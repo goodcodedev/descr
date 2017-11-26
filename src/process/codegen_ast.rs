@@ -1,18 +1,21 @@
 use lang_data::*;
 use std::fs::File;
 use std::io::Write;
-use std::mem;
 
-pub struct CodegenAst<'a> {
-    data: &'a LangData<'a>
+pub struct CodegenAst<'a, 'd: 'a> {
+    data: &'a LangData<'d>
 }
-impl<'a> CodegenAst<'a> {
-    pub fn new(data: &'a LangData<'a>) -> CodegenAst<'a> {
+impl<'a, 'd> CodegenAst<'a, 'd> {
+    pub fn new(data: &'a LangData<'d>) -> CodegenAst<'a, 'd> {
         CodegenAst { data }
     }
 
     pub fn gen(&self) {
-        let mut s = String::new();
+        // Try to allocate ideally enough to contain the source
+        let mut s = String::with_capacity(
+            25 * 3 * self.data.ast_structs.len()
+            + 25 * 3 * self.data.ast_enums.len()
+        );
         for (key, ast_struct) in &self.data.ast_structs {
             s += "pub struct ";
             s += key;

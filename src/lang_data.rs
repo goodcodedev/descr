@@ -38,6 +38,35 @@ pub enum TypedPart<'a> {
         key: &'a str
     }
 }
+impl<'a> TypedPart<'a> {
+    pub fn gen_parser(&self, s: &mut String) {
+        use TypedPart::*;
+        match self {
+            &AstPart { key } => {
+                *s += key;
+            },
+            &ListPart { key } => {
+                *s += key;
+            },
+            &CharPart { key, chr } => {
+                *s += "char!('";
+                s.push(chr);
+                *s += "')";
+            },
+            &TagPart { key, tag } => {
+                *s += "tag!(\"";
+                *s += tag;
+                *s += "\")";
+            },
+            &IntPart { key } => {
+                *s += "int";
+            },
+            &IdentPart { key } => {
+                *s += "ident";
+            }
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct TokenData<'a> {
@@ -70,6 +99,26 @@ impl<'a> AstPartsRule<'a> {
 pub enum AstRule<'a> {
     PartsRule(AstPartsRule<'a>),
     RefRule(&'a str)
+}
+impl<'a> AstRule<'a> {
+    pub fn gen_rule(&self, s: &mut String, data: &LangData) {
+        use AstRule::*;
+        match self {
+            &RefRule(rule_ref) => {
+                *s += rule_ref;
+            },
+            &PartsRule(ref parts_rule) => {
+                *s += "do_parse!(";
+                for part_key in &parts_rule.part_keys {
+                    *s += "    "; 
+                    let part = data.typed_parts.get(part_key).unwrap();
+                    part.gen_parser(s);
+                    *s += " >>\n";
+                }
+                *s += ")";
+            }
+        }
+    }
 }
 
 /// Data for an ast entry

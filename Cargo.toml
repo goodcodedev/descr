@@ -5,3 +5,4 @@ authors = ["goodcodedev <gudmund@goodcode.no>"]
 
 [dependencies]
 nom = "^3.2"
+elapsed = "0.1"
