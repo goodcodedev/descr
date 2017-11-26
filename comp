@@ -1,0 +1,28 @@
+@heading : string
+= num
+= heading_state 
+
+heading_state = heading
+
+fn uc_first(text: str) {
+    string.to_upper(text[0]) + text[1..]
+}
+
+*button {
+    bg-color: light-blue
+    border: darker
+}
+
+
+Plus       => num++
+Minus(inc) => num -= inc
+Fetch      => next_header(Heading)
+Heading(next) => heading_state = next
+FetchGql   => ?header_styles(*button.bg_color)
+
+<h1 onclick=Plus>
+    $heading_state >> uc_first
+</h1>
+<div cls=button click=Minus(1)>minus</div>
+<div cls=button click=Fetch>fetch</div>
+

@@ -1,0 +1,20 @@
+Source {
+    AstSingle,
+    AstMany,
+    List
+}
+
+AstSingle(ident LPAREN tokenList RPAREN)
+AstMany(ident LBRACE astItems RBRACE)
+
+tokenList[] WS Token
+Token {
+    TokenKey(ident optional:QUESTION?),
+    TokenNamedKey(str:name COLON str:key optional:QUESTION?)
+}
+
+astItems[] COMMA AstItem
+AstItem {
+    AstDef(ident? LPAREN tokenList RPAREN),
+    AstRef(ident)
+}

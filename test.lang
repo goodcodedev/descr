@@ -1,0 +1,35 @@
+ident = alpha alphanumeric;
+
+Block("{" $statements "}")
+
+statements[] {
+    Statement ";",
+    ControlStruct
+}
+
+ControlStruct {
+    If ("if" $cond:Expr ifBranch:Block),
+    If ((if) cond:Expr ifBranch:Block "else" elseBranch:Block)
+}
+
+Statement {
+    Assign(var_name:ident (=) Expr),
+    Call(func_name:ident "(" args ")")
+}
+
+args[] "," {
+    Expr
+}
+
+Expr {
+    Ref(varname:ident),
+    IntConst(val:int),
+    Binary(left:Expr op:binaryOp right:Expr)
+}
+
+BinaryOp {
+    Plus(+),
+    Minus(-),
+    Multiply( * ),
+    Divide( / )
+}
