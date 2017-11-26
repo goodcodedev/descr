@@ -12,6 +12,7 @@ use process::register_keys::RegisterKeys;
 use process::get_tokens::GetTokens;
 use process::build_parsers::BuildParsers;
 use process::build_ast::BuildAst;
+use process::codegen_ast::CodegenAst;
 
 fn main() {
     let input = b"
@@ -70,5 +71,9 @@ fn process<'a, 'b>(res: &'a ast::Source, data: &'b mut LangData<'a>) {
     {
         let mut build_ast = BuildAst::new(data);
         build_ast.build_ast();
+    }
+    {
+        let codegen_ast = CodegenAst::new(data);
+        codegen_ast.gen();
     }
 }
