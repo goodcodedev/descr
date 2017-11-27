@@ -16,6 +16,7 @@ use process::build_parsers::BuildParsers;
 use process::build_ast::BuildAst;
 use process::codegen_ast::CodegenAst;
 use process::codegen_parsers::CodegenParsers;
+mod util;
 
 fn main() {
     let input = b"

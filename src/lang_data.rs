@@ -17,26 +17,12 @@ impl<'a> PartKey<'a> {
 
 #[derive(Debug)]
 pub enum TypedPart<'a> {
-    AstPart {
-        key: &'a str,
-    },
-    ListPart{
-        key: &'a str,
-    },
-    CharPart {
-        key: &'a str,
-        chr: char
-    },
-    TagPart {
-        key: &'a str,
-        tag: &'a str
-    },
-    IntPart {
-        key: &'a str
-    },
-    IdentPart {
-        key: &'a str
-    }
+    AstPart     { key: &'a str },
+    ListPart    { key: &'a str },
+    CharPart    { key: &'a str, chr: char },
+    TagPart     { key: &'a str, tag: &'a str },
+    IntPart     { key: &'a str },
+    IdentPart   { key: &'a str }
 }
 impl<'a> TypedPart<'a> {
     pub fn gen_parser(&self, mut s: String) -> String {
@@ -151,7 +137,7 @@ pub enum AstRule<'a> {
     RefRule(&'a str)
 }
 impl<'a> AstRule<'a> {
-    pub fn gen_rule(&self, mut s: String, data: &LangData) -> String {
+    pub fn gen_rule(&self, mut s: String, ast_data: &AstData, data: &LangData, is_enum: bool) -> String {
         use AstRule::*;
         match self {
             &RefRule(rule_ref) => {
@@ -176,8 +162,15 @@ impl<'a> AstRule<'a> {
                     s += " >>\n";
                 }
                 s += "        (";
-                s += parts_rule.ast_type;
-                s += " {\n";
+                if is_enum {
+                    s += ast_data.ast_type;
+                    s += "(";
+                    s += parts_rule.ast_type;
+                    s += "Item {\n";
+                } else {
+                    s += parts_rule.ast_type;
+                    s += " {\n";
+                }
                 for part in &parts_rule.parts {
                     if let Some(member_key) = part.member_key {
                         let typed_part = part.get_typed_part(data);
@@ -188,7 +181,11 @@ impl<'a> AstRule<'a> {
                         s += ",\n";
                     }
                 }
-                s += "    }))";
+                if is_enum {
+                    s += "        })))";
+                } else {
+                    s += "        }))";
+                }
             }
         }
         s

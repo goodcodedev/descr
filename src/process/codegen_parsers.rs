@@ -1,6 +1,7 @@
 use lang_data::*;
 use std::fs::File;
 use std::io::Write;
+use util::SortedHashMap;
 
 pub struct CodegenParsers<'a, 'd: 'a> {
     data: &'a LangData<'d>
@@ -15,7 +16,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
             self.data.ast_data.len() * 100
             + self.data.list_data.len() * 100
         );
-        for (key, ast_data) in &self.data.ast_data {
+        for (key, ast_data) in self.data.ast_data.sorted_iter() {
             match ast_data.rules.len() {
                 0 => {},
                 1 => {
@@ -25,7 +26,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                     s += "<";
                     s += ast_data.ast_type;
                     s += ">,\n    ";
-                    s = rule.gen_rule(s, self.data);
+                    s = rule.gen_rule(s, ast_data, self.data, false);
                     s += "\n);\n\n";
                 },
                 len => {
@@ -36,7 +37,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                     s += ast_data.ast_type;
                     s += ">, alt_complete!(\n    ";
                     for (i, rule) in ast_data.rules.iter().enumerate() {
-                        s = rule.gen_rule(s, self.data);
+                        s = rule.gen_rule(s, ast_data, self.data, true);
                         if i < len - 1 {
                             s += "\n    | ";
                         }

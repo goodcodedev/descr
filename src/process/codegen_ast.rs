@@ -1,6 +1,7 @@
 use lang_data::*;
 use std::fs::File;
 use std::io::Write;
+use util::SortedHashMap;
 
 pub struct CodegenAst<'a, 'd: 'a> {
     data: &'a LangData<'d>
@@ -16,7 +17,7 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             25 * 3 * self.data.ast_structs.len()
             + 25 * 3 * self.data.ast_enums.len()
         );
-        for (key, ast_struct) in &self.data.ast_structs {
+        for (key, ast_struct) in self.data.ast_structs.sorted_iter() {
             s += "pub struct ";
             s += key;
             s += " {\n";
@@ -36,7 +37,7 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
                 }
                 s += ",\n";
             }
-            s += " }\n\n";
+            s += "}\n\n";
         }
         for (key, enum_data) in &self.data.ast_enums {
             s += "pub enum ";
