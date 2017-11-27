@@ -6,7 +6,7 @@ use lang_data::*;
 pub struct BuildParsers<'a, 'd: 'a> {
     data: &'a mut LangData<'d>
 }
-impl<'a, 'd> BuildParsers<'a, 'd> {
+impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
     pub fn new(data: &'a mut LangData<'d>) -> BuildParsers<'a, 'd> {
         BuildParsers {
             data
@@ -39,28 +39,35 @@ impl<'a, 'd> BuildParsers<'a, 'd> {
             use ast::TokenNode::*;
             use lang_data::TypedPart::*;
             match token {
-                &TokenKey(ast::TokenKey{ident, ..}) => {
+                &TokenKey(ast::TokenKey{ident, optional}) => {
                     let part = self.data.typed_parts.get(ident).unwrap();
                     rule.part_keys.push(ident);
                     // Key index on parts considered
                     // members
-                    match part {
+                    let member_key = match part {
                         &AstPart { .. }
                         | &ListPart { .. }
                         | &IntPart { .. }
                         | &IdentPart { .. } => {
                             rule.member_idxs.insert(ident, i);
+                            rule.idx_members.insert(i, ident);
+                            Some(ident)
                         },
-                        _ => ()
+                        _ => None
                     };
+                    rule.parts.push(AstRulePart {
+                        part_key: ident,
+                        member_key,
+                        optional
+                    });
                 },
-                &TokenNamedKey(ast::TokenNamedKey{name, key, ..}) => {
+                &TokenNamedKey(ast::TokenNamedKey{name, key, optional}) => {
                     let part = self.data.typed_parts.get(key).unwrap();
                     rule.part_keys.push(key);
                     // Key index by name
                     // This includes more types
                     // as a way to set members
-                    match part {
+                    let member_key = match part {
                         &AstPart { .. }
                         | &ListPart { .. }
                         | &IntPart { .. }
@@ -68,8 +75,15 @@ impl<'a, 'd> BuildParsers<'a, 'd> {
                         | &CharPart { .. }
                         | &TagPart { .. } => {
                             rule.member_idxs.insert(name, i);
+                            rule.idx_members.insert(i, name);
+                            Some(name)
                         }
                     };
+                    rule.parts.push(AstRulePart {
+                        part_key: key,
+                        member_key,
+                        optional
+                    });
                 }
             }
         }

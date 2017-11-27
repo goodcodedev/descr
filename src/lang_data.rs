@@ -39,32 +39,66 @@ pub enum TypedPart<'a> {
     }
 }
 impl<'a> TypedPart<'a> {
-    pub fn gen_parser(&self, s: &mut String) {
+    pub fn gen_parser(&self, mut s: String) -> String {
         use TypedPart::*;
         match self {
             &AstPart { key } => {
-                *s += key;
+                s += key;
             },
             &ListPart { key } => {
-                *s += key;
+                s += key;
             },
             &CharPart { key, chr } => {
-                *s += "char!('";
+                s += "char!('";
                 s.push(chr);
-                *s += "')";
+                s += "')";
             },
             &TagPart { key, tag } => {
-                *s += "tag!(\"";
-                *s += tag;
-                *s += "\")";
+                s += "tag!(\"";
+                s += tag;
+                s += "\")";
             },
             &IntPart { key } => {
-                *s += "int";
+                s += "int";
             },
             &IdentPart { key } => {
-                *s += "ident";
+                s += "ident";
             }
         }
+        s
+    }
+
+    pub fn gen_val(&self, mut s: String, part: &'a AstRulePart) -> String {
+        use TypedPart::*;
+        let member_key = part.member_key.unwrap();
+        match self {
+            &AstPart { .. }
+            | &ListPart { .. } => {
+                s += member_key;
+                s += "_k";
+            }
+            &CharPart { .. } => {
+                if part.optional {
+                    s += member_key;
+                    s += "_k.is_some()";
+                }
+            },
+            &TagPart { .. } => {
+                if part.optional {
+                    s += member_key;
+                    s += "_k.is_some()";
+                }
+            },
+            &IntPart { .. } => {
+                s += member_key;
+                s += "_k";
+            },
+            &IdentPart { .. } => {
+                s += member_key;
+                s += "_k";
+            }
+        }
+        s
     }
 }
 
@@ -81,16 +115,32 @@ pub struct TokenData<'a> {
 #[derive(Debug)]
 pub struct AstPartsRule<'a> {
     pub part_keys: Vec<&'a str>,
+    pub parts: Vec<AstRulePart<'a>>,
     pub ast_type: &'a str,
-    pub member_idxs: HashMap<&'a str, usize>
+    pub member_idxs: HashMap<&'a str, usize>,
+    pub idx_members: HashMap<usize, &'a str>
 }
 impl<'a> AstPartsRule<'a> {
     pub fn new(ast_type: &'a str) -> AstPartsRule<'a> {
         AstPartsRule {
             part_keys: Vec::new(),
+            parts: Vec::new(),
             ast_type,
-            member_idxs: HashMap::new()
+            member_idxs: HashMap::new(),
+            idx_members: HashMap::new()
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct AstRulePart<'a> {
+    pub part_key: &'a str,
+    pub member_key: Option<&'a str>,
+    pub optional: bool
+}
+impl<'a> AstRulePart<'a> {
+    pub fn get_typed_part(&self, data: &'a LangData<'a>) -> &'a TypedPart {
+        data.typed_parts.get(self.part_key).unwrap()
     }
 }
 
@@ -101,23 +151,47 @@ pub enum AstRule<'a> {
     RefRule(&'a str)
 }
 impl<'a> AstRule<'a> {
-    pub fn gen_rule(&self, s: &mut String, data: &LangData) {
+    pub fn gen_rule(&self, mut s: String, data: &LangData) -> String {
         use AstRule::*;
         match self {
             &RefRule(rule_ref) => {
-                *s += rule_ref;
+                s += rule_ref;
             },
             &PartsRule(ref parts_rule) => {
-                *s += "do_parse!(";
-                for part_key in &parts_rule.part_keys {
-                    *s += "    "; 
-                    let part = data.typed_parts.get(part_key).unwrap();
-                    part.gen_parser(s);
-                    *s += " >>\n";
+                s += "do_parse!(\n";
+                for part in &parts_rule.parts {
+                    s += "        sp >> "; 
+                    let typed_part = part.get_typed_part(data);
+                    if let Some(member_name) = part.member_key {
+                        s += member_name;
+                        s += "_k: ";
+                    }
+                    if part.optional {
+                        s += "opt!(";
+                        s = typed_part.gen_parser(s);
+                        s += ")";
+                    } else {
+                        s = typed_part.gen_parser(s);
+                    }
+                    s += " >>\n";
                 }
-                *s += ")";
+                s += "        (";
+                s += parts_rule.ast_type;
+                s += " {\n";
+                for part in &parts_rule.parts {
+                    if let Some(member_key) = part.member_key {
+                        let typed_part = part.get_typed_part(data);
+                        s += "            ";
+                        s += member_key;
+                        s += ": ";
+                        s = typed_part.gen_val(s, part);
+                        s += ",\n";
+                    }
+                }
+                s += "    }))";
             }
         }
+        s
     }
 }
 

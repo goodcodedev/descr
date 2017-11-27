@@ -1,37 +1,37 @@
-pub struct TokenNamedKey {
-    pub QUESTION: bool,
+pub struct TokenKey {
     pub ident: String,
-    pub COLON: bool,
+    pub QUESTION: bool,
+ }
+
+pub struct AstDef {
+    pub ident: String,
+    pub tokenList: tokenList,
+    pub LPAREN: bool,
+    pub RPAREN: bool,
  }
 
 pub struct AstRef {
     pub ident: String,
  }
 
-pub struct TokenKey {
+pub struct TokenNamedKey {
+    pub COLON: bool,
     pub QUESTION: bool,
     pub ident: String,
  }
 
-pub struct AstDef {
-    pub ident: String,
-    pub LPAREN: bool,
-    pub tokenList: tokenList,
-    pub RPAREN: bool,
- }
-
 pub struct AstMany {
-    pub ident: String,
     pub RBRACE: bool,
+    pub ident: String,
     pub astItems: astItems,
     pub LBRACE: bool,
  }
 
 pub struct AstSingle {
     pub LPAREN: bool,
-    pub tokenList: tokenList,
     pub ident: String,
     pub RPAREN: bool,
+    pub tokenList: tokenList,
  }
 
 pub enum Source {

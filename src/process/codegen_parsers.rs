@@ -24,9 +24,9 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                     s += ast_data.ast_type;
                     s += "<";
                     s += ast_data.ast_type;
-                    s += ">,\n";
-                    rule.gen_rule(&mut s, self.data);
-                    s += ");\n";
+                    s += ">,\n    ";
+                    s = rule.gen_rule(s, self.data);
+                    s += "\n);\n\n";
                 },
                 len => {
                     // Alt rule
@@ -34,14 +34,14 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                     s += ast_data.ast_type;
                     s += "<";
                     s += ast_data.ast_type;
-                    s += ">, alt_complete!(\n";
+                    s += ">, alt_complete!(\n    ";
                     for (i, rule) in ast_data.rules.iter().enumerate() {
-                        rule.gen_rule(&mut s, self.data);
-                        if i < len {
-                            s += "\n| ";
+                        s = rule.gen_rule(s, self.data);
+                        if i < len - 1 {
+                            s += "\n    | ";
                         }
                     }
-                    s += "));\n";
+                    s += "\n));\n\n";
                 }
             }
         }
