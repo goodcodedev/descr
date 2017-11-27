@@ -65,3 +65,11 @@ named!(Token<Token>, alt_complete!(
         })))
 ));
 
+named!(astItems, many0!(
+    AstItem
+));
+
+named!(tokenList, many0!(
+    Token
+));
+

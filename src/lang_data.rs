@@ -137,7 +137,7 @@ pub enum AstRule<'a> {
     RefRule(&'a str)
 }
 impl<'a> AstRule<'a> {
-    pub fn gen_rule(&self, mut s: String, ast_data: &AstData, data: &LangData, is_enum: bool) -> String {
+    pub fn gen_rule(&self, mut s: String, base_type: &str, data: &LangData, is_enum: bool) -> String {
         use AstRule::*;
         match self {
             &RefRule(rule_ref) => {
@@ -163,7 +163,7 @@ impl<'a> AstRule<'a> {
                 }
                 s += "        (";
                 if is_enum {
-                    s += ast_data.ast_type;
+                    s += base_type;
                     s += "(";
                     s += parts_rule.ast_type;
                     s += "Item {\n";

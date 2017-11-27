@@ -42,9 +42,45 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         }
     }
 
+    fn process_parts_rule(rule: &AstPartsRule<'d>,
+                          struct_data: &mut HashMap<&'d str, AstStruct<'d>>,
+                          typed_parts: &HashMap<&'d str, TypedPart<'d>>) {
+        for part in &rule.parts {
+            let typed_part = typed_parts.get(part.part_key).unwrap();
+            use TypedPart::*;
+            match typed_part {
+                &AstPart { .. }
+                | &ListPart { .. }
+                | &IntPart { .. }
+                | &IdentPart { .. } => {
+                    let member_key = part.member_key.unwrap_or(part.part_key);
+                    Self::reg_struct_member(
+                        struct_data,
+                        rule.ast_type, 
+                        member_key,
+                        part.part_key,
+                        part.optional);
+                },
+                &CharPart { .. }
+                | &TagPart { .. } => {
+                    // Count as member if member name is given
+                    if let Some(member_key) = part.member_key {
+                        Self::reg_struct_member(
+                            struct_data,
+                            rule.ast_type, 
+                            member_key,
+                            part.part_key,
+                            part.optional);
+                    }
+                }
+            }
+        }
+    }
+
     fn build_from_ast_data(ast_data: &HashMap<&'d str, AstData<'d>>,
                            struct_data: &mut HashMap<&'d str, AstStruct<'d>>,
-                           enum_data: &mut HashMap<&'d str, AstEnum<'d>>) {
+                           enum_data: &mut HashMap<&'d str, AstEnum<'d>>,
+                           typed_parts: &HashMap<&'d str, TypedPart<'d>>) {
         for (_key, ast_data) in ast_data {
             let mut is_enum = false;
             for rule in &ast_data.rules {
@@ -60,14 +96,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                             is_enum = true;
                         }
                         Self::reg_struct(struct_data, rule.ast_type);
-                        for part_key in &rule.part_keys {
-                            Self::reg_struct_member(
-                                struct_data,
-                                rule.ast_type, 
-                                part_key,
-                                part_key,
-                                false);
-                        }
+                        Self::process_parts_rule(rule, struct_data, typed_parts);
                     }
                 }
             }
@@ -90,7 +119,8 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
 
     fn build_from_list_data(list_data: &HashMap<&'d str, ListData<'d>>,
                             struct_data: &mut HashMap<&'d str, AstStruct<'d>>,
-                            enum_data: &mut HashMap<&'d str, AstEnum<'d>>) {
+                            enum_data: &mut HashMap<&'d str, AstEnum<'d>>,
+                            typed_parts: &HashMap<&'d str, TypedPart<'d>>) {
         for (_key, list_data) in list_data {
             let mut last_type = None;
             let mut is_enum = false;
@@ -109,14 +139,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                         }
                         last_type = Some(rule.ast_type);
                         Self::reg_struct(struct_data, rule.ast_type);
-                        for part_key in &rule.part_keys {
-                            Self::reg_struct_member(
-                                struct_data,
-                                rule.ast_type, 
-                                part_key,
-                                part_key,
-                                false);
-                        }
+                        Self::process_parts_rule(rule, struct_data, typed_parts);
                     }
                 }
                 if is_enum {
@@ -165,11 +188,13 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         Self::build_from_ast_data(
             &self.data.ast_data, 
             &mut self.data.ast_structs,
-            &mut self.data.ast_enums);
+            &mut self.data.ast_enums,
+            &self.data.typed_parts);
         Self::build_from_list_data(
             &self.data.list_data, 
             &mut self.data.ast_structs,
-            &mut self.data.ast_enums);
+            &mut self.data.ast_enums,
+            &self.data.typed_parts);
         Self::build_enums_from_ast_data(&self.data.ast_data, &mut self.data.ast_enums);
         Self::build_enums_from_list_data(&self.data.list_data, &mut self.data.ast_enums);
     }

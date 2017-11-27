@@ -16,6 +16,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
             self.data.ast_data.len() * 100
             + self.data.list_data.len() * 100
         );
+        // Ast data
         for (key, ast_data) in self.data.ast_data.sorted_iter() {
             match ast_data.rules.len() {
                 0 => {},
@@ -26,7 +27,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                     s += "<";
                     s += ast_data.ast_type;
                     s += ">,\n    ";
-                    s = rule.gen_rule(s, ast_data, self.data, false);
+                    s = rule.gen_rule(s, ast_data.ast_type, self.data, false);
                     s += "\n);\n\n";
                 },
                 len => {
@@ -37,7 +38,34 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                     s += ast_data.ast_type;
                     s += ">, alt_complete!(\n    ";
                     for (i, rule) in ast_data.rules.iter().enumerate() {
-                        s = rule.gen_rule(s, ast_data, self.data, true);
+                        s = rule.gen_rule(s, ast_data.ast_type, self.data, true);
+                        if i < len - 1 {
+                            s += "\n    | ";
+                        }
+                    }
+                    s += "\n));\n\n";
+                }
+            }
+        }
+        // List data
+        for (key, list_data) in self.data.list_data.sorted_iter() {
+            match list_data.rules.len() {
+                0 => {},
+                1 => {
+                    let rule = list_data.rules.first().unwrap();
+                    s += "named!(";
+                    s += list_data.key;
+                    s += ", many0!(\n    ";
+                    s = rule.ast_rule.gen_rule(s, list_data.key, self.data, false);
+                    s += "\n));\n\n";
+                },
+                len => {
+                    // Alt rule
+                    s += "named!(";
+                    s += list_data.key;
+                    s += ", many0!(alt_complete!(\n    ";
+                    for (i, rule) in list_data.rules.iter().enumerate() {
+                        s = rule.ast_rule.gen_rule(s, list_data.key, self.data, true);
                         if i < len - 1 {
                             s += "\n    | ";
                         }
