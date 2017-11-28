@@ -1,6 +1,5 @@
 use std;
 use std::collections::HashMap;
-use std::collections::hash_map::Iter;
 
 pub trait SortedHashMap<K, V> {
     fn sorted_iter(&self) -> SortedHashMapIter<K, V>;

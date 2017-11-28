@@ -1,7 +1,8 @@
 use visit_ast::*;
 use ast::*;
 use ast;
-use lang_data::*;
+use lang_data::data::*;
+use lang_data::rule::*;
 
 pub struct BuildParsers<'a, 'd: 'a> {
     data: &'a mut LangData<'d>
@@ -14,7 +15,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
     }
     pub fn add_tokens_to_rule(&mut self, is_ast: bool, ident: &'d str, name: &'d str, 
                               token_list: &Vec<TokenNode<'d>>) {
-        use lang_data::AstRule::*;
+        use lang_data::rule::AstRule::*;
         let rule = {
             if is_ast {
                 let ast_data = self.data.ast_data.get_mut(ident).unwrap();
@@ -37,7 +38,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
         };
         for (i, token) in token_list.iter().enumerate() {
             use ast::TokenNode::*;
-            use lang_data::TypedPart::*;
+            use lang_data::typed_part::TypedPart::*;
             match token {
                 &TokenKey(ast::TokenKey{ident, optional}) => {
                     let part = self.data.typed_parts.get(ident).unwrap();
@@ -92,7 +93,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
 impl<'a, 'd> VisitAst<'a, 'd> for BuildParsers<'a, 'd> {
     fn visit_ast_many(&mut self, node: &'d AstMany) {
         for item in &node.ast_items {
-            use lang_data::AstRule::*;
+            use lang_data::rule::AstRule::*;
             use ast::AstItem::*;
             match item {
                 &AstDef(ast::AstDef{ref ident, ref token_list}) => {
@@ -109,7 +110,7 @@ impl<'a, 'd> VisitAst<'a, 'd> for BuildParsers<'a, 'd> {
     fn visit_list(&mut self, node: &'d List) {
         for item in &node.items {
             use ast::AstItem::*;
-            use lang_data::AstRule::*;
+            use lang_data::rule::AstRule::*;
             match &item.ast_item {
                 &AstDef(ast::AstDef{ref ident, ref token_list}) => {
                     let name = ident.unwrap_or(node.ident);

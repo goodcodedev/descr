@@ -1,4 +1,4 @@
-use lang_data::*;
+use lang_data::data::*;
 use std::fs::File;
 use std::io::Write;
 use util::SortedHashMap;

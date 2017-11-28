@@ -1,3 +1,4 @@
+use lang_data::data::*;
 use visit_ast::*;
 use lang_data::*;
 use ast::*;

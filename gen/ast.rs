@@ -4,8 +4,8 @@ pub struct AstDef {
 }
 
 pub struct AstMany {
-    pub astItems: astItems,
     pub ident: String,
+    pub astItems: astItems,
 }
 
 pub struct AstRef {
@@ -18,13 +18,13 @@ pub struct AstSingle {
 }
 
 pub struct TokenKey {
-    pub ident: String,
     pub optional: bool,
+    pub ident: String,
 }
 
 pub struct TokenNamedKey {
-    pub key: String,
     pub name: String,
+    pub key: String,
     pub optional: bool,
 }
 

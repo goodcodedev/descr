@@ -1,4 +1,7 @@
-use lang_data::*;
+use lang_data::data::*;
+use lang_data::ast::*;
+use lang_data::typed_part::*;
+use lang_data::rule::*;
 use std::collections::HashMap;
 
 pub struct BuildAst<'a, 'd: 'a> {
@@ -47,7 +50,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                           typed_parts: &HashMap<&'d str, TypedPart<'d>>) {
         for part in &rule.parts {
             let typed_part = typed_parts.get(part.part_key).unwrap();
-            use TypedPart::*;
+            use lang_data::typed_part::TypedPart::*;
             match typed_part {
                 &AstPart { .. }
                 | &ListPart { .. }

@@ -9,7 +9,7 @@ mod process;
 use parsers::*;
 mod visit_ast;
 use visit_ast::*;
-use lang_data::*;
+use lang_data::data::*;
 use process::register_keys::RegisterKeys;
 use process::get_tokens::GetTokens;
 use process::build_parsers::BuildParsers;

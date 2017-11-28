@@ -1,4 +1,4 @@
-use lang_data::*;
+use lang_data::data::*;
 use std::fs::File;
 use std::io::Write;
 use util::SortedHashMap;
@@ -26,7 +26,7 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
                 s += key;
                 s += ": ";
                 let tpe = self.data.typed_parts.get(member.token_key).unwrap();
-                use lang_data::TypedPart::*;
+                use lang_data::typed_part::TypedPart::*;
                 match tpe {
                     &AstPart { key } => s += key,
                     &ListPart { key } => s += key,
