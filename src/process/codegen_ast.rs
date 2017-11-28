@@ -18,14 +18,10 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             + 25 * 3 * self.data.ast_enums.len()
         );
         for (key, ast_struct) in self.data.ast_structs.sorted_iter() {
-            s += "pub struct ";
-            s += key;
-            s += " {\n";
+            append!(s, "pub struct " key " {\n");
             for (key, member) in &ast_struct.members {
-                s += "    pub ";
-                s += key;
-                s += ": ";
-                let tpe = self.data.typed_parts.get(member.token_key).unwrap();
+                append!(s 1, "pub" key ": ");
+                let tpe = self.data.typed_parts.get(member.part_key).unwrap();
                 use lang_data::typed_part::TypedPart::*;
                 match tpe {
                     &AstPart { key } => s += key,
@@ -40,15 +36,9 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             s += "}\n\n";
         }
         for (key, enum_data) in self.data.ast_enums.sorted_iter() {
-            s += "pub enum ";
-            s += key;
-            s += " {\n";
+            append!(s, "pub enum " key " {\n");
             for item in &enum_data.items {
-                s += "    ";
-                s += item;
-                s += "Item(";
-                s += item;
-                s += "),\n";
+                append!(s 1, item "Item(" item "),\n");
             }
             s += "}\n\n";
         }

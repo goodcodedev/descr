@@ -1,31 +1,31 @@
 pub struct AstDef {
-    pub tokenList: tokenList,
-    pub ident: String,
+    pubident: String,
+    pubtokenList: tokenList,
 }
 
 pub struct AstMany {
-    pub ident: String,
-    pub astItems: astItems,
+    pubident: String,
+    pubastItems: astItems,
 }
 
 pub struct AstRef {
-    pub ident: String,
+    pubident: String,
 }
 
 pub struct AstSingle {
-    pub tokenList: tokenList,
-    pub ident: String,
+    pubident: String,
+    pubtokenList: tokenList,
 }
 
 pub struct TokenKey {
-    pub optional: bool,
-    pub ident: String,
+    puboptional: bool,
+    pubident: String,
 }
 
 pub struct TokenNamedKey {
-    pub name: String,
-    pub key: String,
-    pub optional: bool,
+    puboptional: bool,
+    pubname: String,
+    pubkey: String,
 }
 
 pub enum AstItem {

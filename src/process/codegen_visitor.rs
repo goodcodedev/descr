@@ -1,7 +1,7 @@
 use lang_data::data::*;
 use std::fs::File;
 use std::io::Write;
-use util::SortedHashMap;
+use util::*;
 
 pub struct CodegenVisitor<'a, 'd: 'a> {
     pub data: &'a LangData<'d>
@@ -16,46 +16,20 @@ impl<'a, 'd> CodegenVisitor<'a, 'd> {
             1024
         );
         s += "trait Visitor {\n";
+        // Ast structs
         for (key, ast_struct) in self.data.ast_structs.sorted_iter() {
-            s += "    pub fn visit_";
-            s += key;
-            s += "(node: ";
-            s += key;
-            s += ") {\n";
+            append!(s 1, "pub fn visit_" key "(node:" key ") {\n");
             for (key, member) in ast_struct.members.sorted_iter() {
-                s += "        ";
-                if member.optional {
-                    s += "self.";
-                    s += key;
-                    s += " match {\n";
-                    s += "            Some(ref inner) => self.visit_";
-                    s += member.name;
-                    s += "(inner)";
-                    s += "),\n";
-                    s += "            None => {}\n        }\n";
-                } else {
-                    s += "self.visit_";
-                    s += member.name;
-                    s += "(node.";
-                    s += key;
-                    s += ");\n";
-                }
+                s = member.gen_visitor(s, ast_struct, self.data);
             }
             s += "    }\n\n";
         }
+        // Ast enums
         for (key, ast_enum) in self.data.ast_enums.sorted_iter() {
-            s += "    pub fn visit_";
-            s += key;
-            s += "(node: ";
-            s += key;
-            s += ") {\n";
-            s += "        match node {\n";
+            append!(s 1, "pub fn visit_" key "(node: " key ") {\n");
+            append!(s 2, "match node {\n");
             for enum_item in &ast_enum.items {
-                s += "            ";
-                s += enum_item;
-                s += "Item(ref inner) => self.visit_";
-                s += enum_item;
-                s += "(inner);\n";
+                append!(s 3, enum_item "Item(ref inner) => self.visit_" enum_item "(inner);\n");
             }
             s += "        }\n    }\n\n";
         }

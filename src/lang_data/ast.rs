@@ -1,20 +1,28 @@
+use lang_data::data::*;
 use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct AstStructMember<'a> {
     pub num_patterns: u32,
     pub name: &'a str,
-    pub token_key: &'a str,
+    pub part_key: &'a str,
+    pub type_name: &'a str,
     pub optional: bool
 }
 impl<'a> AstStructMember<'a> {
-    pub fn new(name: &'a str, token_key: &'a str, optional: bool) -> AstStructMember<'a> {
+    pub fn new(name: &'a str, part_key: &'a str, type_name: &'a str, optional: bool) -> AstStructMember<'a> {
         AstStructMember {
             num_patterns: 0,
             name,
-            token_key,
+            part_key,
+            type_name,
             optional: optional
         }
+    }
+
+    pub fn gen_visitor(&self, mut s: String, ast_struct: &AstStruct, data: &LangData) -> String {
+        let typed_part = data.typed_parts.get(self.part_key).unwrap();
+        typed_part.gen_visitor(s, self, ast_struct, data)
     }
 }
 

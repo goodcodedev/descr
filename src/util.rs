@@ -37,3 +37,41 @@ impl<'a, K: 'a, V: 'a> Iterator for SortedHashMapIter<'a, K, V>
         }
     }
 }
+
+macro_rules! append {
+    ($s:ident, $($a:expr)*) => {
+        $($s += $a;)*
+    };
+    ($s:ident 1, $($a:expr)*) => {
+        $s += "    ";
+        $($s += $a;)*
+    };
+    ($s:ident 2, $($a:expr)*) => {
+        $s += "        ";
+        $($s += $a;)*
+    };
+    ($s:ident 3, $($a:expr)*) => {
+        $s += "            ";
+        $($s += $a;)*
+    };
+    ($s:ident 4, $($a:expr)*) => {
+        $s += "                ";
+        $($s += $a;)*
+    };
+    ($s:ident 5, $($a:expr)*) => {
+        $s += "                    ";
+        $($s += $a;)*
+    };
+    ($s:ident 6, $($a:expr)*) => {
+        $s += "                        ";
+        $($s += $a;)*
+    };
+    ($s:ident 7, $($a:expr)*) => {
+        $s += "                            ";
+        $($s += $a;)*
+    };
+    ($s:ident 8, $($a:expr)*) => {
+        $s += "                                ";
+        $($s += $a;)*
+    };
+}

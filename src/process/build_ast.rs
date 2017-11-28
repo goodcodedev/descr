@@ -29,7 +29,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
 
     fn reg_struct_member(data: &mut HashMap<&'d str, AstStruct<'d>>, 
                              struct_name: &'d str, member_name: &'d str,
-                             token_key: &'d str, optional: bool) {
+                             part_key: &'d str, optional: bool) {
         let ast_struct = data.get_mut(struct_name).unwrap();
         if ast_struct.members.contains_key(member_name) {
             let struct_member = ast_struct.members.get_mut(member_name).unwrap();
@@ -40,7 +40,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         } else {
             ast_struct.members.insert(
                 member_name,
-                AstStructMember::new(member_name, token_key, optional)
+                AstStructMember::new(member_name, part_key, struct_name, optional)
             );
         }
     }

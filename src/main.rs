@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate nom;
 extern crate elapsed;
+#[macro_use]
+mod util;
 use elapsed::measure_time;
 mod ast;
 mod lang_data;
@@ -17,7 +19,6 @@ use process::build_ast::BuildAst;
 use process::codegen_ast::CodegenAst;
 use process::codegen_parsers::CodegenParsers;
 use process::codegen_visitor::CodegenVisitor;
-mod util;
 
 fn main() {
     let input = b"

@@ -1,41 +1,29 @@
 trait Visitor {
-    pub fn visit_AstDef(node: AstDef) {
-        self.ident match {
-            Some(ref inner) => self.visit_ident(inner)),
-            None => {}
-        }
-        self.visit_tokenList(node.tokenList);
-    }
-
-    pub fn visit_AstMany(node: AstMany) {
-        self.visit_astItems(node.astItems);
-        self.visit_ident(node.ident);
-    }
-
-    pub fn visit_AstRef(node: AstRef) {
-        self.visit_ident(node.ident);
-    }
-
-    pub fn visit_AstSingle(node: AstSingle) {
-        self.visit_ident(node.ident);
-        self.visit_tokenList(node.tokenList);
-    }
-
-    pub fn visit_TokenKey(node: TokenKey) {
-        self.visit_ident(node.ident);
-        self.optional match {
-            Some(ref inner) => self.visit_optional(inner)),
-            None => {}
+    pub fn visit_AstDef(node:AstDef) {
+        for item in &self.tokenList{
+            self.visit_tokenList(item);
         }
     }
 
-    pub fn visit_TokenNamedKey(node: TokenNamedKey) {
-        self.visit_key(node.key);
-        self.visit_name(node.name);
-        self.optional match {
-            Some(ref inner) => self.visit_optional(inner)),
-            None => {}
+    pub fn visit_AstMany(node:AstMany) {
+        for item in &self.astItems{
+            self.visit_astItems(item);
         }
+    }
+
+    pub fn visit_AstRef(node:AstRef) {
+    }
+
+    pub fn visit_AstSingle(node:AstSingle) {
+        for item in &self.tokenList{
+            self.visit_tokenList(item);
+        }
+    }
+
+    pub fn visit_TokenKey(node:TokenKey) {
+    }
+
+    pub fn visit_TokenNamedKey(node:TokenNamedKey) {
     }
 
     pub fn visit_AstItem(node: AstItem) {

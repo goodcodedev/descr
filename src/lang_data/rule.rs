@@ -84,7 +84,7 @@ impl<'a> AstRule<'a> {
                         s += "            ";
                         s += member_key;
                         s += ": ";
-                        s = typed_part.gen_val(s, part);
+                        s = typed_part.gen_parser_val(s, part);
                         s += ",\n";
                     }
                 }

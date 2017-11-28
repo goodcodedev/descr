@@ -113,21 +113,6 @@ impl<'a> LangData<'a> {
         }
     }
 
-    pub fn reg_struct_member(&mut self, struct_name: &'a str, member_name: &'a str, token_key: &'a str, optional: bool) {
-        let ast_struct = self.ast_structs.get_mut(struct_name).unwrap();
-        if ast_struct.members.contains_key(member_name) {
-            let struct_member = ast_struct.members.get_mut(member_name).unwrap();
-            struct_member.num_patterns += 1;
-            if optional {
-                struct_member.optional = true;
-            }
-        } else {
-            ast_struct.members.insert(
-                member_name,
-                AstStructMember::new(member_name, token_key, optional)
-            );
-        }
-    }
 
     pub fn ensure_enum(&mut self, name: &'a str) -> &AstEnum<'a> {
         if !self.ast_enums.contains_key(name) {
