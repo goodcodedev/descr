@@ -39,7 +39,7 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             }
             s += "}\n\n";
         }
-        for (key, enum_data) in &self.data.ast_enums {
+        for (key, enum_data) in self.data.ast_enums.sorted_iter() {
             s += "pub enum ";
             s += key;
             s += " {\n";

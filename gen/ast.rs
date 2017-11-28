@@ -4,8 +4,8 @@ pub struct AstDef {
 }
 
 pub struct AstMany {
-    pub ident: String,
     pub astItems: astItems,
+    pub ident: String,
 }
 
 pub struct AstRef {
@@ -18,19 +18,14 @@ pub struct AstSingle {
 }
 
 pub struct TokenKey {
-    pub optional: bool,
     pub ident: String,
+    pub optional: bool,
 }
 
 pub struct TokenNamedKey {
     pub key: String,
-    pub optional: bool,
     pub name: String,
-}
-
-pub enum Token {
-    TokenKeyItem(TokenKey),
-    TokenNamedKeyItem(TokenNamedKey),
+    pub optional: bool,
 }
 
 pub enum AstItem {
@@ -42,5 +37,10 @@ pub enum Source {
     AstSingleItem(AstSingle),
     AstManyItem(AstMany),
     ListItem(List),
+}
+
+pub enum Token {
+    TokenKeyItem(TokenKey),
+    TokenNamedKeyItem(TokenNamedKey),
 }
 

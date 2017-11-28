@@ -16,6 +16,7 @@ use process::build_parsers::BuildParsers;
 use process::build_ast::BuildAst;
 use process::codegen_ast::CodegenAst;
 use process::codegen_parsers::CodegenParsers;
+use process::codegen_visitor::CodegenVisitor;
 mod util;
 
 fn main() {
@@ -92,6 +93,10 @@ fn process<'a, 'b>(res: &'a ast::Source, data: &'b mut LangData<'a>) {
         {
             let codegen_parsers = CodegenParsers::new(data);
             codegen_parsers.gen();
+        }
+        {
+            let codegen_visitor = CodegenVisitor::new(data);
+            codegen_visitor.gen();
         }
     });
     println!("Process: {}", elapsed);
