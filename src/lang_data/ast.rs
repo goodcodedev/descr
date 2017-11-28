@@ -5,15 +5,17 @@ use std::collections::HashMap;
 pub struct AstStructMember<'a> {
     pub num_patterns: u32,
     pub name: &'a str,
+    pub snake_case: String,
     pub part_key: &'a str,
     pub type_name: &'a str,
     pub optional: bool
 }
 impl<'a> AstStructMember<'a> {
-    pub fn new(name: &'a str, part_key: &'a str, type_name: &'a str, optional: bool) -> AstStructMember<'a> {
+    pub fn new(name: &'a str, snake_case: String, part_key: &'a str, type_name: &'a str, optional: bool) -> AstStructMember<'a> {
         AstStructMember {
             num_patterns: 0,
             name,
+            snake_case,
             part_key,
             type_name,
             optional: optional
@@ -24,6 +26,10 @@ impl<'a> AstStructMember<'a> {
         let typed_part = data.typed_parts.get(self.part_key).unwrap();
         typed_part.gen_visitor(s, self, ast_struct, data)
     }
+
+    pub fn sc(&self) -> &str {
+        self.snake_case.as_str()
+    }
 }
 
 /// There is a counter on both
@@ -33,26 +39,47 @@ impl<'a> AstStructMember<'a> {
 /// which fields are optional
 #[derive(Debug)]
 pub struct AstStruct<'a> {
+    pub name: &'a str,
+    pub snake_case: String,
     pub num_patterns: u32,
     pub members: HashMap<&'a str, AstStructMember<'a>>
 }
 impl<'a> AstStruct<'a> {
-    pub fn new() -> AstStruct<'a> {
+    pub fn new(name: &'a str, snake_case: String) -> AstStruct<'a> {
         AstStruct {
+            name,
+            snake_case,
             num_patterns: 0,
             members: HashMap::new()
         }
+    }
+    pub fn sc(&self) -> &str {
+        self.snake_case.as_str()
     }
 }
 
 #[derive(Debug)]
 pub struct AstEnum<'a> {
+    pub name: &'a str,
+    pub snake_case: String,
     pub items: Vec<&'a str>
 }
 impl<'a> AstEnum<'a> {
-    pub fn new() -> AstEnum<'a> {
+    pub fn new(name: &'a str, snake_case: String) -> AstEnum<'a> {
         AstEnum {
+            name,
+            snake_case,
             items: Vec::new()
         }
     }
+
+    pub fn sc(&self) -> &str {
+        self.snake_case.as_str()
+    }
+}
+
+#[derive(Debug)]
+pub enum AstType<'a> {
+    AstStruct(&'a str),
+    AstEnum(&'a str)
 }

@@ -76,36 +76,38 @@ impl<'a> TypedPart<'a> {
         match self {
             &AstPart { key } => {
                 if member.optional {
-                    append!(s 2, "self." member.name "match {\n");
+                    append!(s 2, "self." member.sc() "match {\n");
                     append!(s 3, "Some(ref inner) => self.visit_" key "(inner),\n");
                     append!(s 3, "None => {}\n");
                     append!(s 2, "}\n");
                 } else {
-                    append!(s 1, "self.visit_" key "(node." member.name ");\n");
+                    append!(s 2, "self.visit_" data.sc(key) "(node." member.sc() ");\n");
                 }
             },
             &ListPart { key } => {
                 if member.optional {
-                    append!(s 2, "self." member.name " match {\n");
+                    append!(s 2, "self." member.sc() " match {\n");
                     append!(s 3, "Some(ref inner) => {\n");
                     append!(s 4, "for item in &inner {\n");
-                    let list_data = data.list_data.get(key).unwrap();
-                    match data.ast_enums.get(list_data.key) {
-                        Some(ref ast_enum) => {
-                            append!(s 5, "match item {\n");
-                            for item in &ast_enum.items {
-                                append!(s 6, item "Item(ref inner) => self.visit_" item "(inner);\n");
-                            }
-                            append!(s 5, "}\n");
+                    match data.type_refs.get(key).unwrap() {
+                        &AstType::AstStruct(ref type_name) => {
+                            append!(s 5, "self.visit_" data.sc(type_name) "(item);\n");
                         },
-                        None => {
-                            // Regular ast node
-                            append!(s 5, "self.visit_" key "(item);\n");
+                        &AstType::AstEnum(ref type_name) => {
+                            append!(s 5, "self.visit_" data.sc(type_name) "(item);\n");
                         }
-                    };
+                    }
+                    append!(s 4, "}\n");
                 } else {
-                    append!(s 2, "for item in &self." member.name "{\n");
-                    append!(s 3, "self.visit_" key "(item);\n");
+                    append!(s 2, "for item in &node." member.sc() " {\n");
+                    match data.type_refs.get(key).unwrap() {
+                        &AstType::AstStruct(ref type_name) => {
+                            append!(s 3, "self.visit_" data.sc(type_name) "(item);\n");
+                        },
+                        &AstType::AstEnum(ref type_name) => {
+                            append!(s 3, "self.visit_" data.sc(type_name) "(item);\n");
+                        }
+                    }
                     append!(s 2, "}\n");
                 }
             },

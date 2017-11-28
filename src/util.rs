@@ -27,7 +27,9 @@ impl<'a, K: 'a, V: 'a> Iterator for SortedHashMapIter<'a, K, V>
 {
     type Item = (&'a K, &'a V);
     fn next(&mut self) -> Option<Self::Item> {
-        self.keys.sort();
+        if self.i == 0 {
+            self.keys.sort();
+        }
         if self.i < self.keys.len() {
             let next_key = self.keys[self.i];
             self.i += 1;
@@ -73,5 +75,26 @@ macro_rules! append {
     ($s:ident 8, $($a:expr)*) => {
         $s += "                                ";
         $($s += $a;)*
+    };
+}
+
+macro_rules! indent {
+    ($s:ident $indent:expr) => {
+        match $indent {
+            1 => $s += "    ",
+            2 => $s += "        ",
+            3 => $s += "            ",
+            4 => $s += "                ",
+            5 => $s += "                    ",
+            6 => $s += "                        ",
+            7 => $s += "                            ",
+            8 => $s += "                                ",
+            0 => {},
+            num => {
+                for _i in 0..num {
+                    $s += "    ";
+                }
+            }
+        }
     };
 }

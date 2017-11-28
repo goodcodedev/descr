@@ -39,6 +39,43 @@ named!(AstSingle<AstSingle>,
         }))
 );
 
+named!(List<List>, alt_complete!(
+    do_parse!(
+        sp >> ident_k: ident >>
+        sp >> sep_k: ident >>
+        sp >> reference_k: ident >>
+        (List(ListSingleItem {
+            ident: ident_k,
+            sep: sep_k,
+            reference: reference_k,
+        })))
+    | do_parse!(
+        sp >> ident_k: ident >>
+        sp >> sep_k: opt!(ident) >>
+        sp >> char!('{') >>
+        sp >> ListItem_k: ListItem >>
+        sp >> char!('}') >>
+        (List(ListManyItem {
+            ident: ident_k,
+            sep: sep_k,
+            ListItem: ListItem_k,
+        })))
+));
+
+named!(ListItem<ListItem>,
+    do_parse!(
+        sp >> ident_k: ident >>
+        sp >> char!('(') >>
+        sp >> tokenList_k: tokenList >>
+        sp >> char!(')') >>
+        sp >> sep_k: opt!(ident) >>
+        (ListItem {
+            ident: ident_k,
+            tokenList: tokenList_k,
+            sep: sep_k,
+        }))
+);
+
 named!(Source<Source>, alt_complete!(
     AstSingle
     | AstMany

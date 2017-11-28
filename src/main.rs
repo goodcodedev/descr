@@ -42,6 +42,12 @@ AstItem {
     AstDef(ident? LPAREN tokenList RPAREN),
     AstRef(ident)
 }
+List {
+    ListSingle(ident sep:ident reference:ident),
+    ListMany(ident sep:ident? LBRACE ListItem RBRACE)
+}
+ListItem(ident LPAREN tokenList RPAREN sep:ident?)
+
     ";
     let (elapsed, res) = measure_time(|| {
         source(input)
@@ -64,6 +70,7 @@ AstItem {
     println!("Structs: {:#?}", data.ast_structs);
     println!("Enums: {:#?}", data.ast_enums);
     */
+    println!("{:#?}", data.type_refs);
 }
 
 fn process<'a, 'b>(res: &'a ast::Source, data: &'b mut LangData<'a>) {

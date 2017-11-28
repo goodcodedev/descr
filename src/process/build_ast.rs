@@ -14,11 +14,11 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         }
     }
 
-    fn reg_struct(data: &mut HashMap<&'d str, AstStruct<'d>>, name: &'d str) {
+    fn reg_struct(data: &mut HashMap<&'d str, AstStruct<'d>>, name: &'d str, snake_cased: &mut SnakeCased<'d>) {
         if !data.contains_key(name) {
             data.insert(
                 name,
-                AstStruct::new()
+                AstStruct::new(name, snake_cased.get(name))
             );
         } else {
             // Increment counter
@@ -29,7 +29,8 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
 
     fn reg_struct_member(data: &mut HashMap<&'d str, AstStruct<'d>>, 
                              struct_name: &'d str, member_name: &'d str,
-                             part_key: &'d str, optional: bool) {
+                             part_key: &'d str, optional: bool,
+                             snake_cased: &mut SnakeCased<'d>) {
         let ast_struct = data.get_mut(struct_name).unwrap();
         if ast_struct.members.contains_key(member_name) {
             let struct_member = ast_struct.members.get_mut(member_name).unwrap();
@@ -40,14 +41,15 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         } else {
             ast_struct.members.insert(
                 member_name,
-                AstStructMember::new(member_name, part_key, struct_name, optional)
+                AstStructMember::new(member_name, snake_cased.get(member_name), part_key, struct_name, optional)
             );
         }
     }
 
     fn process_parts_rule(rule: &AstPartsRule<'d>,
                           struct_data: &mut HashMap<&'d str, AstStruct<'d>>,
-                          typed_parts: &HashMap<&'d str, TypedPart<'d>>) {
+                          typed_parts: &HashMap<&'d str, TypedPart<'d>>,
+                          snake_cased: &mut SnakeCased<'d>) {
         for part in &rule.parts {
             let typed_part = typed_parts.get(part.part_key).unwrap();
             use lang_data::typed_part::TypedPart::*;
@@ -62,7 +64,8 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                         rule.ast_type, 
                         member_key,
                         part.part_key,
-                        part.optional);
+                        part.optional,
+                        snake_cased);
                 },
                 &CharPart { .. }
                 | &TagPart { .. } => {
@@ -73,7 +76,8 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                             rule.ast_type, 
                             member_key,
                             part.part_key,
-                            part.optional);
+                            part.optional,
+                            snake_cased);
                     }
                 }
             }
@@ -83,7 +87,9 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
     fn build_from_ast_data(ast_data: &HashMap<&'d str, AstData<'d>>,
                            struct_data: &mut HashMap<&'d str, AstStruct<'d>>,
                            enum_data: &mut HashMap<&'d str, AstEnum<'d>>,
-                           typed_parts: &HashMap<&'d str, TypedPart<'d>>) {
+                           typed_parts: &HashMap<&'d str, TypedPart<'d>>,
+                           type_refs: &mut HashMap<&'d str, AstType<'d>>,
+                           snake_cased: &mut SnakeCased<'d>) {
         for (_key, ast_data) in ast_data {
             let mut is_enum = false;
             for rule in &ast_data.rules {
@@ -98,13 +104,13 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                         if rule.ast_type != ast_data.ast_type {
                             is_enum = true;
                         }
-                        Self::reg_struct(struct_data, rule.ast_type);
-                        Self::process_parts_rule(rule, struct_data, typed_parts);
+                        Self::reg_struct(struct_data, rule.ast_type, snake_cased);
+                        Self::process_parts_rule(rule, struct_data, typed_parts, snake_cased);
                     }
                 }
             }
             if is_enum {
-                let mut e = AstEnum::new();
+                let mut e = AstEnum::new(ast_data.ast_type, snake_cased.get(ast_data.ast_type));
                 for rule in &ast_data.rules {
                     match rule {
                         &AstRule::RefRule(key_ref) => {
@@ -116,6 +122,9 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                     }
                 }
                 enum_data.insert(ast_data.ast_type, e);
+                type_refs.insert(ast_data.ast_type, AstType::AstEnum(ast_data.ast_type));
+            } else {
+                type_refs.insert(ast_data.ast_type, AstType::AstStruct(ast_data.ast_type));
             }
         }
     }
@@ -123,7 +132,9 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
     fn build_from_list_data(list_data: &HashMap<&'d str, ListData<'d>>,
                             struct_data: &mut HashMap<&'d str, AstStruct<'d>>,
                             enum_data: &mut HashMap<&'d str, AstEnum<'d>>,
-                            typed_parts: &HashMap<&'d str, TypedPart<'d>>) {
+                            typed_parts: &HashMap<&'d str, TypedPart<'d>>,
+                            type_refs: &mut HashMap<&'d str, AstType<'d>>,
+                            snake_cased: &mut SnakeCased<'d>) {
         for (_key, list_data) in list_data {
             let mut last_type = None;
             let mut is_enum = false;
@@ -141,12 +152,12 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                             is_enum = true;
                         }
                         last_type = Some(rule.ast_type);
-                        Self::reg_struct(struct_data, rule.ast_type);
-                        Self::process_parts_rule(rule, struct_data, typed_parts);
+                        Self::reg_struct(struct_data, rule.ast_type, snake_cased);
+                        Self::process_parts_rule(rule, struct_data, typed_parts, snake_cased);
                     }
                 }
                 if is_enum {
-                    let mut e = AstEnum::new();
+                    let mut e = AstEnum::new(list_data.key, snake_cased.get(list_data.key));
                     for rule in &list_data.rules {
                         match &rule.ast_rule {
                             &AstRule::RefRule(key_ref) => {
@@ -158,33 +169,12 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                         }
                     }
                     enum_data.insert(list_data.key, e);
+                    type_refs.insert(list_data.key, AstType::AstEnum(last_type.unwrap()));
+                } else {
+                    type_refs.insert(list_data.key, AstType::AstStruct(last_type.unwrap()));
                 }
             }
         }
-    }
-
-    fn build_enums_from_ast_data(ast_data: &HashMap<&'d str, AstData<'d>>,
-                                 data: &mut HashMap<&'d str, AstEnum<'d>>) {
-        for (_key, ast_data) in ast_data {
-            match ast_data.rules.len() {
-                0 => (),
-                1 => {
-                    let rule = &ast_data.rules[0];
-
-                },
-                len => {
-
-                }
-            }
-            for rule in &ast_data.rules {
-
-            }
-        }
-    }
-
-    fn build_enums_from_list_data(list_data: &HashMap<&'d str, ListData<'d>>,
-                                  data: &mut HashMap<&'d str, AstEnum<'d>>) {
-        
     }
 
     pub fn build_ast(&mut self) {
@@ -192,13 +182,15 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
             &self.data.ast_data, 
             &mut self.data.ast_structs,
             &mut self.data.ast_enums,
-            &self.data.typed_parts);
+            &self.data.typed_parts,
+            &mut self.data.type_refs,
+            &mut self.data.snake_cased);
         Self::build_from_list_data(
             &self.data.list_data, 
             &mut self.data.ast_structs,
             &mut self.data.ast_enums,
-            &self.data.typed_parts);
-        Self::build_enums_from_ast_data(&self.data.ast_data, &mut self.data.ast_enums);
-        Self::build_enums_from_list_data(&self.data.list_data, &mut self.data.ast_enums);
+            &self.data.typed_parts,
+            &mut self.data.type_refs,
+            &mut self.data.snake_cased);
     }
 }

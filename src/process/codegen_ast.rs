@@ -20,7 +20,7 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
         for (key, ast_struct) in self.data.ast_structs.sorted_iter() {
             append!(s, "pub struct " key " {\n");
             for (key, member) in &ast_struct.members {
-                append!(s 1, "pub" key ": ");
+                append!(s 1, "pub " key ": ");
                 let tpe = self.data.typed_parts.get(member.part_key).unwrap();
                 use lang_data::typed_part::TypedPart::*;
                 match tpe {

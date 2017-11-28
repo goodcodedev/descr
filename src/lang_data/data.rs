@@ -63,13 +63,55 @@ impl<'a> ListData<'a> {
     }
 }
 
+pub struct SnakeCased<'a> {
+    pub cache: HashMap<&'a str, String>
+}
+impl<'a> SnakeCased<'a> {
+    pub fn reg(&mut self, key: &'a str) {
+        if !self.cache.contains_key(key) {
+            // Capacity, len + 3 or 4
+            let mut s = String::with_capacity(key.len() + 3);
+            let mut is_first = true;
+            for chr in key.chars() {
+                if chr.is_uppercase() {
+                    if !is_first {
+                        s.push('_');
+                    }
+                    for lower in chr.to_lowercase() {
+                        s.push(lower);
+                    }
+                } else {
+                    s.push(chr);
+                }
+                if is_first { is_first = false; }
+            }
+            self.cache.insert(key, s);
+        }
+    }
+
+    pub fn get(&mut self, key: &'a str) -> String {
+        if !self.cache.contains_key(key) {
+            self.reg(key);
+        }
+        self.cache.get(key).unwrap().clone()
+    }
+
+    pub fn get_str(&self, key: &str) -> &str {
+        match self.cache.get(key) {
+            Some(ref s) => s.as_str(),
+            None => panic!("Could not find snake cased for: {}", key)
+        }
+    }
+}
 
 pub struct LangData<'a> {
     pub typed_parts: HashMap<&'a str, TypedPart<'a>>,
     pub ast_data: HashMap<&'a str, AstData<'a>>,
     pub list_data: HashMap<&'a str, ListData<'a>>,
     pub ast_structs: HashMap<&'a str, AstStruct<'a>>,
-    pub ast_enums: HashMap<&'a str, AstEnum<'a>>
+    pub ast_enums: HashMap<&'a str, AstEnum<'a>>,
+    pub type_refs: HashMap<&'a str, AstType<'a>>,
+    pub snake_cased: SnakeCased<'a>
 }
 
 impl<'a> LangData<'a> {
@@ -79,8 +121,14 @@ impl<'a> LangData<'a> {
             ast_data: HashMap::new(),
             list_data: HashMap::new(),
             ast_structs: HashMap::new(),
-            ast_enums: HashMap::new()
+            ast_enums: HashMap::new(),
+            type_refs: HashMap::new(),
+            snake_cased: SnakeCased { cache: HashMap::new() }
         }
+    }
+
+    pub fn sc(&self, key: &str) -> &str {
+        self.snake_cased.get_str(key)
     }
 
     fn add_tag_token(&mut self, key: &'a str, tag: &'a str) {
@@ -98,31 +146,6 @@ impl<'a> LangData<'a> {
             key,
             TypedPart::CharPart { key, chr }
         );
-    }
-
-    pub fn reg_struct(&mut self, name: &'a str) {
-        if !self.ast_structs.contains_key(name) {
-            self.ast_structs.insert(
-                name,
-                AstStruct::new()
-            );
-        } else {
-            // Increment counter
-            let ast_struct = self.ast_structs.get_mut(name).unwrap();
-            ast_struct.num_patterns += 1;
-        }
-    }
-
-
-    pub fn ensure_enum(&mut self, name: &'a str) -> &AstEnum<'a> {
-        if !self.ast_enums.contains_key(name) {
-            self.ast_enums.insert(name, AstEnum::new());
-        }
-        self.ast_enums.get_mut(name).unwrap()
-    }
-
-    pub fn ensure_enum_item(&mut self, enum_name: &'a str, item_name: &'a str) {
-        self.ast_enums.get_mut(enum_name).unwrap().items.push(item_name);
     }
 
     /// Resolve typed part assuming keys
