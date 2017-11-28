@@ -83,3 +83,11 @@ pub enum AstType<'a> {
     AstStruct(&'a str),
     AstEnum(&'a str)
 }
+impl<'a> AstType<'a> {
+    pub fn get_type_name(&self) -> &str {
+        match self {
+            &AstType::AstStruct(type_name) => type_name,
+            &AstType::AstEnum(type_name) => type_name
+        }
+    }
+}

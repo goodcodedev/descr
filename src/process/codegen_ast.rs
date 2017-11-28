@@ -1,4 +1,5 @@
 use lang_data::data::*;
+use lang_data::ast::*;
 use std::fs::File;
 use std::io::Write;
 use util::SortedHashMap;
@@ -18,19 +19,32 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             + 25 * 3 * self.data.ast_enums.len()
         );
         for (key, ast_struct) in self.data.ast_structs.sorted_iter() {
-            append!(s, "pub struct " key " {\n");
+            append!(s, "pub struct " key "<'a> {\n");
             for (key, member) in &ast_struct.members {
-                append!(s 1, "pub " key ": ");
+                append!(s 1, "pub " member.sc() ": ");
                 let tpe = self.data.typed_parts.get(member.part_key).unwrap();
                 use lang_data::typed_part::TypedPart::*;
+                let is_option = member.optional && match tpe {
+                    &CharPart { .. } | &TagPart { .. } => false,
+                    _ => true
+                };
+                if is_option { s += "Option<"; }
                 match tpe {
-                    &AstPart { key } => s += key,
-                    &ListPart { key } => s += key,
+                    &AstPart { key } => {
+                        s += self.data.type_refs.get(key).unwrap().get_type_name();
+                        s += "<'a>";
+                    },
+                    &ListPart { key } => {
+                        s += "Vec<";
+                        s += self.data.type_refs.get(key).unwrap().get_type_name();
+                        s += "<'a>>";
+                    },
                     &IntPart { .. } => s += "i32",
-                    &IdentPart { .. } => s += "String",
+                    &IdentPart { .. } => s += "&'a str",
                     &CharPart { .. } => s += "bool",
                     &TagPart { .. } => s += "bool"
                 }
+                if is_option { s += ">"; }
                 s += ",\n";
             }
             s += "}\n\n";

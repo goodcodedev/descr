@@ -1,6 +1,7 @@
 use lang_data::data::*;
 use lang_data::typed_part::*;
 use std::collections::HashMap;
+use util::*;
 
 /// Parser "rule"
 /// List of tokens that makes up some ast type
@@ -48,16 +49,15 @@ impl<'a> AstRule<'a> {
     pub fn gen_rule(&self, mut s: String, base_type: &str, data: &LangData, is_enum: bool) -> String {
         match self {
             &AstRule::RefRule(rule_ref) => {
-                s += rule_ref;
+                s += data.sc(rule_ref);
             },
             &AstRule::PartsRule(ref parts_rule) => {
                 s += "do_parse!(\n";
                 for part in &parts_rule.parts {
-                    s += "        sp >> "; 
+                    append!(s 2, "sp >> ");
                     let typed_part = part.get_typed_part(data);
                     if let Some(member_name) = part.member_key {
-                        s += member_name;
-                        s += "_k: ";
+                        append!(s, data.sc(member_name) "_k: ");
                     }
                     if part.optional {
                         s += "opt!(";
@@ -81,9 +81,7 @@ impl<'a> AstRule<'a> {
                 for part in &parts_rule.parts {
                     if let Some(member_key) = part.member_key {
                         let typed_part = part.get_typed_part(data);
-                        s += "            ";
-                        s += member_key;
-                        s += ": ";
+                        append!(s 3, data.sc(member_key) ": ");
                         s = typed_part.gen_parser_val(s, part);
                         s += ",\n";
                     }

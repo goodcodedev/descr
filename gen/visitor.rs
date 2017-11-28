@@ -1,12 +1,12 @@
 pub trait Visitor<'a, 'b> {
     pub fn visit_ast_def(&mut self, node: &'b AstDef) {
-        for item in &node.token_list {
+        for item in &node.tokens {
             self.visit_token(item);
         }
     }
 
     pub fn visit_ast_many(&mut self, node: &'b AstMany) {
-        for item in &node.ast_items {
+        for item in &node.items {
             self.visit_ast_item(item);
         }
     }
@@ -15,19 +15,19 @@ pub trait Visitor<'a, 'b> {
     }
 
     pub fn visit_ast_single(&mut self, node: &'b AstSingle) {
-        for item in &node.token_list {
+        for item in &node.tokens {
             self.visit_token(item);
         }
     }
 
     pub fn visit_list_item(&mut self, node: &'b ListItem) {
-        for item in &node.token_list {
-            self.visit_token(item);
-        }
+        self.visit_ast_item(node.ast_item);
     }
 
     pub fn visit_list_many(&mut self, node: &'b ListMany) {
-        self.visit_list_item(node.list_item);
+        for item in &node.items {
+            self.visit_list_item(item);
+        }
     }
 
     pub fn visit_list_single(&mut self, node: &'b ListSingle) {

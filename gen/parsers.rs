@@ -1,12 +1,12 @@
-named!(AstItem<AstItem>, alt_complete!(
+named!(ast_item<AstItem>, alt_complete!(
     do_parse!(
         sp >> ident_k: opt!(ident) >>
         sp >> char!('(') >>
-        sp >> tokenList_k: tokenList >>
+        sp >> tokens_k: tokenList >>
         sp >> char!(')') >>
         (AstItem(AstDefItem {
             ident: ident_k,
-            tokenList: tokenList_k,
+            tokens: tokens_k,
         })))
     | do_parse!(
         sp >> ident_k: ident >>
@@ -15,31 +15,31 @@ named!(AstItem<AstItem>, alt_complete!(
         })))
 ));
 
-named!(AstMany<AstMany>,
+named!(ast_many<AstMany>,
     do_parse!(
         sp >> ident_k: ident >>
         sp >> char!('{') >>
-        sp >> astItems_k: astItems >>
+        sp >> items_k: astItems >>
         sp >> char!('}') >>
         (AstMany {
             ident: ident_k,
-            astItems: astItems_k,
+            items: items_k,
         }))
 );
 
-named!(AstSingle<AstSingle>,
+named!(ast_single<AstSingle>,
     do_parse!(
         sp >> ident_k: ident >>
         sp >> char!('(') >>
-        sp >> tokenList_k: tokenList >>
+        sp >> tokens_k: tokenList >>
         sp >> char!(')') >>
         (AstSingle {
             ident: ident_k,
-            tokenList: tokenList_k,
+            tokens: tokens_k,
         }))
 );
 
-named!(List<List>, alt_complete!(
+named!(list<List>, alt_complete!(
     do_parse!(
         sp >> ident_k: ident >>
         sp >> sep_k: ident >>
@@ -53,36 +53,34 @@ named!(List<List>, alt_complete!(
         sp >> ident_k: ident >>
         sp >> sep_k: opt!(ident) >>
         sp >> char!('{') >>
-        sp >> ListItem_k: ListItem >>
+        sp >> items_k: listItems >>
         sp >> char!('}') >>
         (List(ListManyItem {
             ident: ident_k,
             sep: sep_k,
-            ListItem: ListItem_k,
+            items: items_k,
         })))
 ));
 
-named!(ListItem<ListItem>,
+named!(list_item<ListItem>,
     do_parse!(
         sp >> ident_k: ident >>
-        sp >> char!('(') >>
-        sp >> tokenList_k: tokenList >>
-        sp >> char!(')') >>
+        sp >> ast_item_k: AstItem >>
         sp >> sep_k: opt!(ident) >>
         (ListItem {
             ident: ident_k,
-            tokenList: tokenList_k,
+            ast_item: AstItem_k,
             sep: sep_k,
         }))
 );
 
-named!(Source<Source>, alt_complete!(
-    AstSingle
-    | AstMany
-    | List
+named!(source<Source>, alt_complete!(
+    ast_single
+    | ast_many
+    | list
 ));
 
-named!(Token<Token>, alt_complete!(
+named!(token<Token>, alt_complete!(
     do_parse!(
         sp >> ident_k: ident >>
         sp >> optional_k: opt!(char!('?')) >>
@@ -103,10 +101,14 @@ named!(Token<Token>, alt_complete!(
 ));
 
 named!(astItems, many0!(
-    AstItem
+    ast_item
+));
+
+named!(listItems, many0!(
+    list_item
 ));
 
 named!(tokenList, many0!(
-    Token
+    token
 ));
 

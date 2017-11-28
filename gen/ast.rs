@@ -1,49 +1,49 @@
-pub struct AstDef {
-    pub tokenList: tokenList,
-    pub ident: String,
+pub struct AstDef<'a> {
+    pub ident: Option<&'a str>,
+    pub tokens: Vec<Token<'a>>,
 }
 
-pub struct AstMany {
-    pub ident: String,
-    pub astItems: astItems,
+pub struct AstMany<'a> {
+    pub ident: &'a str,
+    pub items: Vec<AstItem<'a>>,
 }
 
-pub struct AstRef {
-    pub ident: String,
+pub struct AstRef<'a> {
+    pub ident: &'a str,
 }
 
-pub struct AstSingle {
-    pub ident: String,
-    pub tokenList: tokenList,
+pub struct AstSingle<'a> {
+    pub tokens: Vec<Token<'a>>,
+    pub ident: &'a str,
 }
 
-pub struct ListItem {
-    pub ident: String,
-    pub tokenList: tokenList,
-    pub sep: String,
+pub struct ListItem<'a> {
+    pub sep: Option<&'a str>,
+    pub ident: &'a str,
+    pub ast_item: AstItem<'a>,
 }
 
-pub struct ListMany {
-    pub sep: String,
-    pub ListItem: ListItem,
-    pub ident: String,
+pub struct ListMany<'a> {
+    pub sep: Option<&'a str>,
+    pub items: Vec<ListItem<'a>>,
+    pub ident: &'a str,
 }
 
-pub struct ListSingle {
-    pub ident: String,
-    pub sep: String,
-    pub reference: String,
+pub struct ListSingle<'a> {
+    pub reference: &'a str,
+    pub ident: &'a str,
+    pub sep: &'a str,
 }
 
-pub struct TokenKey {
+pub struct TokenKey<'a> {
     pub optional: bool,
-    pub ident: String,
+    pub ident: &'a str,
 }
 
-pub struct TokenNamedKey {
-    pub key: String,
-    pub name: String,
+pub struct TokenNamedKey<'a> {
     pub optional: bool,
+    pub name: &'a str,
+    pub key: &'a str,
 }
 
 pub enum AstItem {

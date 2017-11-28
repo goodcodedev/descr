@@ -28,8 +28,8 @@ Source {
     List
 }
 
-AstSingle(ident LPAREN tokenList RPAREN)
-AstMany(ident LBRACE astItems RBRACE)
+AstSingle(ident LPAREN tokens:tokenList RPAREN)
+AstMany(ident LBRACE items:astItems RBRACE)
 
 tokenList[] WS Token
 Token {
@@ -39,14 +39,15 @@ Token {
 
 astItems[] COMMA AstItem
 AstItem {
-    AstDef(ident? LPAREN tokenList RPAREN),
+    AstDef(ident? LPAREN tokens:tokenList RPAREN),
     AstRef(ident)
 }
 List {
     ListSingle(ident sep:ident reference:ident),
-    ListMany(ident sep:ident? LBRACE ListItem RBRACE)
+    ListMany(ident sep:ident? LBRACE items:listItems RBRACE)
 }
-ListItem(ident LPAREN tokenList RPAREN sep:ident?)
+listItems[] COMMA ListItem
+ListItem(ident AstItem sep:ident?)
 
     ";
     let (elapsed, res) = measure_time(|| {
