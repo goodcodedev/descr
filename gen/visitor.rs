@@ -33,6 +33,12 @@ pub trait Visitor<'a, 'b> {
     pub fn visit_list_single(&mut self, node: &'b ListSingle) {
     }
 
+    pub fn visit_source(&mut self, node: &'b Source) {
+        for item in &node.items {
+            self.visit_source_item(item);
+        }
+    }
+
     pub fn visit_token_key(&mut self, node: &'b TokenKey) {
     }
 
@@ -53,11 +59,11 @@ pub trait Visitor<'a, 'b> {
         }
     }
 
-    pub fn visit_source(&mut self, node: &'b Source) {
+    pub fn visit_source_item(&mut self, node: &'b SourceItem) {
         match node {
-            &Source::AstSingleItem(ref inner) => self.visit_ast_single(inner);
-            &Source::AstManyItem(ref inner) => self.visit_ast_many(inner);
-            &Source::ListItem(ref inner) => self.visit_list(inner);
+            &SourceItem::AstSingleItem(ref inner) => self.visit_ast_single(inner);
+            &SourceItem::AstManyItem(ref inner) => self.visit_ast_many(inner);
+            &SourceItem::ListItem(ref inner) => self.visit_list(inner);
         }
     }
 

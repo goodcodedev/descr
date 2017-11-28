@@ -18,32 +18,36 @@ pub struct AstSingle<'a> {
 }
 
 pub struct ListItem<'a> {
-    pub sep: Option<&'a str>,
     pub ident: &'a str,
     pub ast_item: AstItem<'a>,
+    pub sep: Option<&'a str>,
 }
 
 pub struct ListMany<'a> {
-    pub sep: Option<&'a str>,
     pub items: Vec<ListItem<'a>>,
+    pub sep: Option<&'a str>,
     pub ident: &'a str,
 }
 
 pub struct ListSingle<'a> {
-    pub reference: &'a str,
-    pub ident: &'a str,
     pub sep: &'a str,
+    pub ident: &'a str,
+    pub reference: &'a str,
+}
+
+pub struct Source<'a> {
+    pub items: Vec<SourceItem<'a>>,
 }
 
 pub struct TokenKey<'a> {
-    pub optional: bool,
     pub ident: &'a str,
+    pub optional: bool,
 }
 
 pub struct TokenNamedKey<'a> {
     pub optional: bool,
-    pub name: &'a str,
     pub key: &'a str,
+    pub name: &'a str,
 }
 
 pub enum AstItem {
@@ -56,7 +60,7 @@ pub enum List {
     ListManyItem(ListMany),
 }
 
-pub enum Source {
+pub enum SourceItem {
     AstSingleItem(AstSingle),
     AstManyItem(AstMany),
     ListItem(List),

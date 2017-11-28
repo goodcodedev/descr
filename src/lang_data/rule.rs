@@ -49,7 +49,12 @@ impl<'a> AstRule<'a> {
     pub fn gen_rule(&self, mut s: String, base_type: &str, data: &LangData, is_enum: bool) -> String {
         match self {
             &AstRule::RefRule(rule_ref) => {
-                s += data.sc(rule_ref);
+                if is_enum {
+                    append!(s, "map!(" data.sc(rule_ref) ", |node| { ");
+                    append!(s, base_type "::" rule_ref "Item(node) })");
+                } else {
+                    s += data.sc(rule_ref);
+                }
             },
             &AstRule::PartsRule(ref parts_rule) => {
                 s += "do_parse!(\n";
@@ -70,10 +75,7 @@ impl<'a> AstRule<'a> {
                 }
                 s += "        (";
                 if is_enum {
-                    s += base_type;
-                    s += "(";
-                    s += parts_rule.ast_type;
-                    s += "Item {\n";
+                    append!(s, base_type "(" parts_rule.ast_type "Item {\n");
                 } else {
                     s += parts_rule.ast_type;
                     s += " {\n";

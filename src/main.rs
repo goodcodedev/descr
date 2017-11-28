@@ -22,7 +22,10 @@ use process::codegen_visitor::CodegenVisitor;
 
 fn main() {
     let input = b"
-Source {
+Source (items:sourceItems)
+
+sourceItems[] WS SourceItem
+SourceItem {
     AstSingle,
     AstMany,
     List

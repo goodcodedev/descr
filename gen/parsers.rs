@@ -1,4 +1,4 @@
-named!(ast_item<AstItem>, alt_complete!(
+named!(pub ast_item<AstItem>, alt_complete!(
     do_parse!(
         sp >> ident_k: opt!(ident) >>
         sp >> char!('(') >>
@@ -15,7 +15,7 @@ named!(ast_item<AstItem>, alt_complete!(
         })))
 ));
 
-named!(ast_many<AstMany>,
+named!(pub ast_many<AstMany>,
     do_parse!(
         sp >> ident_k: ident >>
         sp >> char!('{') >>
@@ -27,7 +27,7 @@ named!(ast_many<AstMany>,
         }))
 );
 
-named!(ast_single<AstSingle>,
+named!(pub ast_single<AstSingle>,
     do_parse!(
         sp >> ident_k: ident >>
         sp >> char!('(') >>
@@ -39,7 +39,7 @@ named!(ast_single<AstSingle>,
         }))
 );
 
-named!(list<List>, alt_complete!(
+named!(pub list<List>, alt_complete!(
     do_parse!(
         sp >> ident_k: ident >>
         sp >> sep_k: ident >>
@@ -62,7 +62,7 @@ named!(list<List>, alt_complete!(
         })))
 ));
 
-named!(list_item<ListItem>,
+named!(pub list_item<ListItem>,
     do_parse!(
         sp >> ident_k: ident >>
         sp >> ast_item_k: AstItem >>
@@ -74,13 +74,21 @@ named!(list_item<ListItem>,
         }))
 );
 
-named!(source<Source>, alt_complete!(
-    ast_single
-    | ast_many
-    | list
+named!(pub source<Source>,
+    do_parse!(
+        sp >> items_k: sourceItems >>
+        (Source {
+            items: items_k,
+        }))
+);
+
+named!(pub source_item<SourceItem>, alt_complete!(
+    map!(ast_single, |node| { SourceItem::AstSingleItem(node) })
+    | map!(ast_many, |node| { SourceItem::AstManyItem(node) })
+    | map!(list, |node| { SourceItem::ListItem(node) })
 ));
 
-named!(token<Token>, alt_complete!(
+named!(pub token<Token>, alt_complete!(
     do_parse!(
         sp >> ident_k: ident >>
         sp >> optional_k: opt!(char!('?')) >>
@@ -100,15 +108,19 @@ named!(token<Token>, alt_complete!(
         })))
 ));
 
-named!(astItems, many0!(
+named!(pub ast_items<Vec<AstItem>>, many0!(
     ast_item
 ));
 
-named!(listItems, many0!(
+named!(pub list_items<Vec<ListItem>>, many0!(
     list_item
 ));
 
-named!(tokenList, many0!(
+named!(pub source_items<Vec<SourceItem>>, many0!(
+    source_item
+));
+
+named!(pub token_list<Vec<Token>>, many0!(
     token
 ));
 

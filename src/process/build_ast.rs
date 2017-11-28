@@ -135,7 +135,8 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                             typed_parts: &HashMap<&'d str, TypedPart<'d>>,
                             type_refs: &mut HashMap<&'d str, AstType<'d>>,
                             snake_cased: &mut SnakeCased<'d>) {
-        for (_key, list_data) in list_data {
+        for (key, list_data) in list_data {
+            snake_cased.reg(key);
             let mut last_type = None;
             let mut is_enum = false;
             for rule in &list_data.rules {
