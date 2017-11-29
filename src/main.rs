@@ -58,7 +58,9 @@ fn main() {
     let file_path = Path::new(filename);
     // Check modification of lang file vs ast.rs
     let ast_path = Path::new(output_dir).join("ast.rs");
-    let is_changed = if ast_path.exists() {
+    let is_changed = if !ast_path.exists() {
+        true
+    } else {
         let file_meta = std::fs::metadata(file_path).unwrap();
         let ast_meta = std::fs::metadata(ast_path).unwrap();
         match file_meta.modified() {
@@ -68,8 +70,6 @@ fn main() {
             },
             _ => true
         }
-    } else {
-        true
     };
     if check_change && !is_changed {
         println!("Lang file not changes since last codegen");
