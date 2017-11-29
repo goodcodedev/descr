@@ -5,16 +5,12 @@ extern crate elapsed;
 mod util;
 use elapsed::measure_time;
 mod lang_data;
-mod parsers;
 mod process;
-use parsers::*;
-mod visit_ast;
 use lang_data::data::*;
 use std::fs::File;
 use std::io::prelude::*;
 extern crate descr_common;
 extern crate descr_lang;
-mod ast;
 
 fn main() {
     let mut f = File::open("descr.lang").expect("Could not open descr.lang");
