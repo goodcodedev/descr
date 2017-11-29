@@ -1,7 +1,6 @@
 use lang_data::data::*;
 use lang_data::typed_part::*;
 use std::collections::HashMap;
-use util::*;
 
 /// Parser "rule"
 /// List of tokens that makes up some ast type

@@ -1,7 +1,5 @@
 use lang_data::data::*;
-use std::fs::File;
-use std::io::Write;
-use util::*;
+use descr_common::util::*;
 
 pub struct CodegenParsers<'a, 'd: 'a> {
     data: &'a LangData<'d>
@@ -21,8 +19,21 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
         s += "extern crate nom;\n";
         s += "use self::nom::*;\n";
         s += "use super::ast::*;\n\n";
+        // Start key
+        match self.data.start_key {
+            Some(start_key) => {
+                match self.data.type_refs.get(start_key) {
+                    Some(ref type_ref) => {
+                        append!(s, "named!(pub start<" type_ref.get_type_name() ">, "
+                                "do_parse!(res: " self.data.sc(start_key) " >> (res)));\n\n");
+                    },
+                    _ => {}
+                }
+            },
+            None => {}
+        }
         // Ast data
-        for (key, ast_data) in self.data.ast_data.sorted_iter() {
+        for (_key, ast_data) in self.data.ast_data.sorted_iter() {
             match ast_data.rules.len() {
                 0 => {},
                 1 => {
@@ -45,7 +56,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
             }
         }
         // List data
-        for (key, list_data) in self.data.list_data.sorted_iter() {
+        for (_key, list_data) in self.data.list_data.sorted_iter() {
             match list_data.rules.len() {
                 0 => {},
                 1 => {

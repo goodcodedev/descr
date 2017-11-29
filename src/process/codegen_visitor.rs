@@ -1,7 +1,5 @@
 use lang_data::data::*;
-use std::fs::File;
-use std::io::Write;
-use util::*;
+use descr_common::util::*;
 
 pub struct CodegenVisitor<'a, 'd: 'a> {
     pub data: &'a LangData<'d>
@@ -20,7 +18,7 @@ impl<'a, 'd> CodegenVisitor<'a, 'd> {
         // Ast structs
         for (key, ast_struct) in self.data.ast_structs.sorted_iter() {
             append!(s 1, "fn visit_" ast_struct.sc() "(&mut self, node: &'a " key ") {\n");
-            for (key, member) in ast_struct.members.sorted_iter() {
+            for (_key, member) in ast_struct.members.sorted_iter() {
                 s = member.gen_visitor(s, ast_struct, self.data);
             }
             s += "    }\n\n";

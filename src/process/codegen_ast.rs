@@ -1,8 +1,5 @@
 use lang_data::data::*;
-use lang_data::ast::*;
-use std::fs::File;
-use std::io::Write;
-use util::SortedHashMap;
+use descr_common::util::SortedHashMap;
 
 pub struct CodegenAst<'a, 'd: 'a> {
     data: &'a LangData<'d>
@@ -21,7 +18,7 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
         for (key, ast_struct) in self.data.ast_structs.sorted_iter() {
             append!(s, "#[derive(Debug)]\n");
             append!(s, "pub struct " key "<'a> {\n");
-            for (key, member) in ast_struct.members.sorted_iter() {
+            for (_key, member) in ast_struct.members.sorted_iter() {
                 append!(s 1, "pub " member.sc() ": ");
                 let tpe = self.data.typed_parts.get(member.part_key).unwrap();
                 use lang_data::typed_part::TypedPart::*;

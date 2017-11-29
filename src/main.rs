@@ -1,21 +1,31 @@
-#[macro_use]
 extern crate nom;
 extern crate elapsed;
-#[macro_use]
-mod util;
 use elapsed::measure_time;
+#[macro_use]
+extern crate descr_common;
+extern crate descr_lang;
 mod lang_data;
 mod process;
 use lang_data::data::*;
 use std::fs::File;
 use std::io::prelude::*;
-extern crate descr_common;
-extern crate descr_lang;
+use std::env;
 
 fn main() {
-    let mut f = File::open("descr.lang").expect("Could not open descr.lang");
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 3 {
+        eprintln!("\n = Missing args ========================= ");
+        eprintln!("|                                        |");
+        eprintln!("|   Usage: <exe> input-file output-dir   |");
+        eprintln!("|                                        |");
+        eprintln!(" ======================================== \n");
+        return;
+    }
+    let filename = args[1].as_str();
+    let output_dir = args[2].as_str();
+    let mut f = File::open(filename).expect(format!("Could not open {}", filename).as_str());
     let mut buf = Vec::with_capacity(1024);
-    f.read_to_end(&mut buf).expect("Could not read descr.lang");
+    f.read_to_end(&mut buf).expect(format!("Could not open {}", filename).as_str());
     let (elapsed, res) = measure_time(|| {
         descr_lang::gen::parsers::source(&buf[..])
     });
@@ -25,47 +35,11 @@ fn main() {
     {
         match res {
             nom::IResult::Done(_, ref source) => {
-                process::process(source, &mut data, "descr-lang/src/gen");
+                process::process(source, &mut data, output_dir);
             }
             _ => ()
         }
     }
-    {
-        /*
-        let test_source = b"
-Source (items:sourceItems)
-sourceItems[] WS SourceItem
-SourceItem {
-    AstSingle,
-    AstMany,
-    List
-}
-AstSingle(ident LPAREN tokens:tokenList RPAREN)
-AstMany(ident LBRACE items:astItems RBRACE)
-
-tokenList[] WS Token
-Token {
-    TokenKey(ident optional:QUESTION?),
-    TokenNamedKey(name:ident COLON key:ident optional:QUESTION?)
-}
-
-astItems[] COMMA AstItem
-AstItem {
-    AstDef(ident? LPAREN tokens:tokenList RPAREN),
-    AstRef(ident)
-}
-List {
-    ListSingle(ident LBRACKET RBRACKET sep:ident reference:ident),
-    ListMany(ident sep:ident? LBRACE items:listItems RBRACE)
-}
-listItems[] COMMA ListItem
-ListItem(ident AstItem sep:ident?)
-        ";
-        let test = descr_lang::gen::parsers::source(test_source);
-        println!("{:#?}", test);
-        */
-    }
-
     /*
     println!("Ast keys: {:#?}", data.ast_data.keys());
     println!("List keys: {:#?}", data.list_data.keys());

@@ -23,38 +23,48 @@ use std::path::Path;
 use descr_lang::gen::visitor::Visitor;
 
 pub fn process<'a, 'b, 'c>(res: &'a ast::Source, data: &'b mut LangData<'a>, path: &'c str) {
-    println!("{:#?}", res);
     let (elapsed, ()) = measure_time(|| {
         {
-            let mut register_keys = RegisterKeys::new(data);
-            let (elapsed, ()) = measure_time(|| {
+            measure!("Register keys", {
+                let mut register_keys = RegisterKeys::new(data);
                 register_keys.visit_source(res);
             });
-            println!("Register keys: {}", elapsed);
         }
         {
-            let mut get_tokens = GetTokens::new(data);
-            get_tokens.visit_source(res);
+            measure!("Get tokens", {
+                let mut get_tokens = GetTokens::new(data);
+                get_tokens.visit_source(res);
+            });
         }
         {
-            let mut build_parsers = BuildParsers::new(data);
-            build_parsers.visit_source(res);
+            measure!("Build parsers", {
+                let mut build_parsers = BuildParsers::new(data);
+                build_parsers.visit_source(res);
+            });
         }
         {
-            let mut build_ast = BuildAst::new(data);
-            build_ast.build_ast();
+            measure!("Build ast", {
+                let mut build_ast = BuildAst::new(data);
+                build_ast.build_ast();
+            })
         }
         {
-            let codegen_ast = CodegenAst::new(data);
-            write_file(path, "ast.rs", codegen_ast.gen());
+            measure!("Codegen ast", {
+                let codegen_ast = CodegenAst::new(data);
+                write_file(path, "ast.rs", codegen_ast.gen());
+            });
         }
         {
-            let codegen_parsers = CodegenParsers::new(data);
-            write_file(path, "parsers.rs", codegen_parsers.gen());
+            measure!("Codegen parsers", {
+                let codegen_parsers = CodegenParsers::new(data);
+                write_file(path, "parsers.rs", codegen_parsers.gen());
+            });
         }
         {
-            let codegen_visitor = CodegenVisitor::new(data);
-            write_file(path, "visitor.rs", codegen_visitor.gen());
+            measure!("Codegen visitor", {
+                let codegen_visitor = CodegenVisitor::new(data);
+                write_file(path, "visitor.rs", codegen_visitor.gen());
+            });
         }
         // Generate mod file
         gen_mod(path);

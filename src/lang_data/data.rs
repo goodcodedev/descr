@@ -3,27 +3,6 @@ use lang_data::ast::*;
 use lang_data::rule::*;
 use lang_data::typed_part::*;
 
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct PartKey<'a> {
-    pub name: Option<&'a str>,
-    pub key: &'a str
-}
-
-impl<'a> PartKey<'a> {
-    pub fn get_name(&self) -> &'a str {
-        match &self.name {
-            &None => self.key,
-            &Some(ref str) => str
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct TokenData<'a> {
-    pub key: &'a str,
-    pub tag: &'a str
-}
-
 /// Data for an ast entry
 /// Either single, or multiple rules
 #[derive(Debug)]
@@ -40,11 +19,6 @@ impl<'a> AstData<'a> {
             rules: Vec::new()
         }
     }
-}
-
-pub struct AstDataItem<'a> {
-    pub key: &'a str,
-    //pub token_list: Vec<TypedPart>
 }
 
 #[derive(Debug)]
@@ -113,7 +87,9 @@ pub struct LangData<'a> {
     pub ast_structs: HashMap<&'a str, AstStruct<'a>>,
     pub ast_enums: HashMap<&'a str, AstEnum<'a>>,
     pub type_refs: HashMap<&'a str, AstType<'a>>,
-    pub snake_cased: SnakeCased<'a>
+    pub snake_cased: SnakeCased<'a>,
+    // Assumed to be first item
+    pub start_key: Option<&'a str>
 }
 
 impl<'a> LangData<'a> {
@@ -125,7 +101,8 @@ impl<'a> LangData<'a> {
             ast_structs: HashMap::new(),
             ast_enums: HashMap::new(),
             type_refs: HashMap::new(),
-            snake_cased: SnakeCased { cache: HashMap::new() }
+            snake_cased: SnakeCased { cache: HashMap::new() },
+            start_key: None
         }
     }
 

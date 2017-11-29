@@ -40,6 +40,16 @@ impl<'a, K: 'a, V: 'a> Iterator for SortedHashMapIter<'a, K, V>
     }
 }
 
+pub fn load_file(filename: &str) -> Vec<u8> {
+    use std::fs::File;
+    use std::io::prelude::*;
+    let mut f = File::open(filename).expect(format!("Could not open file: {}", filename).as_str());
+    let mut buf = Vec::with_capacity(1024);
+    f.read_to_end(&mut buf).expect(format!("Could not read file: {}", filename).as_str());
+    buf
+}
+
+#[macro_export]
 macro_rules! append {
     ($s:ident, $($a:expr)*) => {
         $($s += $a;)*
@@ -78,6 +88,7 @@ macro_rules! append {
     };
 }
 
+#[macro_export]
 macro_rules! indent {
     ($s:ident $indent:expr) => {
         match $indent {
@@ -97,4 +108,12 @@ macro_rules! indent {
             }
         }
     };
+}
+
+#[macro_export]
+macro_rules! measure {
+    ($name:expr, $b:block) => {{
+        let (elapsed, ()) = measure_time(|| $b);
+        println!("{}: {}", $name, elapsed);
+    }};
 }

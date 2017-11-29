@@ -1,7 +1,6 @@
 use lang_data::data::*;
 use lang_data::ast::*;
 use lang_data::rule::*;
-use util::*;
 
 #[derive(Debug)]
 pub enum TypedPart<'a> {
@@ -19,15 +18,15 @@ impl<'a> TypedPart<'a> {
         match self {
             &AstPart { key } => { s += data.sc(key); },
             &ListPart { key } => { s += data.sc(key); },
-            &CharPart { key, chr } => {
+            &CharPart { chr, .. } => {
                 s += "char!('";
                 s.push(chr);
                 s += "')";
             },
-            &TagPart { key, tag } => { append!(s, "tag!(\"" tag "\")"); },
-            &IntPart { key } => { s += "int"; },
-            &IdentPart { key } => { s += "ident"; },
-            &FnPart { key, fnc, .. } => { s += fnc; }
+            &TagPart { tag, .. } => { append!(s, "tag!(\"" tag "\")"); },
+            &IntPart { .. } => { s += "int"; },
+            &IdentPart { .. } => { s += "ident"; },
+            &FnPart { fnc, .. } => { s += fnc; }
         }
         s
     }
@@ -64,7 +63,7 @@ impl<'a> TypedPart<'a> {
     }
 
     pub fn gen_visitor(&self, mut s: String, member: &AstStructMember,
-                       ast_struct: &AstStruct, data: &LangData) -> String {
+                       _ast_struct: &AstStruct, data: &LangData) -> String {
         use lang_data::typed_part::TypedPart::*;
         match self {
             &AstPart { key } => {

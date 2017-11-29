@@ -4,6 +4,8 @@ extern crate nom;
 use self::nom::*;
 use super::ast::*;
 
+named!(pub start<Source>, do_parse!(res: source >> (res)));
+
 named!(pub ast_item<AstItem>, alt_complete!(
     do_parse!(
         ident_k: opt!(do_parse!(sp >> res: ident >> (res))) >>

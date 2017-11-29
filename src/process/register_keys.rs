@@ -1,5 +1,4 @@
 use lang_data::data::*;
-use lang_data::*;
 use descr_lang::gen::ast::*;
 use descr_lang::gen::visitor::Visitor;
 
@@ -13,10 +12,16 @@ impl<'a, 'd> RegisterKeys<'a, 'd> {
             data
         }
     }
+    pub fn check_start(&mut self, start_key: &'d str) {
+        if self.data.start_key.is_none() {
+            self.data.start_key = Some(start_key);
+        }
+    }
 }
 impl<'a, 'd> Visitor<'d> for RegisterKeys<'a, 'd> {
 
     fn visit_ast_single(&mut self, node: &'d AstSingle) {
+        self.check_start(node.ident);
         self.data.ast_data.insert(
             node.ident, 
             AstData::new(node.ident, node.ident)

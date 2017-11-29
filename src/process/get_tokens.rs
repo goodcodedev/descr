@@ -1,5 +1,4 @@
 use lang_data::data::*;
-use lang_data::*;
 use descr_lang::gen::ast::*;
 use descr_lang::gen::visitor::Visitor;
 

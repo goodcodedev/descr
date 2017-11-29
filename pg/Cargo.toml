@@ -1,0 +1,8 @@
+[package]
+name = "pg"
+version = "0.1.0"
+authors = ["goodcodedev <gudmund@goodcode.no>"]
+
+[dependencies]
+descr-common = { path = "../descr-common" }
+nom = "^3.2"
