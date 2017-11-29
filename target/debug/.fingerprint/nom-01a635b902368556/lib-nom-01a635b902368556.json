@@ -1,0 +1,1 @@
+{"rustc":3341971744011742278,"features":"[\"default\", \"memchr\", \"std\", \"stream\"]","target":3894494604576714744,"profile":731176819336294830,"deps":[["memchr v1.0.2",9234874381495165222]],"local":[{"Precalculated":"3.2.1"}],"rustflags":[]}

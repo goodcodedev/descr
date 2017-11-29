@@ -1,0 +1,1 @@
+{"rustc":9575415638515559179,"features":"[]","target":13920411371825856867,"profile":731176819336294830,"deps":[["elapsed v0.1.2",5241886145412361778],["nom v3.2.1",15508405033609457025]],"local":[{"MtimeBased":[[1511952453,0],"/Users/gudmund/rust/descr/target/debug/.fingerprint/descr-2cddbaa1d63c704d/dep-bin-descr-2cddbaa1d63c704d"]}],"rustflags":[]}
