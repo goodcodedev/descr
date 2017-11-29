@@ -25,4 +25,11 @@ impl<'a, 'd> VisitAst<'a, 'd> for GetTokens<'a, 'd> {
         self.data.resolve_typed_part(node.ident);
     }
 
+    fn visit_list(&mut self, node: &'d List) {
+        match node.sep {
+            Some(sep) => self.data.resolve_typed_part(sep),
+            None => {}
+        };
+    }
+
 }

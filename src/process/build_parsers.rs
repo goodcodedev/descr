@@ -74,6 +74,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                         | &IntPart { .. }
                         | &IdentPart { .. }
                         | &CharPart { .. }
+                        | &FnPart { .. }
                         | &TagPart { .. } => {
                             rule.member_idxs.insert(name, i);
                             rule.idx_members.insert(i, name);

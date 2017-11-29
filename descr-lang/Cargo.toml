@@ -1,0 +1,6 @@
+[package]
+name = "descr-lang"
+version = "0.1.0"
+authors = ["goodcodedev <gudmund@goodcode.no>"]
+
+[dependencies]

@@ -50,14 +50,16 @@ pub struct AstDataItem<'a> {
 #[derive(Debug)]
 pub struct ListData<'a> {
     pub key: &'a str,
+    pub sep: Option<&'a str>,
     pub rules: Vec<ListRule<'a>>
 }
 
 
 impl<'a> ListData<'a> {
-    pub fn new(key: &'a str) -> ListData<'a> {
+    pub fn new(key: &'a str, sep: Option<&'a str>) -> ListData<'a> {
         ListData {
             key,
+            sep,
             rules: Vec::new()
         }
     }
@@ -148,6 +150,13 @@ impl<'a> LangData<'a> {
         );
     }
 
+    fn add_fn_token(&mut self, key: &'a str, fnc: &'a str, tpe: &'a str) {
+        self.typed_parts.insert(
+            key,
+            TypedPart::FnPart { key, fnc, tpe }
+        );
+    }
+
     /// Resolve typed part assuming keys
     /// are registered
     pub fn resolve_typed_part(&mut self, key: &'a str) {
@@ -184,6 +193,7 @@ impl<'a> LangData<'a> {
                 "LTE" => self.add_tag_token("LTE", "<="),
                 "GTE" => self.add_tag_token("GTE", ">="),
                 "QUESTION" => self.add_char_token("QUESTION", '?'),
+                "WS" => self.add_fn_token("WS", "multispace", "&'a str"),
                 "ident" => {
                     self.typed_parts.insert(
                         key,

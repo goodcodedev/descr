@@ -58,6 +58,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                 | &ListPart { .. }
                 | &IntPart { .. }
                 | &IdentPart { .. } => {
+                    // Count as member by default
                     let member_key = part.member_key.unwrap_or(part.part_key);
                     Self::reg_struct_member(
                         struct_data,
@@ -68,6 +69,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                         snake_cased);
                 },
                 &CharPart { .. }
+                | &FnPart { .. }
                 | &TagPart { .. } => {
                     // Count as member if member name is given
                     if let Some(member_key) = part.member_key {

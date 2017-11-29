@@ -22,7 +22,7 @@ impl<'a> AstStructMember<'a> {
         }
     }
 
-    pub fn gen_visitor(&self, mut s: String, ast_struct: &AstStruct, data: &LangData) -> String {
+    pub fn gen_visitor(&self, s: String, ast_struct: &AstStruct, data: &LangData) -> String {
         let typed_part = data.typed_parts.get(self.part_key).unwrap();
         typed_part.gen_visitor(s, self, ast_struct, data)
     }

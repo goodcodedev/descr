@@ -33,7 +33,7 @@ impl<'a, 'd> VisitAst<'a, 'd> for RegisterKeys<'a, 'd> {
     fn visit_list(&mut self, node: &'d List) {
         self.data.list_data.insert(
             node.ident,
-            ListData::new(node.ident)
+            ListData::new(node.ident, node.sep)
         );
     }
 }

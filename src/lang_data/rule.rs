@@ -66,10 +66,10 @@ impl<'a> AstRule<'a> {
                     }
                     if part.optional {
                         s += "opt!(";
-                        s = typed_part.gen_parser(s);
+                        s = typed_part.gen_parser(s, data);
                         s += ")";
                     } else {
-                        s = typed_part.gen_parser(s);
+                        s = typed_part.gen_parser(s, data);
                     }
                     s += " >>\n";
                 }

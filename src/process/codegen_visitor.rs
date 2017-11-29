@@ -11,7 +11,7 @@ impl<'a, 'd> CodegenVisitor<'a, 'd> {
         CodegenVisitor { data }
     }
 
-    pub fn gen(&self) {
+    pub fn gen(&self) -> String {
         let mut s = String::with_capacity(
             1024
         );
@@ -34,7 +34,6 @@ impl<'a, 'd> CodegenVisitor<'a, 'd> {
             s += "        }\n    }\n\n";
         }
         s += "}";
-        let mut file = File::create("gen/visitor.rs").expect("Could not open file");
-        file.write_all(s.as_bytes()).expect("Could not write to file");
+        s
     }
 }

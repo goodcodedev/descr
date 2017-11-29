@@ -10,34 +10,24 @@ pub enum TypedPart<'a> {
     CharPart    { key: &'a str, chr: char },
     TagPart     { key: &'a str, tag: &'a str },
     IntPart     { key: &'a str },
-    IdentPart   { key: &'a str }
+    IdentPart   { key: &'a str },
+    FnPart      { key: &'a str, fnc: &'a str, tpe: &'a str }
 }
 impl<'a> TypedPart<'a> {
-    pub fn gen_parser(&self, mut s: String) -> String {
+    pub fn gen_parser(&self, mut s: String, data: &LangData) -> String {
         use lang_data::typed_part::TypedPart::*;
         match self {
-            &AstPart { key } => {
-                s += key;
-            },
-            &ListPart { key } => {
-                s += key;
-            },
+            &AstPart { key } => { s += data.sc(key); },
+            &ListPart { key } => { s += data.sc(key); },
             &CharPart { key, chr } => {
                 s += "char!('";
                 s.push(chr);
                 s += "')";
             },
-            &TagPart { key, tag } => {
-                s += "tag!(\"";
-                s += tag;
-                s += "\")";
-            },
-            &IntPart { key } => {
-                s += "int";
-            },
-            &IdentPart { key } => {
-                s += "ident";
-            }
+            &TagPart { key, tag } => { append!(s, "tag!(\"" tag "\")"); },
+            &IntPart { key } => { s += "int"; },
+            &IdentPart { key } => { s += "ident"; },
+            &FnPart { key, fnc, .. } => { s += fnc; }
         }
         s
     }
@@ -64,6 +54,9 @@ impl<'a> TypedPart<'a> {
                 append!(s, member_key "_k");
             },
             &IdentPart { .. } => {
+                append!(s, member_key "_k");
+            },
+            &FnPart { .. } => {
                 append!(s, member_key "_k");
             }
         }

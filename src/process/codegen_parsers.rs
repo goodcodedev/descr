@@ -11,7 +11,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
         CodegenParsers { data }
     }
 
-    pub fn gen(&self) {
+    pub fn gen(&self) -> String {
         let mut s = String::with_capacity(
             self.data.ast_data.len() * 100
             + self.data.list_data.len() * 100
@@ -50,7 +50,17 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                         self.data.sc(list_data.key)
                         "<Vec<"
                         self.data.type_refs.get(list_data.key).unwrap().get_type_name()
-                        ">>, many0!(\n    ");
+                        ">>, ");
+                    match list_data.sep {
+                        Some(sep) => {
+                            append!(s, "separated_list!(");
+                            s = self.data.typed_parts.get(sep).unwrap().gen_parser(s, self.data);
+                            s += ", \n    ";
+                        },
+                        None => {
+                            append!(s, "many0!(\n    ");
+                        }
+                    }
                     s = rule.ast_rule.gen_rule(s, list_data.key, self.data, false);
                     s += "\n));\n\n";
                 },
@@ -58,7 +68,20 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                     // Alt rule
                     append!(s, "named!(pub "
                         self.data.sc(list_data.key)
-                        ", many0!(alt_complete!(\n    ");
+                        "Vec<"
+                        self.data.type_refs.get(list_data.key).unwrap().get_type_name()
+                        ">>, ");
+                    match list_data.sep {
+                        Some(sep) => {
+                            append!(s, "separated_list!(");
+                            s = self.data.typed_parts.get(sep).unwrap().gen_parser(s, self.data);
+                            s += ", ";
+                        },
+                        None => {
+                            append!(s, "many0!(");
+                        }
+                    }
+                    append!(s, "alt_complete!(\n    ");
                     for (i, rule) in list_data.rules.iter().enumerate() {
                         s = rule.ast_rule.gen_rule(s, list_data.key, self.data, true);
                         if i < len - 1 { s += "\n    | "; }
@@ -67,7 +90,6 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                 }
             }
         }
-        let mut file = File::create("gen/parsers.rs").expect("Could not open file");
-        file.write_all(s.as_bytes()).expect("Could not write ast file");
+        s
     }
 }
