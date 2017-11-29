@@ -75,7 +75,7 @@ impl<'a> AstRule<'a> {
                 }
                 s += "        (";
                 if is_enum {
-                    append!(s, base_type "(" parts_rule.ast_type "Item {\n");
+                    append!(s, base_type "::" parts_rule.ast_type "Item(" parts_rule.ast_type " {\n");
                 } else {
                     s += parts_rule.ast_type;
                     s += " {\n";
@@ -84,7 +84,7 @@ impl<'a> AstRule<'a> {
                     if let Some(member_key) = part.member_key {
                         let typed_part = part.get_typed_part(data);
                         append!(s 3, data.sc(member_key) ": ");
-                        s = typed_part.gen_parser_val(s, part);
+                        s = typed_part.gen_parser_val(s, part, data);
                         s += ",\n";
                     }
                 }

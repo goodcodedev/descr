@@ -15,10 +15,11 @@ impl<'a, 'd> CodegenVisitor<'a, 'd> {
         let mut s = String::with_capacity(
             1024
         );
+        s += "use super::ast::*;\n\n";
         s += "pub trait Visitor<'a, 'b> {\n";
         // Ast structs
         for (key, ast_struct) in self.data.ast_structs.sorted_iter() {
-            append!(s 1, "pub fn visit_" ast_struct.sc() "(&mut self, node: &'b " key ") {\n");
+            append!(s 1, "fn visit_" ast_struct.sc() "(&mut self, node: &'b " key ") {\n");
             for (key, member) in ast_struct.members.sorted_iter() {
                 s = member.gen_visitor(s, ast_struct, self.data);
             }
@@ -26,10 +27,10 @@ impl<'a, 'd> CodegenVisitor<'a, 'd> {
         }
         // Ast enums
         for (key, ast_enum) in self.data.ast_enums.sorted_iter() {
-            append!(s 1, "pub fn visit_" ast_enum.sc() "(&mut self, node: &'b " key ") {\n");
+            append!(s 1, "fn visit_" ast_enum.sc() "(&mut self, node: &'b " key ") {\n");
             append!(s 2, "match node {\n");
             for enum_item in &ast_enum.items {
-                append!(s 3, "&" key "::" enum_item "Item(ref inner) => self.visit_" self.data.sc(enum_item) "(inner);\n");
+                append!(s 3, "&" key "::" enum_item "Item(ref inner) => self.visit_" self.data.sc(enum_item) "(inner),\n");
             }
             s += "        }\n    }\n\n";
         }

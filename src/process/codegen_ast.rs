@@ -53,9 +53,9 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
         }
         for (key, enum_data) in self.data.ast_enums.sorted_iter() {
             append!(s, "#[derive(Debug)]\n");
-            append!(s, "pub enum " key " {\n");
+            append!(s, "pub enum " key "<'a> {\n");
             for item in &enum_data.items {
-                append!(s 1, item "Item(" item "),\n");
+                append!(s 1, item "Item(" item "<'a>),\n");
             }
             s += "}\n\n";
         }

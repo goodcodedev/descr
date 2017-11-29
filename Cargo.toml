@@ -6,3 +6,4 @@ authors = ["goodcodedev <gudmund@goodcode.no>"]
 [dependencies]
 nom = "^3.2"
 elapsed = "0.1"
+descr-common = { path = "descr-common" }

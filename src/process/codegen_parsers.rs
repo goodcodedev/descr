@@ -16,6 +16,11 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
             self.data.ast_data.len() * 100
             + self.data.list_data.len() * 100
         );
+        s += "extern crate descr_common;\n";
+        s += "use self::descr_common::parsers::*;\n";
+        s += "extern crate nom;\n";
+        s += "use self::nom::*;\n";
+        s += "use super::ast::*;\n\n";
         // Ast data
         for (key, ast_data) in self.data.ast_data.sorted_iter() {
             match ast_data.rules.len() {

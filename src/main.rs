@@ -13,6 +13,7 @@ mod visit_ast;
 use lang_data::data::*;
 use std::fs::File;
 use std::io::prelude::*;
+extern crate descr_common;
 
 fn main() {
     let mut f = File::open("descr.lang").expect("Could not open descr.lang");
@@ -27,7 +28,7 @@ fn main() {
     {
         match res {
             nom::IResult::Done(_, ref source) => {
-                process::process(source, &mut data, "descr-lang/src");
+                process::process(source, &mut data, "descr-lang/src/gen");
             }
             _ => ()
         }

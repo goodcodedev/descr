@@ -61,27 +61,27 @@ pub struct TokenNamedKey<'a> {
 }
 
 #[derive(Debug)]
-pub enum AstItem {
-    AstDefItem(AstDef),
-    AstRefItem(AstRef),
+pub enum AstItem<'a> {
+    AstDefItem(AstDef<'a>),
+    AstRefItem(AstRef<'a>),
 }
 
 #[derive(Debug)]
-pub enum List {
-    ListSingleItem(ListSingle),
-    ListManyItem(ListMany),
+pub enum List<'a> {
+    ListSingleItem(ListSingle<'a>),
+    ListManyItem(ListMany<'a>),
 }
 
 #[derive(Debug)]
-pub enum SourceItem {
-    AstSingleItem(AstSingle),
-    AstManyItem(AstMany),
-    ListItem(List),
+pub enum SourceItem<'a> {
+    AstSingleItem(AstSingle<'a>),
+    AstManyItem(AstMany<'a>),
+    ListItem(List<'a>),
 }
 
 #[derive(Debug)]
-pub enum Token {
-    TokenKeyItem(TokenKey),
-    TokenNamedKeyItem(TokenNamedKey),
+pub enum Token<'a> {
+    TokenKeyItem(TokenKey<'a>),
+    TokenNamedKeyItem(TokenNamedKey<'a>),
 }
 

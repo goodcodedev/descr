@@ -1,16 +1,22 @@
+extern crate descr_common;
+use self::descr_common::parsers::*;
+extern crate nom;
+use self::nom::*;
+use super::ast::*;
+
 named!(pub ast_item<AstItem>, alt_complete!(
     do_parse!(
         sp >> ident_k: opt!(ident) >>
         sp >> char!('(') >>
         sp >> tokens_k: token_list >>
         sp >> char!(')') >>
-        (AstItem(AstDefItem {
+        (AstItem::AstDefItem(AstDef {
             ident: ident_k,
             tokens: tokens_k,
         })))
     | do_parse!(
         sp >> ident_k: ident >>
-        (AstItem(AstRefItem {
+        (AstItem::AstRefItem(AstRef {
             ident: ident_k,
         })))
 ));
@@ -44,7 +50,7 @@ named!(pub list<List>, alt_complete!(
         sp >> ident_k: ident >>
         sp >> sep_k: ident >>
         sp >> reference_k: ident >>
-        (List(ListSingleItem {
+        (List::ListSingleItem(ListSingle {
             ident: ident_k,
             sep: sep_k,
             reference: reference_k,
@@ -55,7 +61,7 @@ named!(pub list<List>, alt_complete!(
         sp >> char!('{') >>
         sp >> items_k: list_items >>
         sp >> char!('}') >>
-        (List(ListManyItem {
+        (List::ListManyItem(ListMany {
             ident: ident_k,
             sep: sep_k,
             items: items_k,
@@ -69,7 +75,7 @@ named!(pub list_item<ListItem>,
         sp >> sep_k: opt!(ident) >>
         (ListItem {
             ident: ident_k,
-            ast_item: AstItem_k,
+            ast_item: ast_item_k,
             sep: sep_k,
         }))
 );
@@ -92,7 +98,7 @@ named!(pub token<Token>, alt_complete!(
     do_parse!(
         sp >> ident_k: ident >>
         sp >> optional_k: opt!(char!('?')) >>
-        (Token(TokenKeyItem {
+        (Token::TokenKeyItem(TokenKey {
             ident: ident_k,
             optional: optional_k.is_some(),
         })))
@@ -101,7 +107,7 @@ named!(pub token<Token>, alt_complete!(
         sp >> char!(':') >>
         sp >> key_k: ident >>
         sp >> optional_k: opt!(char!('?')) >>
-        (Token(TokenNamedKeyItem {
+        (Token::TokenNamedKeyItem(TokenNamedKey {
             name: name_k,
             key: key_k,
             optional: optional_k.is_some(),

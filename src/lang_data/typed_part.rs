@@ -32,9 +32,9 @@ impl<'a> TypedPart<'a> {
         s
     }
 
-    pub fn gen_parser_val(&self, mut s: String, part: &'a AstRulePart) -> String {
+    pub fn gen_parser_val(&self, mut s: String, part: &'a AstRulePart, data: &LangData) -> String {
         use lang_data::typed_part::TypedPart::*;
-        let member_key = part.member_key.unwrap();
+        let member_key = data.sc(part.member_key.unwrap());
         match self {
             &AstPart { .. }
             | &ListPart { .. } => {
@@ -74,7 +74,7 @@ impl<'a> TypedPart<'a> {
                     append!(s 3, "None => {}\n");
                     append!(s 2, "}\n");
                 } else {
-                    append!(s 2, "self.visit_" data.sc(key) "(node." member.sc() ");\n");
+                    append!(s 2, "self.visit_" data.sc(key) "(&node." member.sc() ");\n");
                 }
             },
             &ListPart { key } => {
