@@ -1,9 +1,32 @@
 [[package]]
+name = "descr"
+version = "0.1.0"
+dependencies = [
+ "descr-common 0.1.0",
+ "descr-lang 0.1.0",
+ "elapsed 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "descr-common"
 version = "0.1.0"
 dependencies = [
  "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "descr-lang"
+version = "0.1.0"
+dependencies = [
+ "descr-common 0.1.0",
+ "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "elapsed"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "libc"
@@ -30,11 +53,13 @@ dependencies = [
 name = "pg"
 version = "0.1.0"
 dependencies = [
+ "descr 0.1.0",
  "descr-common 0.1.0",
  "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [metadata]
+"checksum elapsed 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6f4e5af126dafd0741c2ad62d47f68b28602550102e5f0dd45c8a97fc8b49c29"
 "checksum libc 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)" = "5ba3df4dcb460b9dfbd070d41c94c19209620c191b0340b929ce748a2bcd42d2"
 "checksum memchr 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "148fab2e51b4f1cfc66da2a7c32981d1d3c083a803978268bb11fe4b86925e7a"
 "checksum nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "05aec50c70fd288702bcd93284a8444607f3292dbdf2a30de5ea5dcdbe72287b"

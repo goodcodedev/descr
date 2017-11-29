@@ -1,0 +1,10 @@
+[package]
+name = "descr-gen"
+version = "0.1.0"
+authors = ["goodcodedev <gudmund@goodcode.no>"]
+
+[dependencies]
+nom = "^3.2"
+elapsed = "0.1"
+descr-common = { path = "../descr-common" }
+descr-lang = { path = "../descr-lang" }

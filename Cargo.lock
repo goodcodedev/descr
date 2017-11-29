@@ -3,15 +3,27 @@ name = "descr"
 version = "0.1.0"
 dependencies = [
  "descr-common 0.1.0",
+ "descr-gen 0.1.0",
  "descr-lang 0.1.0",
  "elapsed 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pg 0.1.0",
 ]
 
 [[package]]
 name = "descr-common"
 version = "0.1.0"
 dependencies = [
+ "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "descr-gen"
+version = "0.1.0"
+dependencies = [
+ "descr-common 0.1.0",
+ "descr-lang 0.1.0",
+ "elapsed 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -47,6 +59,14 @@ version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "memchr 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "pg"
+version = "0.1.0"
+dependencies = [
+ "descr-common 0.1.0",
+ "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [metadata]
