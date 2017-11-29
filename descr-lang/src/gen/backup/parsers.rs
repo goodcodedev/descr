@@ -84,7 +84,7 @@ named!(pub list_item<ListItem>,
 
 named!(pub source<Source>,
     do_parse!(
-        sp >> items_k: source_items >>
+        sp >> items_k: source_item >>
         (Source {
             items: items_k,
         }))

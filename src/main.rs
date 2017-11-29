@@ -4,7 +4,6 @@ extern crate elapsed;
 #[macro_use]
 mod util;
 use elapsed::measure_time;
-mod ast;
 mod lang_data;
 mod parsers;
 mod process;
@@ -15,13 +14,14 @@ use std::fs::File;
 use std::io::prelude::*;
 extern crate descr_common;
 extern crate descr_lang;
+mod ast;
 
 fn main() {
     let mut f = File::open("descr.lang").expect("Could not open descr.lang");
     let mut buf = Vec::with_capacity(1024);
     f.read_to_end(&mut buf).expect("Could not read descr.lang");
     let (elapsed, res) = measure_time(|| {
-        source(&buf[..])
+        descr_lang::gen::parsers::source(&buf[..])
     });
     println!("Parse: {}", elapsed);
     //println!("{:#?}", res);
@@ -35,6 +35,7 @@ fn main() {
         }
     }
     {
+        /*
         let test_source = b"
 Source (items:sourceItems)
 sourceItems[] WS SourceItem
@@ -66,6 +67,7 @@ ListItem(ident AstItem sep:ident?)
         ";
         let test = descr_lang::gen::parsers::source(test_source);
         println!("{:#?}", test);
+        */
     }
 
     /*

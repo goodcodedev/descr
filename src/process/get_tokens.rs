@@ -1,7 +1,7 @@
 use lang_data::data::*;
-use visit_ast::*;
 use lang_data::*;
-use ast::*;
+use descr_lang::gen::ast::*;
+use descr_lang::gen::visitor::Visitor;
 
 pub struct GetTokens<'a, 'd: 'a> {
     data: &'a mut LangData<'d>
@@ -15,7 +15,7 @@ impl<'a, 'd> GetTokens<'a, 'd> {
     }
 }
 
-impl<'a, 'd> VisitAst<'a, 'd> for GetTokens<'a, 'd> {
+impl<'a, 'd> Visitor<'d> for GetTokens<'a, 'd> {
 
     fn visit_token_named_key(&mut self, node: &'d TokenNamedKey) {
         self.data.resolve_typed_part(node.key);
@@ -25,7 +25,11 @@ impl<'a, 'd> VisitAst<'a, 'd> for GetTokens<'a, 'd> {
         self.data.resolve_typed_part(node.ident);
     }
 
-    fn visit_list(&mut self, node: &'d List) {
+    fn visit_list_single(&mut self, node: &'d ListSingle) {
+        self.data.resolve_typed_part(node.sep);
+    }
+
+    fn visit_list_many(&mut self, node: &'d ListMany) {
         match node.sep {
             Some(sep) => self.data.resolve_typed_part(sep),
             None => {}

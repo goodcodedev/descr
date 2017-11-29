@@ -73,7 +73,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                     // Alt rule
                     append!(s, "named!(pub "
                         self.data.sc(list_data.key)
-                        "Vec<"
+                        "<Vec<"
                         self.data.type_refs.get(list_data.key).unwrap().get_type_name()
                         ">>, ");
                     match list_data.sep {

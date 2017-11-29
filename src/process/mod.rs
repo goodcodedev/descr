@@ -7,22 +7,23 @@ pub mod codegen_parsers;
 pub mod codegen_visitor;
 
 use std::fs::File;
+use std::fs;
 use std::io::Write;
 use elapsed::measure_time;
-use process::register_keys::RegisterKeys;
-use process::get_tokens::GetTokens;
-use process::build_parsers::BuildParsers;
-use process::build_ast::BuildAst;
-use process::codegen_ast::CodegenAst;
-use process::codegen_parsers::CodegenParsers;
-use process::codegen_visitor::CodegenVisitor;
-use ast;
-use process;
+use self::register_keys::RegisterKeys;
+use self::get_tokens::GetTokens;
+use self::build_parsers::BuildParsers;
+use self::build_ast::BuildAst;
+use self::codegen_ast::CodegenAst;
+use self::codegen_parsers::CodegenParsers;
+use self::codegen_visitor::CodegenVisitor;
+use descr_lang::gen::ast;
 use lang_data::data::*;
-use visit_ast::*;
 use std::path::Path;
+use descr_lang::gen::visitor::Visitor;
 
 pub fn process<'a, 'b, 'c>(res: &'a ast::Source, data: &'b mut LangData<'a>, path: &'c str) {
+    println!("{:#?}", res);
     let (elapsed, ()) = measure_time(|| {
         {
             let mut register_keys = RegisterKeys::new(data);
@@ -56,7 +57,7 @@ pub fn process<'a, 'b, 'c>(res: &'a ast::Source, data: &'b mut LangData<'a>, pat
             write_file(path, "visitor.rs", codegen_visitor.gen());
         }
         // Generate mod file
-        process::gen_mod(path);
+        gen_mod(path);
     });
     println!("Process: {}", elapsed);
 }
@@ -68,6 +69,11 @@ pub fn gen_mod(path: &str) {
 
 pub fn write_file<'a, 'b>(path: &'a str, name: &'b str, content: String) {
     let p = Path::new(path).join(name);
+    if p.exists() {
+        // Backup file (for now)
+        let backup_p = Path::new(path).join("backup").join(name);
+        fs::copy(&p, backup_p).expect("Could not backup file");
+    }
     let mut file = File::create(p).expect(format!("Could not open path: {}, file: {}", path, name).as_str());
     file.write_all(content.as_bytes()).expect(format!("Could not write to path: {}, file: {}", path, name).as_str());
 }

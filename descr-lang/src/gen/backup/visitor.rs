@@ -36,9 +36,7 @@ pub trait Visitor<'a> {
     }
 
     fn visit_source(&mut self, node: &'a Source) {
-        for item in &node.items {
-            self.visit_source_item(item);
-        }
+        self.visit_source_item(&node.items);
     }
 
     fn visit_token_key(&mut self, node: &'a TokenKey) {

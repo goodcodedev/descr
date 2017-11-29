@@ -1,7 +1,7 @@
 use lang_data::data::*;
-use visit_ast::*;
 use lang_data::*;
-use ast::*;
+use descr_lang::gen::ast::*;
+use descr_lang::gen::visitor::Visitor;
 
 pub struct RegisterKeys<'a, 'd: 'a> {
     data: &'a mut LangData<'d>
@@ -14,7 +14,7 @@ impl<'a, 'd> RegisterKeys<'a, 'd> {
         }
     }
 }
-impl<'a, 'd> VisitAst<'a, 'd> for RegisterKeys<'a, 'd> {
+impl<'a, 'd> Visitor<'d> for RegisterKeys<'a, 'd> {
 
     fn visit_ast_single(&mut self, node: &'d AstSingle) {
         self.data.ast_data.insert(
@@ -30,7 +30,14 @@ impl<'a, 'd> VisitAst<'a, 'd> for RegisterKeys<'a, 'd> {
         );
     }
 
-    fn visit_list(&mut self, node: &'d List) {
+    fn visit_list_single(&mut self, node: &'d ListSingle) {
+        self.data.list_data.insert(
+            node.ident,
+            ListData::new(node.ident, Some(node.sep))
+        );
+    }
+
+    fn visit_list_many(&mut self, node: &'d ListMany) {
         self.data.list_data.insert(
             node.ident,
             ListData::new(node.ident, node.sep)

@@ -26,4 +26,4 @@ List {
     ListMany(ident LBRACKET RBRACKET sep:ident? LBRACE items:listItems RBRACE)
 }
 listItems[] COMMA ListItem
-ListItem(ident AstItem sep:ident?)
+ListItem(AstItem sep:ident?)

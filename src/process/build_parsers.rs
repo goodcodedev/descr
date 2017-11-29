@@ -1,8 +1,7 @@
-use visit_ast::*;
-use ast::*;
-use ast;
 use lang_data::data::*;
 use lang_data::rule::*;
+use descr_lang::gen::ast::*;
+use descr_lang::gen::visitor::Visitor;
 
 pub struct BuildParsers<'a, 'd: 'a> {
     data: &'a mut LangData<'d>
@@ -14,7 +13,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
         }
     }
     pub fn add_tokens_to_rule(&mut self, is_ast: bool, ident: &'d str, name: &'d str, 
-                              token_list: &Vec<TokenNode<'d>>) {
+                              token_list: &Vec<Token<'d>>) {
         use lang_data::rule::AstRule::*;
         let rule = {
             if is_ast {
@@ -37,10 +36,10 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
             }
         };
         for (i, token) in token_list.iter().enumerate() {
-            use ast::TokenNode::*;
+            use self::Token::*;
             use lang_data::typed_part::TypedPart::*;
             match token {
-                &TokenKey(ast::TokenKey{ident, optional}) => {
+                &TokenKeyItem(TokenKey{ident, optional}) => {
                     let part = self.data.typed_parts.get(ident).unwrap();
                     rule.part_keys.push(ident);
                     // Key index on parts considered
@@ -62,7 +61,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                         optional
                     });
                 },
-                &TokenNamedKey(ast::TokenNamedKey{name, key, optional}) => {
+                &TokenNamedKeyItem(TokenNamedKey{name, key, optional}) => {
                     let part = self.data.typed_parts.get(key).unwrap();
                     rule.part_keys.push(key);
                     // Key index by name
@@ -91,44 +90,52 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
         }
     }
 }
-impl<'a, 'd> VisitAst<'a, 'd> for BuildParsers<'a, 'd> {
+impl<'a, 'd> Visitor<'d> for BuildParsers<'a, 'd> {
     fn visit_ast_many(&mut self, node: &'d AstMany) {
-        for item in &node.ast_items {
+        for item in &node.items {
             use lang_data::rule::AstRule::*;
-            use ast::AstItem::*;
+            use self::AstItem::*;
             match item {
-                &AstDef(ast::AstDef{ref ident, ref token_list}) => {
+                &AstDefItem(AstDef{ref ident, ref tokens}) => {
                     let name = ident.unwrap_or(node.ident);
-                    self.add_tokens_to_rule(true, node.ident, name, token_list);
+                    self.add_tokens_to_rule(true, node.ident, name, tokens);
                 },
-                &AstRef(ast::AstRef{ref ident}) => {
+                &AstRefItem(AstRef{ref ident}) => {
                     self.data.ast_data.get_mut(node.ident).unwrap().rules.push(RefRule(ident));
                 }
             }
         }
     }
 
-    fn visit_list(&mut self, node: &'d List) {
+    fn visit_list_many(&mut self, node: &'d ListMany) {
         for item in &node.items {
-            use ast::AstItem::*;
+            use self::AstItem::*;
             use lang_data::rule::AstRule::*;
             match &item.ast_item {
-                &AstDef(ast::AstDef{ref ident, ref token_list}) => {
+                &AstDefItem(AstDef{ref ident, ref tokens}) => {
                     let name = ident.unwrap_or(node.ident);
-                    self.add_tokens_to_rule(false, name, name, token_list);
+                    self.add_tokens_to_rule(false, name, name, tokens);
                 },
-                &AstRef(ast::AstRef{ref ident}) => {
+                &AstRefItem(AstRef{ref ident}) => {
                     self.data.list_data.get_mut(node.ident).unwrap().rules.push(
-                        ListRule::new(Some(""), RefRule(ident))
+                        ListRule::new(item.sep, RefRule(ident))
                     );
                 }
             }
         }
     }
 
+    fn visit_list_single(&mut self, node: &'d ListSingle) {
+        let list_data = self.data.list_data.get_mut(node.ident).unwrap();
+        use lang_data::rule::AstRule::*;
+        list_data.rules.push(
+            ListRule::new(None, RefRule(node.reference))
+        );
+    }
+
     fn visit_ast_single(&mut self, node: &'d AstSingle) {
         let mut rule = AstPartsRule::new(node.ident);
         rule.ast_type = node.ident;
-        self.add_tokens_to_rule(true, &node.ident, &node.ident, &node.token_list);
+        self.add_tokens_to_rule(true, &node.ident, &node.ident, &node.tokens);
     }
 }

@@ -43,7 +43,7 @@ pub struct ListSingle<'a> {
 
 #[derive(Debug)]
 pub struct Source<'a> {
-    pub items: Vec<SourceItem<'a>>,
+    pub items: SourceItem<'a>,
 }
 
 #[derive(Debug)]
