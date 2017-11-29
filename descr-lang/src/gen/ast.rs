@@ -81,7 +81,7 @@ pub enum SourceItem<'a> {
 
 #[derive(Debug)]
 pub enum Token<'a> {
-    TokenKeyItem(TokenKey<'a>),
     TokenNamedKeyItem(TokenNamedKey<'a>),
+    TokenKeyItem(TokenKey<'a>),
 }
 

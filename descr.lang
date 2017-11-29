@@ -12,8 +12,8 @@ AstMany(ident LBRACE items:astItems RBRACE)
 
 tokenList[] WS Token
 Token {
-    TokenKey(ident optional:QUESTION?),
-    TokenNamedKey(name:ident COLON key:ident optional:QUESTION?)
+    TokenNamedKey(name:ident COLON key:ident optional:QUESTION?),
+    TokenKey(ident optional:QUESTION?)
 }
 
 astItems[] COMMA AstItem
@@ -22,8 +22,8 @@ AstItem {
     AstRef(ident)
 }
 List {
-    ListSingle(ident sep:ident reference:ident),
-    ListMany(ident sep:ident? LBRACE items:listItems RBRACE)
+    ListSingle(ident LBRACKET RBRACKET sep:ident reference:ident),
+    ListMany(ident LBRACKET RBRACKET sep:ident? LBRACE items:listItems RBRACE)
 }
 listItems[] COMMA ListItem
 ListItem(ident AstItem sep:ident?)

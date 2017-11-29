@@ -7,3 +7,4 @@ authors = ["goodcodedev <gudmund@goodcode.no>"]
 nom = "^3.2"
 elapsed = "0.1"
 descr-common = { path = "descr-common" }
+descr-lang = { path = "descr-lang" }

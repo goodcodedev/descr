@@ -6,7 +6,7 @@ use super::ast::*;
 
 named!(pub ast_item<AstItem>, alt_complete!(
     do_parse!(
-        sp >> ident_k: opt!(ident) >>
+ident_k: opt!(do_parse!(sp >> res: ident >> (res))) >>
         sp >> char!('(') >>
         sp >> tokens_k: token_list >>
         sp >> char!(')') >>
@@ -48,6 +48,8 @@ named!(pub ast_single<AstSingle>,
 named!(pub list<List>, alt_complete!(
     do_parse!(
         sp >> ident_k: ident >>
+        sp >> char!('[') >>
+        sp >> char!(']') >>
         sp >> sep_k: ident >>
         sp >> reference_k: ident >>
         (List::ListSingleItem(ListSingle {
@@ -57,7 +59,9 @@ named!(pub list<List>, alt_complete!(
         })))
     | do_parse!(
         sp >> ident_k: ident >>
-        sp >> sep_k: opt!(ident) >>
+        sp >> char!('[') >>
+        sp >> char!(']') >>
+sep_k: opt!(do_parse!(sp >> res: ident >> (res))) >>
         sp >> char!('{') >>
         sp >> items_k: list_items >>
         sp >> char!('}') >>
@@ -72,7 +76,7 @@ named!(pub list_item<ListItem>,
     do_parse!(
         sp >> ident_k: ident >>
         sp >> ast_item_k: ast_item >>
-        sp >> sep_k: opt!(ident) >>
+sep_k: opt!(do_parse!(sp >> res: ident >> (res))) >>
         (ListItem {
             ident: ident_k,
             ast_item: ast_item_k,
@@ -96,20 +100,20 @@ named!(pub source_item<SourceItem>, alt_complete!(
 
 named!(pub token<Token>, alt_complete!(
     do_parse!(
-        sp >> ident_k: ident >>
-        sp >> optional_k: opt!(char!('?')) >>
-        (Token::TokenKeyItem(TokenKey {
-            ident: ident_k,
-            optional: optional_k.is_some(),
-        })))
-    | do_parse!(
         sp >> name_k: ident >>
         sp >> char!(':') >>
         sp >> key_k: ident >>
-        sp >> optional_k: opt!(char!('?')) >>
+optional_k: opt!(do_parse!(sp >> res: char!('?') >> (res))) >>
         (Token::TokenNamedKeyItem(TokenNamedKey {
             name: name_k,
             key: key_k,
+            optional: optional_k.is_some(),
+        })))
+    | do_parse!(
+        sp >> ident_k: ident >>
+optional_k: opt!(do_parse!(sp >> res: char!('?') >> (res))) >>
+        (Token::TokenKeyItem(TokenKey {
+            ident: ident_k,
             optional: optional_k.is_some(),
         })))
 ));
@@ -122,11 +126,11 @@ named!(pub list_items<Vec<ListItem>>, separated_list!(char!(','),
     list_item
 ));
 
-named!(pub source_items<Vec<SourceItem>>, separated_list!(multispace, 
+named!(pub source_items<Vec<SourceItem>>, separated_list!(sp, 
     source_item
 ));
 
-named!(pub token_list<Vec<Token>>, separated_list!(multispace, 
+named!(pub token_list<Vec<Token>>, separated_list!(sp, 
     token
 ));
 

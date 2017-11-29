@@ -193,7 +193,7 @@ impl<'a> LangData<'a> {
                 "LTE" => self.add_tag_token("LTE", "<="),
                 "GTE" => self.add_tag_token("GTE", ">="),
                 "QUESTION" => self.add_char_token("QUESTION", '?'),
-                "WS" => self.add_fn_token("WS", "multispace", "&'a str"),
+                "WS" => self.add_fn_token("WS", "sp", "&'a str"),
                 "ident" => {
                     self.typed_parts.insert(
                         key,

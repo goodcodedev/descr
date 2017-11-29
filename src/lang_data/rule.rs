@@ -59,15 +59,17 @@ impl<'a> AstRule<'a> {
             &AstRule::PartsRule(ref parts_rule) => {
                 s += "do_parse!(\n";
                 for part in &parts_rule.parts {
-                    append!(s 2, "sp >> ");
+                    if !part.optional {
+                        append!(s 2, "sp >> ");
+                    }
                     let typed_part = part.get_typed_part(data);
                     if let Some(member_name) = part.member_key {
                         append!(s, data.sc(member_name) "_k: ");
                     }
                     if part.optional {
-                        s += "opt!(";
+                        append!(s 2, "opt!(do_parse!(sp >> res: ";
                         s = typed_part.gen_parser(s, data);
-                        s += ")";
+                        s += " >> (res)))";
                     } else {
                         s = typed_part.gen_parser(s, data);
                     }

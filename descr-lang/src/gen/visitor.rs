@@ -71,8 +71,8 @@ pub trait Visitor<'a, 'b> {
 
     fn visit_token(&mut self, node: &'b Token) {
         match node {
-            &Token::TokenKeyItem(ref inner) => self.visit_token_key(inner),
             &Token::TokenNamedKeyItem(ref inner) => self.visit_token_named_key(inner),
+            &Token::TokenKeyItem(ref inner) => self.visit_token_key(inner),
         }
     }
 

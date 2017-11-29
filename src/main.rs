@@ -14,6 +14,7 @@ use lang_data::data::*;
 use std::fs::File;
 use std::io::prelude::*;
 extern crate descr_common;
+extern crate descr_lang;
 
 fn main() {
     let mut f = File::open("descr.lang").expect("Could not open descr.lang");
@@ -33,6 +34,40 @@ fn main() {
             _ => ()
         }
     }
+    {
+        let test_source = b"
+Source (items:sourceItems)
+sourceItems[] WS SourceItem
+SourceItem {
+    AstSingle,
+    AstMany,
+    List
+}
+AstSingle(ident LPAREN tokens:tokenList RPAREN)
+AstMany(ident LBRACE items:astItems RBRACE)
+
+tokenList[] WS Token
+Token {
+    TokenKey(ident optional:QUESTION?),
+    TokenNamedKey(name:ident COLON key:ident optional:QUESTION?)
+}
+
+astItems[] COMMA AstItem
+AstItem {
+    AstDef(ident? LPAREN tokens:tokenList RPAREN),
+    AstRef(ident)
+}
+List {
+    ListSingle(ident LBRACKET RBRACKET sep:ident reference:ident),
+    ListMany(ident sep:ident? LBRACE items:listItems RBRACE)
+}
+listItems[] COMMA ListItem
+ListItem(ident AstItem sep:ident?)
+        ";
+        let test = descr_lang::gen::parsers::source(test_source);
+        println!("{:#?}", test);
+    }
+
     /*
     println!("Ast keys: {:#?}", data.ast_data.keys());
     println!("List keys: {:#?}", data.list_data.keys());
