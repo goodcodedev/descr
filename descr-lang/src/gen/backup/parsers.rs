@@ -1,66 +1,68 @@
-extern crate descr_common;
-use self::descr_common::parsers::*;
-extern crate nom;
-use self::nom::*;
-use super::ast::*;
+    extern crate descr_common;
+    use self::descr_common::parsers::*;
+    extern crate nom;
+    use self::nom::*;
+    use super::ast::*;
 
-named!(pub start<Source>, do_parse!(res: source >> (res)));
+    named!(pub start<Source>, do_parse!(res: source >> (res)));
 
-named!(pub ast_item<AstItem>, alt_complete!(
-    do_parse!(
-        ident_k: opt!(do_parse!(sp >> res: ident >> (res))) >>
-        sp >> char!('(') >>
-        sp >> tokens_k: token_list >>
-        sp >> char!(')') >>
-        (AstItem::AstDefItem(AstDef {
-            ident: ident_k,
-            tokens: tokens_k,
-        })))
-    | do_parse!(
-        sp >> ident_k: ident >>
-        (AstItem::AstRefItem(AstRef {
-            ident: ident_k,
-        })))
-));
+    named!(pub ast_item<AstItem>, alt_complete!(
+        do_parse!(
+            ident_k: opt!(do_parse!(sp >> res: ident >> (res))) >>
+            sp >> char!('(') >>
+            sp >> tokens_k: token_list >>
+            sp >> char!(')') >>
+            (AstItem::AstDefItem(AstDef {
+                ident: ident_k,
+                tokens: tokens_k,
+            })))
+        | do_parse!(
+            sp >> ident_k: ident >>
+            (AstItem::AstRefItem(AstRef {
+                ident: ident_k,
+            })))
+    ));
 
-named!(pub ast_many<AstMany>,
-    do_parse!(
-        sp >> ident_k: ident >>
-        sp >> char!('{') >>
-        sp >> items_k: ast_items >>
-        sp >> char!('}') >>
-        (AstMany {
-            ident: ident_k,
-            items: items_k,
-        }))
-);
+    named!(pub ast_many<AstMany>,
+        do_parse!(
+            sp >> ident_k: ident >>
+            sp >> char!('{') >>
+            sp >> items_k: ast_items >>
+            sp >> char!('}') >>
+            (AstMany {
+                ident: ident_k,
+                items: items_k,
+            }))
+    );
 
-named!(pub ast_single<AstSingle>,
-    do_parse!(
-        sp >> ident_k: ident >>
-        sp >> char!('(') >>
-        sp >> tokens_k: token_list >>
-        sp >> char!(')') >>
-        (AstSingle {
-            ident: ident_k,
-            tokens: tokens_k,
-        }))
-);
+    named!(pub ast_single<AstSingle>,
+        do_parse!(
+            sp >> ident_k: ident >>
+            sp >> char!('(') >>
+            sp >> tokens_k: token_list >>
+            sp >> char!(')') >>
+            (AstSingle {
+                ident: ident_k,
+                tokens: tokens_k,
+            }))
+    );
 
-named!(pub list<List>, alt_complete!(
-    do_parse!(
-        sp >> ident_k: ident >>
-        sp >> char!('[') >>
-        sp >> char!(']') >>
-        sp >> sep_k: ident >>
-        sp >> reference_k: ident >>
-        (List::ListSingleItem(ListSingle {
+    named!(pub list<List>, alt_complete!(
+        do_parse!(
+            sp >> ident_k: ident >>
+            sp >> char!('[') >>
+            sp >> char!(']') >>
+            sp >> sep_k: ident >>
+            sp >> reference_k: ident >>
+            (List::ListSingleItem(ListSingle {
             ident: ident_k,
             sep: sep_k,
             reference: reference_k,
         })))
     | do_parse!(
         sp >> ident_k: ident >>
+        sp >> char!(':') >>
+        sp >> ast_type_k: ident >>
         sp >> char!('[') >>
         sp >> char!(']') >>
         sep_k: opt!(do_parse!(sp >> res: ident >> (res))) >>
@@ -69,6 +71,7 @@ named!(pub list<List>, alt_complete!(
         sp >> char!('}') >>
         (List::ListManyItem(ListMany {
             ident: ident_k,
+            ast_type: ast_type_k,
             sep: sep_k,
             items: items_k,
         })))
@@ -102,19 +105,33 @@ named!(pub token<Token>, alt_complete!(
     do_parse!(
         sp >> name_k: ident >>
         sp >> char!(':') >>
-        sp >> key_k: ident >>
+        sp >> token_type_k: token_type >>
         optional_k: opt!(do_parse!(sp >> res: char!('?') >> (res))) >>
-        (Token::TokenNamedKeyItem(TokenNamedKey {
+        (Token::NamedTokenItem(NamedToken {
             name: name_k,
-            key: key_k,
+            token_type: token_type_k,
             optional: optional_k.is_some(),
         })))
+
     | do_parse!(
-        sp >> ident_k: ident >>
+        sp >> token_type_k: token_type >>
         optional_k: opt!(do_parse!(sp >> res: char!('?') >> (res))) >>
-        (Token::TokenKeyItem(TokenKey {
-            ident: ident_k,
+        (Token::SimpleTokenItem(SimpleToken {
+            token_type: token_type_k,
             optional: optional_k.is_some(),
+        })))
+));
+
+named!(pub token_type<TokenType>, alt_complete!(
+    do_parse!(
+        sp >> key_k: ident >>
+        (TokenType::KeyTokenItem(KeyToken {
+            key: key_k,
+        })))
+    | do_parse!(
+        sp >> string_k: quoted_str >>
+        (TokenType::QuotedItem(Quoted {
+            string: string_k,
         })))
 ));
 

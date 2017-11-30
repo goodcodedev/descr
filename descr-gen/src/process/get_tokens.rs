@@ -29,6 +29,9 @@ impl<'a, 'd> Visitor<'d> for GetTokens<'a, 'd> {
             Some(sep) => self.data.resolve_typed_part(sep),
             None => {}
         };
+        for item in &node.items {
+            self.visit_list_item(item);
+        }
     }
 
 }

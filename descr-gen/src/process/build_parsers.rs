@@ -138,7 +138,7 @@ impl<'a, 'd> Visitor<'d> for BuildParsers<'a, 'd> {
             match &item.ast_item {
                 &AstDefItem(AstDef{ref ident, ref tokens}) => {
                     let name = ident.unwrap_or(node.ident);
-                    self.add_tokens_to_rule(false, name, name, tokens);
+                    self.add_tokens_to_rule(false, node.ident, name, tokens);
                 },
                 &AstRefItem(AstRef{ref ident}) => {
                     self.data.list_data.get_mut(node.ident).unwrap().rules.push(

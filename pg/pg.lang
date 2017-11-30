@@ -1,6 +1,6 @@
-Source(someList)
-someList[] COMMA Something
-Something {
-    StrItem("tag" string),
-    Str2Item("tag2" string)
+Source(items)
+
+items:SourceItem[] WS {
+    Say("say" string),
+    Hello("hello")
 }

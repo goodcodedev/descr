@@ -3,6 +3,7 @@ use lang_data::ast::*;
 use lang_data::typed_part::*;
 use lang_data::rule::*;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 pub struct BuildAst<'a, 'd: 'a> {
     data: &'a mut LangData<'d>
@@ -14,16 +15,20 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         }
     }
 
-    fn reg_struct(data: &mut HashMap<&'d str, AstStruct<'d>>, name: &'d str, snake_cased: &mut SnakeCased<'d>) {
+    fn reg_struct(data: &mut HashMap<&'d str, AstStruct<'d>>, name: &'d str, key: &'d str,
+                  snake_cased: &mut SnakeCased<'d>, type_refs: &mut HashMap<&'d str, AstType<'d>>) {
         if !data.contains_key(name) {
             data.insert(
                 name,
                 AstStruct::new(name, snake_cased.get(name))
             );
         } else {
-            // Increment counter
+            // Increment counter to match against arg counter
             let ast_struct = data.get_mut(name).unwrap();
             ast_struct.num_patterns += 1;
+        }
+        if !type_refs.contains_key(key) {
+            type_refs.insert(key, AstType::AstStruct(name));
         }
     }
 
@@ -110,40 +115,44 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                            type_refs: &mut HashMap<&'d str, AstType<'d>>,
                            snake_cased: &mut SnakeCased<'d>) {
         for (_key, ast_data) in ast_data {
-            let mut is_enum = false;
+            // Collect types to check if
+            // this should be an enum
+            let mut types = HashSet::new();
+            types.insert(ast_data.ast_type);
             for rule in &ast_data.rules {
                 match rule {
                     &AstRule::RefRule(key_ref) => {
                         // Ref to another ast
-                        if !is_enum && key_ref != ast_data.ast_type {
-                            is_enum = true;
-                        }
+                        types.insert(key_ref);
                     },
                     &AstRule::PartsRule(ref rule) => {
-                        if rule.ast_type != ast_data.ast_type {
-                            is_enum = true;
-                        }
-                        Self::reg_struct(struct_data, rule.ast_type, snake_cased);
+                        types.insert(rule.ast_type);
+                        Self::reg_struct(struct_data, rule.ast_type, rule.ast_type, snake_cased, type_refs);
                         Self::process_parts_rule(rule, struct_data, typed_parts, snake_cased);
                     }
                 }
             }
-            if is_enum {
-                let mut e = AstEnum::new(ast_data.ast_type, snake_cased.get(ast_data.ast_type));
-                for rule in &ast_data.rules {
-                    match rule {
-                        &AstRule::RefRule(key_ref) => {
-                            e.items.push(key_ref);
-                        },
-                        &AstRule::PartsRule(ref rule) => {
-                            e.items.push(rule.ast_type);
+            match types.len() {
+                0 => {},
+                1 => {
+                    //type_refs.insert(ast_data.ast_type, AstType::AstStruct(ast_data.ast_type));
+                },
+                _ => {
+                    // Several types registered, create enum
+                    let mut e = AstEnum::new(ast_data.ast_type, snake_cased.get(ast_data.ast_type));
+                    for rule in &ast_data.rules {
+                        match rule {
+                            &AstRule::RefRule(key_ref) => {
+                                e.items.push(key_ref);
+                            },
+                            &AstRule::PartsRule(ref rule) => {
+                                e.items.push(rule.ast_type);
+                            }
                         }
                     }
+                    enum_data.insert(ast_data.ast_type, e);
+                    type_refs.insert(ast_data.ast_type, AstType::AstEnum(ast_data.ast_type));
                 }
-                enum_data.insert(ast_data.ast_type, e);
-                type_refs.insert(ast_data.ast_type, AstType::AstEnum(ast_data.ast_type));
-            } else {
-                type_refs.insert(ast_data.ast_type, AstType::AstStruct(ast_data.ast_type));
             }
         }
     }
@@ -156,28 +165,41 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                             snake_cased: &mut SnakeCased<'d>) {
         for (key, list_data) in list_data {
             snake_cased.reg(key);
-            let mut last_type = None;
-            let mut is_enum = false;
+            let mut types = HashSet::new();
+            list_data.ast_type.map(|t| { types.insert(t); });
             for rule in &list_data.rules {
                 match &rule.ast_rule {
                     &AstRule::RefRule(key_ref) => {
                         // Ref to another ast
-                        if !is_enum && last_type.is_some() && last_type.unwrap() != key_ref {
-                            is_enum = true;
-                        }
-                        last_type = Some(key_ref);
+                        types.insert(key_ref);
                     },
                     &AstRule::PartsRule(ref rule) => {
-                        if !is_enum && last_type.is_some() && last_type.unwrap() != rule.ast_type {
-                            is_enum = true;
-                        }
-                        last_type = Some(rule.ast_type);
-                        Self::reg_struct(struct_data, rule.ast_type, snake_cased);
+                        types.insert(rule.ast_type);
+                        Self::reg_struct(struct_data, rule.ast_type, rule.ast_type, snake_cased, type_refs);
                         Self::process_parts_rule(rule, struct_data, typed_parts, snake_cased);
                     }
                 }
-                if is_enum {
-                    let mut e = AstEnum::new(list_data.key, snake_cased.get(list_data.key));
+            }
+            match types.len() {
+                0 => {},
+                1 => {
+                    /*
+                    let ast_name = match list_data.ast_type {
+                        Some(t) => t,
+                        None => match &list_data.rules[0].ast_rule {
+                            &AstRule::RefRule(r) => r,
+                            &AstRule::PartsRule(ref rule) => rule.ast_type
+                        }
+                    };
+                    type_refs.insert(list_data.key, AstType::AstStruct(ast_name));
+                    */
+                },
+                _ => {
+                    let enum_name = match list_data.ast_type {
+                        Some(ast_type) => ast_type,
+                        None => list_data.key
+                    };
+                    let mut e = AstEnum::new(enum_name, snake_cased.get(enum_name));
                     for rule in &list_data.rules {
                         match &rule.ast_rule {
                             &AstRule::RefRule(key_ref) => {
@@ -189,9 +211,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                         }
                     }
                     enum_data.insert(list_data.key, e);
-                    type_refs.insert(list_data.key, AstType::AstEnum(last_type.unwrap()));
-                } else {
-                    type_refs.insert(list_data.key, AstType::AstStruct(last_type.unwrap()));
+                    type_refs.insert(list_data.key, AstType::AstEnum(enum_name));
                 }
             }
         }

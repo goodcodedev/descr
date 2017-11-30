@@ -66,7 +66,8 @@ statements:Statement[] {
     ("bg" Color)   => BgColor
 }
 
-(* Alternative syntax also works for list items *)
+(* Alternative syntax also
+ * work for list items *)
 Color {
     Red("red"),
     Green("green"),

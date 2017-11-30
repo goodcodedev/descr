@@ -1,2 +1,2 @@
-tag2 "Test",
-tag "Test2"
+say "Hello"
+hello

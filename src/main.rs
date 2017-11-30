@@ -99,7 +99,7 @@ fn main() {
             descr_lang::gen::parsers::source(&buf[..])
         });
         println!("Parse: {}", elapsed);
-        println!("{:#?}", res);
+        //println!("{:#?}", res);
         let mut data = LangData::new();
         {
             match res {

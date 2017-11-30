@@ -15,9 +15,11 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             25 * 3 * self.data.ast_structs.len()
             + 25 * 3 * self.data.ast_enums.len()
         );
-        for (key, ast_struct) in self.data.ast_structs.sorted_iter() {
+        for (_key, ast_struct) in self.data.ast_structs.sorted_iter() {
             append!(s, "#[derive(Debug)]\n");
-            append!(s, "pub struct " key "<'a> {\n");
+            append!(s, "pub struct ");
+            s = ast_struct.add_type(s);
+            s += " {\n";
             for (_key, member) in ast_struct.members.sorted_iter() {
                 append!(s 1, "pub " member.sc() ": ");
                 let tpe = self.data.typed_parts.get(member.part_key).unwrap();
@@ -49,11 +51,15 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             }
             s += "}\n\n";
         }
-        for (key, enum_data) in self.data.ast_enums.sorted_iter() {
+        for (_key, enum_data) in self.data.ast_enums.sorted_iter() {
             append!(s, "#[derive(Debug)]\n");
-            append!(s, "pub enum " key "<'a> {\n");
+            append!(s, "pub enum ");
+            s = enum_data.add_type(s);
+            s += " {\n";
             for item in &enum_data.items {
-                append!(s 1, item "Item(" item "<'a>),\n");
+                append!(s 1, item "Item(");
+                s = self.data.add_ast_type(s, item);
+                s += "),\n";
             }
             s += "}\n\n";
         }

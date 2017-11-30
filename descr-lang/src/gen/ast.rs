@@ -83,21 +83,21 @@ pub enum List<'a> {
 }
 
 #[derive(Debug)]
-pub enum SourceItem<'a> {
-    AstSingleItem(AstSingle<'a>),
-    AstManyItem(AstMany<'a>),
-    ListItem(List<'a>),
-}
-
-#[derive(Debug)]
 pub enum Token<'a> {
-    SimpleTokenItem(SimpleToken<'a>),
     NamedTokenItem(NamedToken<'a>),
+    SimpleTokenItem(SimpleToken<'a>),
 }
 
 #[derive(Debug)]
 pub enum TokenType<'a> {
     KeyTokenItem(KeyToken<'a>),
     QuotedItem(Quoted<'a>),
+}
+
+#[derive(Debug)]
+pub enum SourceItem<'a> {
+    AstSingleItem(AstSingle<'a>),
+    AstManyItem(AstMany<'a>),
+    ListItem(List<'a>),
 }
 

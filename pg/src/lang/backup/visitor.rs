@@ -1,22 +1,22 @@
 use super::ast::*;
 
 pub trait Visitor<'a> {
+    fn visit_hello(&mut self, node: &'a Hello) {
+    }
+
+    fn visit_say(&mut self, node: &'a Say) {
+    }
+
     fn visit_source(&mut self, node: &'a Source) {
-        for item in &node.some_list {
-            self.visit_something(item);
+        for item in &node.items {
+            self.visit_source_item(item);
         }
     }
 
-    fn visit_str2_item(&mut self, node: &'a Str2Item) {
-    }
-
-    fn visit_str_item(&mut self, node: &'a StrItem) {
-    }
-
-    fn visit_something(&mut self, node: &'a Something) {
+    fn visit_source_item(&mut self, node: &'a SourceItem) {
         match node {
-            &Something::StrItemItem(ref inner) => self.visit_str_item(inner),
-            &Something::Str2ItemItem(ref inner) => self.visit_str2_item(inner),
+            &SourceItem::SayItem(ref inner) => self.visit_say(inner),
+            &SourceItem::HelloItem(ref inner) => self.visit_hello(inner),
         }
     }
 

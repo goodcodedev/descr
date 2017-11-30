@@ -57,6 +57,16 @@ impl<'a> AstStruct<'a> {
     pub fn sc(&self) -> &str {
         self.snake_case.as_str()
     }
+    pub fn needs_lifetime(&self) -> bool {
+        self.members.len() > 0
+    }
+    pub fn add_type(&self, mut s: String) -> String {
+        s += self.name;
+        if self.needs_lifetime() {
+            s += "<'a>";
+        }
+        s
+    }
 }
 
 #[derive(Debug)]
@@ -72,6 +82,18 @@ impl<'a> AstEnum<'a> {
             snake_case,
             items: Vec::new()
         }
+    }
+
+    pub fn needs_lifetime(&self) -> bool {
+        // todo improve
+        self.items.len() > 0
+    }
+    pub fn add_type(&self, mut s: String) -> String {
+        s += self.name;
+        if self.needs_lifetime() {
+            s += "<'a>";
+        }
+        s
     }
 
     pub fn sc(&self) -> &str {

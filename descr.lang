@@ -1,7 +1,6 @@
 Source (items:sourceItems)
 
-sourceItems[] WS SourceItem
-SourceItem {
+sourceItems:SourceItem[] WS {
     AstSingle,
     AstMany,
     List
@@ -27,9 +26,11 @@ AstItem {
     AstDef(ident? LPAREN tokens:tokenList RPAREN),
     AstRef(ident)
 }
+
 List {
     ListSingle(ident LBRACKET RBRACKET sep:ident reference:ident),
     ListMany(ident COLON ast_type:ident LBRACKET RBRACKET sep:ident? LBRACE items:listItems RBRACE)
 }
 listItems[] COMMA ListItem
 ListItem(AstItem sep:ident?)
+

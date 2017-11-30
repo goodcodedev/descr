@@ -69,18 +69,10 @@ pub trait Visitor<'a> {
         }
     }
 
-    fn visit_source_item(&mut self, node: &'a SourceItem) {
-        match node {
-            &SourceItem::AstSingleItem(ref inner) => self.visit_ast_single(inner),
-            &SourceItem::AstManyItem(ref inner) => self.visit_ast_many(inner),
-            &SourceItem::ListItem(ref inner) => self.visit_list(inner),
-        }
-    }
-
     fn visit_token(&mut self, node: &'a Token) {
         match node {
-            &Token::SimpleTokenItem(ref inner) => self.visit_simple_token(inner),
             &Token::NamedTokenItem(ref inner) => self.visit_named_token(inner),
+            &Token::SimpleTokenItem(ref inner) => self.visit_simple_token(inner),
         }
     }
 
@@ -88,6 +80,14 @@ pub trait Visitor<'a> {
         match node {
             &TokenType::KeyTokenItem(ref inner) => self.visit_key_token(inner),
             &TokenType::QuotedItem(ref inner) => self.visit_quoted(inner),
+        }
+    }
+
+    fn visit_source_item(&mut self, node: &'a SourceItem) {
+        match node {
+            &SourceItem::AstSingleItem(ref inner) => self.visit_ast_single(inner),
+            &SourceItem::AstManyItem(ref inner) => self.visit_ast_many(inner),
+            &SourceItem::ListItem(ref inner) => self.visit_list(inner),
         }
     }
 
