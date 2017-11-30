@@ -10,7 +10,8 @@ pub enum TypedPart<'a> {
     TagPart     { key: &'a str, tag: &'a str },
     IntPart     { key: &'a str },
     IdentPart   { key: &'a str },
-    FnPart      { key: &'a str, fnc: &'a str, tpe: &'a str }
+    FnPart      { key: &'a str, fnc: &'a str, tpe: &'a str },
+    StringPart  { key: &'a str }
 }
 impl<'a> TypedPart<'a> {
     pub fn gen_parser(&self, mut s: String, data: &LangData) -> String {
@@ -26,7 +27,8 @@ impl<'a> TypedPart<'a> {
             &TagPart { tag, .. } => { append!(s, "tag!(\"" tag "\")"); },
             &IntPart { .. } => { s += "int"; },
             &IdentPart { .. } => { s += "ident"; },
-            &FnPart { fnc, .. } => { s += fnc; }
+            &FnPart { fnc, .. } => { s += fnc; },
+            &StringPart { .. } => { s += "quoted_str"; }
         }
         s
     }
@@ -42,6 +44,12 @@ impl<'a> TypedPart<'a> {
             &CharPart { .. } => {
                 if part.optional {
                     append!(s, member_key "_k.is_some()");
+                } else {
+                    // Not sure if it would make
+                    // sense to store char.
+                    // True captures that the pattern
+                    // matched.
+                    append!(s, "true");
                 }
             },
             &TagPart { .. } => {
@@ -56,6 +64,9 @@ impl<'a> TypedPart<'a> {
                 append!(s, member_key "_k");
             },
             &FnPart { .. } => {
+                append!(s, member_key "_k");
+            },
+            &StringPart { .. } => {
                 append!(s, member_key "_k");
             }
         }

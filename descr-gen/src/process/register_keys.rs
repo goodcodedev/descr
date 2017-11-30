@@ -38,14 +38,14 @@ impl<'a, 'd> Visitor<'d> for RegisterKeys<'a, 'd> {
     fn visit_list_single(&mut self, node: &'d ListSingle) {
         self.data.list_data.insert(
             node.ident,
-            ListData::new(node.ident, Some(node.sep))
+            ListData::new(node.ident, None, Some(node.sep))
         );
     }
 
     fn visit_list_many(&mut self, node: &'d ListMany) {
         self.data.list_data.insert(
             node.ident,
-            ListData::new(node.ident, node.sep)
+            ListData::new(node.ident, Some(node.ast_type), node.sep)
         );
     }
 }

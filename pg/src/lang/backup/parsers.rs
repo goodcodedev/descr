@@ -4,23 +4,32 @@ extern crate nom;
 use self::nom::*;
 use super::ast::*;
 
-named!(pub start<First>, do_parse!(res: first >> (res)));
+named!(pub start<Source>, do_parse!(res: source >> (res)));
 
-named!(pub first<First>,
+named!(pub something<Something>, alt_complete!(
     do_parse!(
-        sp >> char!('(') >>
-        sp >> second_k: second >>
-        sp >> char!(')') >>
-        (First {
-            second: second_k,
+        sp >> tag!("tag") >>
+        sp >> string_k: quoted_str >>
+        (Something::StrItemItem(StrItem {
+            string: string_k,
+        })))
+    | do_parse!(
+        sp >> tag!("tag2") >>
+        sp >> string_k: quoted_str >>
+        (Something::Str2ItemItem(Str2Item {
+            string: string_k,
+        })))
+));
+
+named!(pub source<Source>,
+    do_parse!(
+        sp >> some_list_k: some_list >>
+        (Source {
+            some_list: some_list_k,
         }))
 );
 
-named!(pub second<Second>,
-    do_parse!(
-        sp >> ident_k: ident >>
-        (Second {
-            ident: ident_k,
-        }))
-);
+named!(pub some_list<Vec<Something>>, separated_list!(char!(';'), 
+    something
+));
 

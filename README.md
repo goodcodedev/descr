@@ -43,9 +43,9 @@ Enums
 To allow alternatives, an enum can be described like this:
 ```
 Choices {
-    Choice1(EQUAL),
-    Choice2(LT),
-    Choice3(GT)
+    EQUAL => Choice1,
+    LT => Choice2,
+    GT => Choice3
 }
 ```
 These can be used as struct members as well:
@@ -62,10 +62,11 @@ whether there are variations among the possibilities:
 Source (statements)
 
 statements:Statement[] {
-    Say("say" quoted),
-    BgColor("bg" Color)
+    ("say" quoted) => Say,
+    ("bg" Color)   => BgColor
 }
 
+(* Alternative syntax also works for list items *)
 Color {
     Red("red"),
     Green("green"),
@@ -77,11 +78,13 @@ This definition would recognize the following source:
 bg blue
 say "Hello world"
 ```
-To traverse this items, the following code could be created:
+To traverse these items, the following code could be created:
 ```rust
 use lang::visitor::Visitor;
+
 struct Interpr;
 impl<'a> Visitor<'a> for Interpr {
+
     fn visit_say(&mut self, node: &'a Say) {
         println!("Saying: {}", node.quoted);
     }

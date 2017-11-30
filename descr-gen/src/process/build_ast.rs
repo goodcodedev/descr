@@ -51,33 +51,50 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                           typed_parts: &HashMap<&'d str, TypedPart<'d>>,
                           snake_cased: &mut SnakeCased<'d>) {
         for part in &rule.parts {
-            let typed_part = typed_parts.get(part.part_key).unwrap();
-            use lang_data::typed_part::TypedPart::*;
-            match typed_part {
-                &AstPart { .. }
-                | &ListPart { .. }
-                | &IntPart { .. }
-                | &IdentPart { .. } => {
-                    // Count as member by default
-                    let member_key = part.member_key.unwrap_or(part.part_key);
-                    Self::reg_struct_member(
-                        struct_data,
-                        rule.ast_type, 
-                        member_key,
-                        part.part_key,
-                        part.optional,
-                        snake_cased);
+            match &part.token {
+                &AstRuleToken::Key(key) => {
+                    let typed_part = typed_parts.get(key).unwrap();
+                    use lang_data::typed_part::TypedPart::*;
+                    match typed_part {
+                        &AstPart { .. }
+                        | &ListPart { .. }
+                        | &IntPart { .. }
+                        | &StringPart { .. }
+                        | &IdentPart { .. } => {
+                            // Count as member by default
+                            let member_key = part.member_key.unwrap_or(key);
+                            Self::reg_struct_member(
+                                struct_data,
+                                rule.ast_type, 
+                                member_key,
+                                key,
+                                part.optional,
+                                snake_cased);
+                        },
+                        &CharPart { .. }
+                        | &FnPart { .. }
+                        | &TagPart { .. } => {
+                            // Count as member if member name is given
+                            if let Some(member_key) = part.member_key {
+                                Self::reg_struct_member(
+                                    struct_data,
+                                    rule.ast_type, 
+                                    member_key,
+                                    key,
+                                    part.optional,
+                                    snake_cased);
+                            }
+                        }
+                    }
                 },
-                &CharPart { .. }
-                | &FnPart { .. }
-                | &TagPart { .. } => {
+                &AstRuleToken::Tag(string) => {
                     // Count as member if member name is given
                     if let Some(member_key) = part.member_key {
                         Self::reg_struct_member(
                             struct_data,
                             rule.ast_type, 
                             member_key,
-                            part.part_key,
+                            string,
                             part.optional,
                             snake_cased);
                     }

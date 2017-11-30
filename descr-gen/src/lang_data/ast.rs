@@ -6,6 +6,7 @@ pub struct AstStructMember<'a> {
     pub num_patterns: u32,
     pub name: &'a str,
     pub snake_case: String,
+    // TODO: Refactor to account for tag
     pub part_key: &'a str,
     pub type_name: &'a str,
     pub optional: bool

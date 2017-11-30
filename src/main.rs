@@ -4,12 +4,12 @@ use elapsed::measure_time;
 extern crate descr_common;
 extern crate descr_lang;
 extern crate descr_gen;
-extern crate pg;
 use std::fs::File;
 use std::io::prelude::*;
 use std::env;
 use descr_gen::lang_data::data::LangData;
 use std::path::Path;
+use std::process;
 
 fn invalid_args() {
     eprintln!("\n = Missing args ================================ ");
@@ -35,6 +35,24 @@ enum Command {
     PgRes,
     DescrLang,
     Custom
+}
+
+fn compile_pg() {
+    let output = process::Command::new("cargo")
+        .current_dir("pg")
+        .arg("build")
+        .output().expect("Could not run pg build");
+    println!("{}", String::from_utf8_lossy(&output.stdout));
+    println!("{}", String::from_utf8_lossy(&output.stderr));
+}
+
+fn run_pg() {
+    let output = process::Command::new("cargo")
+        .current_dir("pg")
+        .arg("run")
+        .output().expect("Could not run pg");
+    println!("{}", String::from_utf8_lossy(&output.stdout));
+    println!("{}", String::from_utf8_lossy(&output.stderr));
 }
 
 fn main() {
@@ -81,7 +99,7 @@ fn main() {
             descr_lang::gen::parsers::source(&buf[..])
         });
         println!("Parse: {}", elapsed);
-        //println!("{:#?}", res);
+        println!("{:#?}", res);
         let mut data = LangData::new();
         {
             match res {
@@ -93,12 +111,17 @@ fn main() {
         }
     }
     match command {
-        Command::Pg => println!("Playground lang updated"),
+        Command::Pg => {
+            println!("Playground lang updated, compiling..");
+            compile_pg();
+        },
         Command::PgRes => {
             if is_changed {
-                println!("Playground lang updated, reload to see result");
+                println!("Playground lang updated, compiling..");
+                compile_pg();
+                run_pg();
             } else {
-                pg::result();
+                run_pg();
             }
         },
         Command::DescrLang => println!("Descr lang updated"),

@@ -41,6 +41,7 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
                     &IdentPart { .. } => s += "&'a str",
                     &CharPart { .. } => s += "bool",
                     &TagPart { .. } => s += "bool",
+                    &StringPart { .. } => s += "&'a str",
                     &FnPart { tpe, .. } => s += tpe
                 }
                 if is_option { s += ">"; }

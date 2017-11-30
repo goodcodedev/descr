@@ -39,52 +39,76 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
             use self::Token::*;
             use lang_data::typed_part::TypedPart::*;
             match token {
-                &TokenKeyItem(TokenKey{ident, optional}) => {
-                    let part = self.data.typed_parts.get(ident).unwrap();
-                    rule.part_keys.push(ident);
-                    // Key index on parts considered
-                    // members
-                    let member_key = match part {
-                        &AstPart { .. }
-                        | &ListPart { .. }
-                        | &IntPart { .. }
-                        | &IdentPart { .. } => {
-                            rule.member_idxs.insert(ident, i);
-                            rule.idx_members.insert(i, ident);
-                            Some(ident)
+                &SimpleTokenItem(SimpleToken{ref token_type, optional}) => {
+                    match token_type {
+                        &TokenType::KeyTokenItem(KeyToken { key }) => {
+                            let part = self.data.typed_parts.get(key).unwrap();
+                            // Key index on parts considered
+                            // members
+                            let member_key = match part {
+                                &AstPart { .. }
+                                | &ListPart { .. }
+                                | &IntPart { .. }
+                                | &StringPart { .. }
+                                | &IdentPart { .. } => {
+                                    rule.member_idxs.insert(key, i);
+                                    rule.idx_members.insert(i, key);
+                                    Some(key)
+                                },
+                                _ => None
+                            };
+                            rule.parts.push(AstRulePart {
+                                token: AstRuleToken::Key(key),
+                                member_key,
+                                optional
+                            });
                         },
-                        _ => None
-                    };
-                    rule.parts.push(AstRulePart {
-                        part_key: ident,
-                        member_key,
-                        optional
-                    });
-                },
-                &TokenNamedKeyItem(TokenNamedKey{name, key, optional}) => {
-                    let part = self.data.typed_parts.get(key).unwrap();
-                    rule.part_keys.push(key);
-                    // Key index by name
-                    // This includes more types
-                    // as a way to set members
-                    let member_key = match part {
-                        &AstPart { .. }
-                        | &ListPart { .. }
-                        | &IntPart { .. }
-                        | &IdentPart { .. }
-                        | &CharPart { .. }
-                        | &FnPart { .. }
-                        | &TagPart { .. } => {
-                            rule.member_idxs.insert(name, i);
-                            rule.idx_members.insert(i, name);
-                            Some(name)
+                        &TokenType::QuotedItem(Quoted { string }) => {
+                            // Tag rule, not considered member
+                            rule.parts.push(AstRulePart {
+                                token: AstRuleToken::Tag(string),
+                                member_key: None,
+                                optional
+                            });
                         }
-                    };
-                    rule.parts.push(AstRulePart {
-                        part_key: key,
-                        member_key,
-                        optional
-                    });
+                    }
+                },
+                &NamedTokenItem(NamedToken{ref token_type, name, optional}) => {
+                    match token_type {
+                        &TokenType::KeyTokenItem(KeyToken { key }) => {
+                            let part = self.data.typed_parts.get(key).unwrap();
+                            // Key index by name
+                            // This includes more types
+                            // as a way to set members
+                            let member_key = match part {
+                                &AstPart { .. }
+                                | &ListPart { .. }
+                                | &IntPart { .. }
+                                | &IdentPart { .. }
+                                | &CharPart { .. }
+                                | &FnPart { .. }
+                                | &StringPart { .. }
+                                | &TagPart { .. } => {
+                                    rule.member_idxs.insert(name, i);
+                                    rule.idx_members.insert(i, name);
+                                    Some(name)
+                                }
+                            };
+                            rule.parts.push(AstRulePart {
+                                token: AstRuleToken::Key(key),
+                                member_key,
+                                optional
+                            });
+                        },
+                        &TokenType::QuotedItem(Quoted { string }) => {
+                            // Tag rule, not considered member
+                            rule.parts.push(AstRulePart {
+                                token: AstRuleToken::Tag(string),
+                                member_key: Some(name),
+                                optional
+                            });
+                        }
+                    }
                 }
             }
         }

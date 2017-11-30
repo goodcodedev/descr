@@ -8,7 +8,6 @@ use std::collections::HashMap;
 /// lang_data, and referenced by key
 #[derive(Debug)]
 pub struct AstPartsRule<'a> {
-    pub part_keys: Vec<&'a str>,
     pub parts: Vec<AstRulePart<'a>>,
     pub ast_type: &'a str,
     pub member_idxs: HashMap<&'a str, usize>,
@@ -17,7 +16,6 @@ pub struct AstPartsRule<'a> {
 impl<'a> AstPartsRule<'a> {
     pub fn new(ast_type: &'a str) -> AstPartsRule<'a> {
         AstPartsRule {
-            part_keys: Vec::new(),
             parts: Vec::new(),
             ast_type,
             member_idxs: HashMap::new(),
@@ -28,13 +26,49 @@ impl<'a> AstPartsRule<'a> {
 
 #[derive(Debug)]
 pub struct AstRulePart<'a> {
-    pub part_key: &'a str,
+    pub token: AstRuleToken<'a>,
     pub member_key: Option<&'a str>,
     pub optional: bool
 }
+
+#[derive(Debug)]
+pub enum AstRuleToken<'a> {
+    Key(&'a str),
+    Tag(&'a str)
+}
+
+pub enum TypedRulePart<'a> {
+    Keyed(&'a TypedPart<'a>),
+    Quoted(&'a str)
+}
+impl<'a, 'b> TypedRulePart<'a> {
+    pub fn gen_parser(&self, mut s: String, data: &'b LangData<'a>) -> String {
+        match self {
+            &TypedRulePart::Keyed(part) => part.gen_parser(s, data),
+            &TypedRulePart::Quoted(string) => {
+                append!(s, "tag!(\"" string "\")");
+                s
+            }
+        }
+    }
+
+    pub fn gen_parser_val(&self, mut s: String, part: &'b AstRulePart<'a>, data: &'b LangData<'a>) -> String {
+        match self {
+            &TypedRulePart::Keyed(typed_part) => typed_part.gen_parser_val(s, part, data),
+            &TypedRulePart::Quoted(..) => {
+                s += "true";
+                s
+            }
+        }
+    }
+}
+
 impl<'a> AstRulePart<'a> {
-    pub fn get_typed_part(&self, data: &'a LangData<'a>) -> &'a TypedPart {
-        data.typed_parts.get(self.part_key).unwrap()
+    pub fn get_typed_part(&self, data: &'a LangData<'a>) -> TypedRulePart<'a> {
+        match &self.token {
+            &AstRuleToken::Key(key) => TypedRulePart::Keyed(data.typed_parts.get(key).unwrap()),
+            &AstRuleToken::Tag(string) => TypedRulePart::Quoted(string)
+        }
     }
 }
 

@@ -10,10 +10,16 @@ SourceItem {
 AstSingle(ident LPAREN tokens:tokenList RPAREN)
 AstMany(ident LBRACE items:astItems RBRACE)
 
+
 tokenList[] WS Token
 Token {
-    TokenNamedKey(name:ident COLON key:ident optional:QUESTION?),
-    TokenKey(ident optional:QUESTION?)
+    NamedToken(name:ident COLON TokenType optional:QUESTION?),
+    SimpleToken(TokenType optional:QUESTION?)
+}
+
+TokenType {
+    KeyToken(key:ident),
+    Quoted(string)
 }
 
 astItems[] COMMA AstItem
@@ -23,7 +29,7 @@ AstItem {
 }
 List {
     ListSingle(ident LBRACKET RBRACKET sep:ident reference:ident),
-    ListMany(ident LBRACKET RBRACKET sep:ident? LBRACE items:listItems RBRACE)
+    ListMany(ident COLON ast_type:ident LBRACKET RBRACKET sep:ident? LBRACE items:listItems RBRACE)
 }
 listItems[] COMMA ListItem
 ListItem(AstItem sep:ident?)

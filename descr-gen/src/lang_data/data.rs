@@ -24,15 +24,17 @@ impl<'a> AstData<'a> {
 #[derive(Debug)]
 pub struct ListData<'a> {
     pub key: &'a str,
+    pub ast_type: Option<&'a str>,
     pub sep: Option<&'a str>,
     pub rules: Vec<ListRule<'a>>
 }
 
 
 impl<'a> ListData<'a> {
-    pub fn new(key: &'a str, sep: Option<&'a str>) -> ListData<'a> {
+    pub fn new(key: &'a str, ast_type: Option<&'a str>, sep: Option<&'a str>) -> ListData<'a> {
         ListData {
             key,
+            ast_type,
             sep,
             rules: Vec::new()
         }
@@ -169,8 +171,15 @@ impl<'a> LangData<'a> {
                 "GT" => self.add_char_token("GT", '>'),
                 "LTE" => self.add_tag_token("LTE", "<="),
                 "GTE" => self.add_tag_token("GTE", ">="),
+                "STAR" => self.add_char_token("STAR", '*'),
                 "QUESTION" => self.add_char_token("QUESTION", '?'),
                 "WS" => self.add_fn_token("WS", "sp", "&'a str"),
+                "string" => {
+                    self.typed_parts.insert(
+                        key,
+                        TypedPart::StringPart { key }
+                    );
+                },
                 "ident" => {
                     self.typed_parts.insert(
                         key,
