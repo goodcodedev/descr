@@ -19,7 +19,9 @@ impl<'a, 'd> CodegenVisitor<'a, 'd> {
         for (key, ast_struct) in self.data.ast_structs.sorted_iter() {
             append!(s 1, "fn visit_" ast_struct.sc() "(&mut self, node: &'a " key ") {\n");
             for (_key, member) in ast_struct.members.sorted_iter() {
-                s = member.gen_visitor(s, ast_struct, self.data);
+                if !member.not {
+                    s = member.gen_visitor(s, ast_struct, self.data);
+                }
             }
             s += "    }\n\n";
         }

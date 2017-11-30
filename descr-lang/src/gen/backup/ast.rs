@@ -55,6 +55,7 @@ pub struct ListSingle<'a> {
 pub struct NamedToken<'a> {
     pub token_type: TokenType<'a>,
     pub name: &'a str,
+    pub not: bool,
     pub optional: bool,
 }
 

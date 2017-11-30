@@ -1,5 +1,4 @@
-extern crate descr_common;
-use self::descr_common::parsers::*;
+use descr_common::parsers::*;
 extern crate nom;
 use self::nom::*;
 use super::ast::*;
@@ -68,7 +67,7 @@ named!(pub ast_single<AstSingle>,
 named!(pub comment<Comment>,
     do_parse!(
         sp >> tag!("(*") >>
-        not!(tag!("*)")) >>
+        until_done_result!(tag!("*)")) >>
         sp >> tag!("*)") >>
         (Comment {
         }))
@@ -126,10 +125,12 @@ named!(pub token<Token>, alt_complete!(
     do_parse!(
         sp >> name_k: ident >>
         sp >> char!(':') >>
+        not_k: opt!(do_parse!(sp >> res: char!('!') >> (res))) >>
         sp >> token_type_k: token_type >>
         optional_k: opt!(do_parse!(sp >> res: char!('?') >> (res))) >>
         (Token::NamedTokenItem(NamedToken {
             name: name_k,
+            not: not_k.is_some(),
             token_type: token_type_k,
             optional: optional_k.is_some(),
         })))

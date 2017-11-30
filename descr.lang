@@ -7,7 +7,7 @@ sourceItems:SourceItem[] WS {
     Comment
 }
 
-Comment("(*" !"*)" "*)")
+Comment("(*" comment:!"*)" "*)")
 
 AstSingle(ident LPAREN tokens:tokenList RPAREN)
 AstMany(ident LBRACE items:astItems RBRACE)
@@ -15,13 +15,13 @@ AstMany(ident LBRACE items:astItems RBRACE)
 
 tokenList[] WS Token
 Token {
-    NamedToken(name:ident COLON TokenType optional:QUESTION?),
+    NamedToken(name:ident COLON not:EXCL? TokenType optional:QUESTION?),
     SimpleToken(not:EXCL? TokenType optional:QUESTION?)
 }
 
 TokenType {
-    KeyToken(key:ident),
-    Quoted(string)
+    key:ident => KeyToken,
+    string => Quoted
 }
 
 astItems[] COMMA AstItem

@@ -22,29 +22,51 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             s += " {\n";
             for (_key, member) in ast_struct.members.sorted_iter() {
                 append!(s 1, "pub " member.sc() ": ");
-                let tpe = self.data.typed_parts.get(member.part_key).unwrap();
+                // If member comes from quote (could be
+                // interpreted as boolean todo), or
+                // a not (!) part, it doesn't have a
+                // "typed part" now.
+                // There should possibly be an enum here
+                // like TypedRulePart
+                let tpe = if member.not {
+                    None
+                } else {
+                    Some(self.data.typed_parts.get(member.part_key).unwrap())
+                };
                 use lang_data::typed_part::TypedPart::*;
                 let is_option = member.optional && match tpe {
-                    &CharPart { .. } | &TagPart { .. } => false,
-                    _ => true
+                    Some(tpe) => match tpe {
+                        &CharPart { .. } | &TagPart { .. } => false,
+                        _ => true
+                    },
+                    _ => false
                 };
                 if is_option { s += "Option<"; }
-                match tpe {
-                    &AstPart { key } => {
-                        s += self.data.type_refs.get(key).unwrap().get_type_name();
-                        s += "<'a>";
-                    },
-                    &ListPart { key } => {
-                        s += "Vec<";
-                        s += self.data.type_refs.get(key).unwrap().get_type_name();
-                        s += "<'a>>";
-                    },
-                    &IntPart { .. } => s += "i32",
-                    &IdentPart { .. } => s += "&'a str",
-                    &CharPart { .. } => s += "bool",
-                    &TagPart { .. } => s += "bool",
-                    &StringPart { .. } => s += "&'a str",
-                    &FnPart { tpe, .. } => s += tpe
+                if member.not {
+                    s += "&'a str";
+                } else {
+                    match tpe {
+                        Some(tpe) => match tpe {
+                            &AstPart { key } => {
+                                s += self.data.type_refs.get(key).unwrap().get_type_name();
+                                s += "<'a>";
+                            },
+                            &ListPart { key } => {
+                                s += "Vec<";
+                                s += self.data.type_refs.get(key).unwrap().get_type_name();
+                                s += "<'a>>";
+                            },
+                            &IntPart { .. } => s += "i32",
+                            &IdentPart { .. } => s += "&'a str",
+                            &CharPart { .. } => s += "bool",
+                            &TagPart { .. } => s += "bool",
+                            &StringPart { .. } => s += "&'a str",
+                            &FnPart { tpe, .. } => s += tpe
+                        },
+                        _ => {
+                            panic!("Not implemented")
+                        }
+                    }
                 }
                 if is_option { s += ">"; }
                 s += ",\n";

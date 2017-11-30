@@ -59,8 +59,8 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let (filename, output_dir, command, check_change) = match args.len() {
         2 => match args[1].as_str() {
-            "pg-lang"     => ("pg/pg.lang", "pg/src/lang", Command::Pg, false),
-            "pg"          => ("pg/pg.lang", "pg/src/lang", Command::PgRes, true),
+            "pg-lang"     => ("playground.lang", "pg/src/lang", Command::Pg, false),
+            "pg"          => ("playground.lang", "pg/src/lang", Command::PgRes, true),
             "descr-lang"  => ("descr.lang", "descr-lang/src/gen", Command::DescrLang, false),
             _ => {
                 invalid_args();

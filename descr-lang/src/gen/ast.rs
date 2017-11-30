@@ -22,7 +22,8 @@ pub struct AstSingle<'a> {
 }
 
 #[derive(Debug)]
-pub struct Comment {
+pub struct Comment<'a> {
+    pub comment: &'a str,
 }
 
 #[derive(Debug)]
@@ -55,6 +56,7 @@ pub struct ListSingle<'a> {
 pub struct NamedToken<'a> {
     pub token_type: TokenType<'a>,
     pub name: &'a str,
+    pub not: bool,
     pub optional: bool,
 }
 
@@ -104,6 +106,6 @@ pub enum SourceItem<'a> {
     AstSingleItem(AstSingle<'a>),
     AstManyItem(AstMany<'a>),
     ListItem(List<'a>),
-    CommentItem(Comment),
+    CommentItem(Comment<'a>),
 }
 

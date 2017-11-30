@@ -1,6 +1,7 @@
 use descr_common::parsers::*;
 extern crate nom;
 use self::nom::*;
+use std;
 use super::ast::*;
 
 named!(pub start<Source>, do_parse!(res: source >> (res)));
@@ -67,9 +68,10 @@ named!(pub ast_single<AstSingle>,
 named!(pub comment<Comment>,
     do_parse!(
         sp >> tag!("(*") >>
-        until_done_result!(tag!("*)")) >>
+        comment_k: until_done_result!(tag!("*)")) >>
         sp >> tag!("*)") >>
         (Comment {
+            comment: std::str::from_utf8(comment_k).unwrap(),
         }))
 );
 
@@ -125,10 +127,12 @@ named!(pub token<Token>, alt_complete!(
     do_parse!(
         sp >> name_k: ident >>
         sp >> char!(':') >>
+        not_k: opt!(do_parse!(sp >> res: char!('!') >> (res))) >>
         sp >> token_type_k: token_type >>
         optional_k: opt!(do_parse!(sp >> res: char!('?') >> (res))) >>
         (Token::NamedTokenItem(NamedToken {
             name: name_k,
+            not: not_k.is_some(),
             token_type: token_type_k,
             optional: optional_k.is_some(),
         })))

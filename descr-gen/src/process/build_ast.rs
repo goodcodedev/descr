@@ -34,7 +34,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
 
     fn reg_struct_member(data: &mut HashMap<&'d str, AstStruct<'d>>, 
                              struct_name: &'d str, member_name: &'d str,
-                             part_key: &'d str, optional: bool,
+                             part_key: &'d str, optional: bool, not: bool,
                              snake_cased: &mut SnakeCased<'d>) {
         let ast_struct = data.get_mut(struct_name).unwrap();
         if ast_struct.members.contains_key(member_name) {
@@ -46,7 +46,13 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         } else {
             ast_struct.members.insert(
                 member_name,
-                AstStructMember::new(member_name, snake_cased.get(member_name), part_key, struct_name, optional)
+                AstStructMember::new(
+                    member_name, 
+                    snake_cased.get(member_name), 
+                    part_key, 
+                    struct_name, 
+                    optional,
+                    not)
             );
         }
     }
@@ -74,6 +80,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                                 member_key,
                                 key,
                                 part.optional,
+                                part.not,
                                 snake_cased);
                         },
                         &CharPart { .. }
@@ -87,6 +94,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                                     member_key,
                                     key,
                                     part.optional,
+                                    part.not,
                                     snake_cased);
                             }
                         }
@@ -101,6 +109,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                             member_key,
                             string,
                             part.optional,
+                            part.not,
                             snake_cased);
                     }
                 }

@@ -1,17 +1,18 @@
 use descr_common::parsers::*;
 extern crate nom;
 use self::nom::*;
+use std;
 use super::ast::*;
 
 named!(pub start<Source>, do_parse!(res: source >> (res)));
 
-
 named!(pub comment<Comment>,
     do_parse!(
         sp >> tag!("(*") >>
-        until_done_result!(tag!("*)")) >>
-        tag!("*)") >>
+        comment_k: until_done_result!(tag!("*)")) >>
+        sp >> tag!("*)") >>
         (Comment {
+            comment: std::str::from_utf8(comment_k).unwrap(),
         }))
 );
 

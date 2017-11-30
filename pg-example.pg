@@ -1,3 +1,4 @@
 test "first"
 (* Commented *)
 test "second"
+test "second"

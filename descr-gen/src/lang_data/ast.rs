@@ -9,17 +9,19 @@ pub struct AstStructMember<'a> {
     // TODO: Refactor to account for tag
     pub part_key: &'a str,
     pub type_name: &'a str,
-    pub optional: bool
+    pub optional: bool,
+    pub not: bool
 }
 impl<'a> AstStructMember<'a> {
-    pub fn new(name: &'a str, snake_case: String, part_key: &'a str, type_name: &'a str, optional: bool) -> AstStructMember<'a> {
+    pub fn new(name: &'a str, snake_case: String, part_key: &'a str, type_name: &'a str, optional: bool, not: bool) -> AstStructMember<'a> {
         AstStructMember {
             num_patterns: 0,
             name,
             snake_case,
             part_key,
             type_name,
-            optional: optional
+            optional,
+            not
         }
     }
 

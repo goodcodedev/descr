@@ -55,11 +55,19 @@ impl<'a, 'b> TypedRulePart<'a> {
     }
 
     pub fn gen_parser_val(&self, mut s: String, part: &'b AstRulePart<'a>, data: &'b LangData<'a>) -> String {
-        match self {
-            &TypedRulePart::Keyed(typed_part) => typed_part.gen_parser_val(s, part, data),
-            &TypedRulePart::Quoted(..) => {
-                s += "true";
-                s
+        if part.not {
+            // Not is collected as str
+            s += "std::str::from_utf8(";
+            s += part.member_key.unwrap();
+            s += "_k).unwrap()";
+            s
+        } else {
+            match self {
+                &TypedRulePart::Keyed(typed_part) => typed_part.gen_parser_val(s, part, data),
+                &TypedRulePart::Quoted(..) => {
+                    s += "true";
+                    s
+                }
             }
         }
     }
@@ -102,12 +110,12 @@ impl<'a> AstRule<'a> {
                     if !part.optional && !part.not {
                         append!(s, "sp >> ");
                     }
-                    if part.not {
-                        append!(s, "until_done_result!(");
-                    }
                     let typed_part = part.get_typed_part(data);
                     if let Some(member_name) = part.member_key {
                         append!(s, data.sc(member_name) "_k: ");
+                    }
+                    if part.not {
+                        append!(s, "until_done_result!(");
                     }
                     if part.optional {
                         append!(s, "opt!(do_parse!(sp >> res: ");

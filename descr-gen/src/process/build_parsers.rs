@@ -75,7 +75,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                         }
                     }
                 },
-                &NamedTokenItem(NamedToken{ref token_type, name, optional}) => {
+                &NamedTokenItem(NamedToken{ref token_type, name, optional, not}) => {
                     match token_type {
                         &TokenType::KeyTokenItem(KeyToken { key }) => {
                             let part = self.data.typed_parts.get(key).unwrap();
@@ -100,7 +100,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                                 token: AstRuleToken::Key(key),
                                 member_key,
                                 optional,
-                                not: false
+                                not
                             });
                         },
                         &TokenType::QuotedItem(Quoted { string }) => {
@@ -109,7 +109,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                                 token: AstRuleToken::Tag(string),
                                 member_key: Some(name),
                                 optional,
-                                not: false
+                                not
                             });
                         }
                     }
