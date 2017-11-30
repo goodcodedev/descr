@@ -3,8 +3,11 @@ Source (items:sourceItems)
 sourceItems:SourceItem[] WS {
     AstSingle,
     AstMany,
-    List
+    List,
+    Comment
 }
+
+Comment("(*" !"*)" "*)")
 
 AstSingle(ident LPAREN tokens:tokenList RPAREN)
 AstMany(ident LBRACE items:astItems RBRACE)
@@ -13,7 +16,7 @@ AstMany(ident LBRACE items:astItems RBRACE)
 tokenList[] WS Token
 Token {
     NamedToken(name:ident COLON TokenType optional:QUESTION?),
-    SimpleToken(TokenType optional:QUESTION?)
+    SimpleToken(not:EXCL? TokenType optional:QUESTION?)
 }
 
 TokenType {
@@ -23,6 +26,8 @@ TokenType {
 
 astItems[] COMMA AstItem
 AstItem {
+    AstDef(tokens:tokenList "=>" ident?),
+    AstDef(LPAREN tokens:tokenList RPAREN "=>" ident?),
     AstDef(ident? LPAREN tokens:tokenList RPAREN),
     AstRef(ident)
 }
@@ -33,4 +38,3 @@ List {
 }
 listItems[] COMMA ListItem
 ListItem(AstItem sep:ident?)
-

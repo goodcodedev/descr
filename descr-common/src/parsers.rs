@@ -68,3 +68,32 @@ pub fn special_chars(input: &[u8]) -> IResult<&[u8], &str> {
         }
     }
 }
+
+#[macro_export]
+macro_rules! until_done_result (
+    ($i:expr, $submac:ident!( $($args:tt)* )) => ({
+        use std::str;
+        let input = $i;
+        let mut index = 0;
+        let mut is_done = false;
+        loop {
+            let i_ = input.slice(index..);
+            match peek!(i_, $submac!($($args)* )) {
+                IResult::Done(..) => {
+                    is_done = true;
+                    break;
+                },
+                _ => {}
+            }
+            index += 1;
+            if index > input.len() {
+                break;
+            }
+        }
+        if is_done {
+            IResult::Done(input.slice(index..), str::from_utf8(input.slice(..index)))
+        } else {
+            IResult::Incomplete(Needed::Unknown)
+        }
+    });
+);

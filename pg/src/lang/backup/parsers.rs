@@ -1,29 +1,35 @@
-extern crate descr_common;
-use self::descr_common::parsers::*;
+use descr_common::parsers::*;
 extern crate nom;
 use self::nom::*;
 use super::ast::*;
 
 named!(pub start<Source>, do_parse!(res: source >> (res)));
 
+
+named!(pub comment<Comment>,
+    do_parse!(
+        sp >> tag!("(*") >>
+        until_done_result!(tag!("*)")) >>
+        tag!("*)") >>
+        (Comment {
+        }))
+);
+
 named!(pub source<Source>,
     do_parse!(
-        sp >> items_k: items >>
+        sp >> items_k: source_items >>
         (Source {
             items: items_k,
         }))
 );
 
-named!(pub items<Vec<SourceItem>>, separated_list!(sp, alt_complete!(
+named!(pub source_items<Vec<SourceItem>>, separated_list!(sp, alt_complete!(
     do_parse!(
-        sp >> tag!("say") >>
+        sp >> tag!("test") >>
         sp >> string_k: quoted_str >>
-        (SourceItem::SayItem(Say {
+        (SourceItem::RandomItem(Random {
             string: string_k,
         })))
-    | do_parse!(
-        sp >> tag!("hello") >>
-        (SourceItem::HelloItem(Hello {
-        })))
+    | map!(comment, |node| { SourceItem::CommentItem(node) })
 )));
 

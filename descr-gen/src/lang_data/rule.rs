@@ -29,7 +29,8 @@ impl<'a> AstPartsRule<'a> {
 pub struct AstRulePart<'a> {
     pub token: AstRuleToken<'a>,
     pub member_key: Option<&'a str>,
-    pub optional: bool
+    pub optional: bool,
+    pub not: bool
 }
 
 #[derive(Debug)]
@@ -98,8 +99,11 @@ impl<'a> AstRule<'a> {
                 s += "do_parse!(\n";
                 for part in &parts_rule.parts {
                     indent!(s 2);
-                    if !part.optional {
+                    if !part.optional && !part.not {
                         append!(s, "sp >> ");
+                    }
+                    if part.not {
+                        append!(s, "until_done_result!(");
                     }
                     let typed_part = part.get_typed_part(data);
                     if let Some(member_name) = part.member_key {
@@ -111,6 +115,9 @@ impl<'a> AstRule<'a> {
                         s += " >> (res)))";
                     } else {
                         s = typed_part.gen_parser(s, data);
+                    }
+                    if part.not {
+                        s += ")";
                     }
                     s += " >>\n";
                 }

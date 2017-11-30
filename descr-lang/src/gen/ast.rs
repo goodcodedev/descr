@@ -22,6 +22,10 @@ pub struct AstSingle<'a> {
 }
 
 #[derive(Debug)]
+pub struct Comment {
+}
+
+#[derive(Debug)]
 pub struct KeyToken<'a> {
     pub key: &'a str,
 }
@@ -62,6 +66,7 @@ pub struct Quoted<'a> {
 #[derive(Debug)]
 pub struct SimpleToken<'a> {
     pub token_type: TokenType<'a>,
+    pub not: bool,
     pub optional: bool,
 }
 
@@ -99,5 +104,6 @@ pub enum SourceItem<'a> {
     AstSingleItem(AstSingle<'a>),
     AstManyItem(AstMany<'a>),
     ListItem(List<'a>),
+    CommentItem(Comment),
 }
 

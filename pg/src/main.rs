@@ -1,4 +1,6 @@
+#![feature(trace_macros)]
 mod lang;
+#[macro_use]
 extern crate descr_common;
 
 fn main() {

@@ -1,2 +1,3 @@
-say "Hello"
-hello
+test "first"
+(* Commented *)
+test "second"

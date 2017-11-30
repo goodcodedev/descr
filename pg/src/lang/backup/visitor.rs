@@ -1,10 +1,10 @@
 use super::ast::*;
 
 pub trait Visitor<'a> {
-    fn visit_hello(&mut self, node: &'a Hello) {
+    fn visit_comment(&mut self, node: &'a Comment) {
     }
 
-    fn visit_say(&mut self, node: &'a Say) {
+    fn visit_random(&mut self, node: &'a Random) {
     }
 
     fn visit_source(&mut self, node: &'a Source) {
@@ -15,8 +15,8 @@ pub trait Visitor<'a> {
 
     fn visit_source_item(&mut self, node: &'a SourceItem) {
         match node {
-            &SourceItem::SayItem(ref inner) => self.visit_say(inner),
-            &SourceItem::HelloItem(ref inner) => self.visit_hello(inner),
+            &SourceItem::RandomItem(ref inner) => self.visit_random(inner),
+            &SourceItem::CommentItem(ref inner) => self.visit_comment(inner),
         }
     }
 

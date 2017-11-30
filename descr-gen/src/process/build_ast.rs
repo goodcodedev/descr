@@ -140,14 +140,19 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                 _ => {
                     // Several types registered, create enum
                     let mut e = AstEnum::new(ast_data.ast_type, snake_cased.get(ast_data.ast_type));
+                    let mut added = HashSet::new();
                     for rule in &ast_data.rules {
-                        match rule {
+                        let item = match rule {
                             &AstRule::RefRule(key_ref) => {
-                                e.items.push(key_ref);
+                                key_ref
                             },
                             &AstRule::PartsRule(ref rule) => {
-                                e.items.push(rule.ast_type);
+                                rule.ast_type
                             }
+                        };
+                        if !added.contains(item) {
+                            e.items.push(item);
+                            added.insert(item);
                         }
                     }
                     enum_data.insert(ast_data.ast_type, e);
@@ -183,7 +188,6 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
             match types.len() {
                 0 => {},
                 1 => {
-                    /*
                     let ast_name = match list_data.ast_type {
                         Some(t) => t,
                         None => match &list_data.rules[0].ast_rule {
@@ -192,7 +196,6 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                         }
                     };
                     type_refs.insert(list_data.key, AstType::AstStruct(ast_name));
-                    */
                 },
                 _ => {
                     let enum_name = match list_data.ast_type {
@@ -200,14 +203,19 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                         None => list_data.key
                     };
                     let mut e = AstEnum::new(enum_name, snake_cased.get(enum_name));
+                    let mut added = HashSet::new();
                     for rule in &list_data.rules {
-                        match &rule.ast_rule {
+                        let item = match &rule.ast_rule {
                             &AstRule::RefRule(key_ref) => {
-                                e.items.push(key_ref);
+                                key_ref
                             },
                             &AstRule::PartsRule(ref rule) => {
-                                e.items.push(rule.ast_type);
+                                rule.ast_type
                             }
+                        };
+                        if !added.contains(item) {
+                            e.items.push(item);
+                            added.insert(item);
                         }
                     }
                     enum_data.insert(list_data.key, e);

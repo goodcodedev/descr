@@ -22,6 +22,9 @@ pub trait Visitor<'a> {
         }
     }
 
+    fn visit_comment(&mut self, node: &'a Comment) {
+    }
+
     fn visit_key_token(&mut self, node: &'a KeyToken) {
     }
 
@@ -88,6 +91,7 @@ pub trait Visitor<'a> {
             &SourceItem::AstSingleItem(ref inner) => self.visit_ast_single(inner),
             &SourceItem::AstManyItem(ref inner) => self.visit_ast_many(inner),
             &SourceItem::ListItem(ref inner) => self.visit_list(inner),
+            &SourceItem::CommentItem(ref inner) => self.visit_comment(inner),
         }
     }
 

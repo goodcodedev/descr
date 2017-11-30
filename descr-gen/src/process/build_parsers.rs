@@ -39,7 +39,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
             use self::Token::*;
             use lang_data::typed_part::TypedPart::*;
             match token {
-                &SimpleTokenItem(SimpleToken{ref token_type, optional}) => {
+                &SimpleTokenItem(SimpleToken{ref token_type, optional, not}) => {
                     match token_type {
                         &TokenType::KeyTokenItem(KeyToken { key }) => {
                             let part = self.data.typed_parts.get(key).unwrap();
@@ -60,7 +60,8 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                             rule.parts.push(AstRulePart {
                                 token: AstRuleToken::Key(key),
                                 member_key,
-                                optional
+                                optional,
+                                not
                             });
                         },
                         &TokenType::QuotedItem(Quoted { string }) => {
@@ -68,7 +69,8 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                             rule.parts.push(AstRulePart {
                                 token: AstRuleToken::Tag(string),
                                 member_key: None,
-                                optional
+                                optional,
+                                not
                             });
                         }
                     }
@@ -97,7 +99,8 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                             rule.parts.push(AstRulePart {
                                 token: AstRuleToken::Key(key),
                                 member_key,
-                                optional
+                                optional,
+                                not: false
                             });
                         },
                         &TokenType::QuotedItem(Quoted { string }) => {
@@ -105,7 +108,8 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                             rule.parts.push(AstRulePart {
                                 token: AstRuleToken::Tag(string),
                                 member_key: Some(name),
-                                optional
+                                optional,
+                                not: false
                             });
                         }
                     }
@@ -158,8 +162,8 @@ impl<'a, 'd> Visitor<'d> for BuildParsers<'a, 'd> {
     }
 
     fn visit_ast_single(&mut self, node: &'d AstSingle) {
-        let mut rule = AstPartsRule::new(node.ident);
-        rule.ast_type = node.ident;
+        //let mut rule = AstPartsRule::new(node.ident);
+        //rule.ast_type = node.ident;
         self.add_tokens_to_rule(true, &node.ident, &node.ident, &node.tokens);
     }
 }

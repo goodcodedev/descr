@@ -1,5 +1,4 @@
-extern crate descr_common;
-use self::descr_common::parsers::*;
+use descr_common::parsers::*;
 extern crate nom;
 use self::nom::*;
 use super::ast::*;
@@ -8,6 +7,24 @@ named!(pub start<Source>, do_parse!(res: source >> (res)));
 
 named!(pub ast_item<AstItem>, alt_complete!(
     do_parse!(
+        sp >> tokens_k: token_list >>
+        sp >> tag!("=>") >>
+        ident_k: opt!(do_parse!(sp >> res: ident >> (res))) >>
+        (AstItem::AstDefItem(AstDef {
+            tokens: tokens_k,
+            ident: ident_k,
+        })))
+    | do_parse!(
+        sp >> char!('(') >>
+        sp >> tokens_k: token_list >>
+        sp >> char!(')') >>
+        sp >> tag!("=>") >>
+        ident_k: opt!(do_parse!(sp >> res: ident >> (res))) >>
+        (AstItem::AstDefItem(AstDef {
+            tokens: tokens_k,
+            ident: ident_k,
+        })))
+    | do_parse!(
         ident_k: opt!(do_parse!(sp >> res: ident >> (res))) >>
         sp >> char!('(') >>
         sp >> tokens_k: token_list >>
@@ -44,6 +61,15 @@ named!(pub ast_single<AstSingle>,
         (AstSingle {
             ident: ident_k,
             tokens: tokens_k,
+        }))
+);
+
+named!(pub comment<Comment>,
+    do_parse!(
+        sp >> tag!("(*") >>
+        until_done_result!(tag!("*)")) >>
+        sp >> tag!("*)") >>
+        (Comment {
         }))
 );
 
@@ -107,9 +133,11 @@ named!(pub token<Token>, alt_complete!(
             optional: optional_k.is_some(),
         })))
     | do_parse!(
+        not_k: opt!(do_parse!(sp >> res: char!('!') >> (res))) >>
         sp >> token_type_k: token_type >>
         optional_k: opt!(do_parse!(sp >> res: char!('?') >> (res))) >>
         (Token::SimpleTokenItem(SimpleToken {
+            not: not_k.is_some(),
             token_type: token_type_k,
             optional: optional_k.is_some(),
         })))
@@ -140,6 +168,7 @@ named!(pub source_items<Vec<SourceItem>>, separated_list!(sp, alt_complete!(
     map!(ast_single, |node| { SourceItem::AstSingleItem(node) })
     | map!(ast_many, |node| { SourceItem::AstManyItem(node) })
     | map!(list, |node| { SourceItem::ListItem(node) })
+    | map!(comment, |node| { SourceItem::CommentItem(node) })
 )));
 
 named!(pub token_list<Vec<Token>>, separated_list!(sp, 

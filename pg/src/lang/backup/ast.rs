@@ -1,9 +1,9 @@
 #[derive(Debug)]
-pub struct Hello {
+pub struct Comment {
 }
 
 #[derive(Debug)]
-pub struct Say<'a> {
+pub struct Random<'a> {
     pub string: &'a str,
 }
 
@@ -14,7 +14,7 @@ pub struct Source<'a> {
 
 #[derive(Debug)]
 pub enum SourceItem<'a> {
-    SayItem(Say<'a>),
-    HelloItem(Hello),
+    RandomItem(Random<'a>),
+    CommentItem(Comment),
 }
 
