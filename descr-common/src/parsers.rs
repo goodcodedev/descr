@@ -41,6 +41,31 @@ pub fn ident(input: &[u8]) -> IResult<&[u8], &str> {
     }
 }
 
+pub fn parse_int(input: &[u8]) -> IResult<&[u8], i32> {
+    let len = input.len();
+    if len == 0 {
+        return IResult::Incomplete(Needed::Size(1));
+    } else {
+        let first = input[0];
+        let mut i = if is_digit(first) {
+            1
+        } else if first == '-' as u8 || first == '+' as u8 {
+            if len < 2 || !is_digit(input[1]) {
+                return IResult::Error(error_code!(ErrorKind::Digit));
+            } else {
+                2
+            }
+        } else {
+            return IResult::Error(error_code!(ErrorKind::Digit));
+        };
+        while i < len && is_digit(input[i]) {
+            i += 1;
+        }
+        let parsed = str::from_utf8(&input[..i]).unwrap().parse::<i32>().unwrap();
+        return IResult::Done(&input[i..], parsed);
+    }
+}
+
 // Some special chars that could possibly
 // be parsed without quotes
 pub fn special_chars(input: &[u8]) -> IResult<&[u8], &str> {

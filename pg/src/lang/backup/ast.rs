@@ -4,18 +4,18 @@ pub struct Comment<'a> {
 }
 
 #[derive(Debug)]
-pub struct Random<'a> {
-    pub string: &'a str,
+pub struct Random {
+    pub num: i32,
 }
 
 #[derive(Debug)]
 pub struct Source<'a> {
-    pub items: Vec<SourceItem<'a>>,
+    pub source_items: SourceItems<'a>,
 }
 
 #[derive(Debug)]
-pub enum SourceItem<'a> {
-    RandomItem(Random<'a>),
+pub enum SourceItems<'a> {
+    RandomItem(Random),
     CommentItem(Comment<'a>),
 }
 

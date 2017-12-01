@@ -8,15 +8,15 @@ pub trait Visitor<'a> {
     }
 
     fn visit_source(&mut self, node: &'a Source) {
-        for item in &node.items {
-            self.visit_source_item(item);
+        for item in &node.source_items {
+            self.visit_source_items(item);
         }
     }
 
-    fn visit_source_item(&mut self, node: &'a SourceItem) {
+    fn visit_source_items(&mut self, node: &'a SourceItems) {
         match node {
-            &SourceItem::RandomItem(ref inner) => self.visit_random(inner),
-            &SourceItem::CommentItem(ref inner) => self.visit_comment(inner),
+            &SourceItems::RandomItem(ref inner) => self.visit_random(inner),
+            &SourceItems::CommentItem(ref inner) => self.visit_comment(inner),
         }
     }
 

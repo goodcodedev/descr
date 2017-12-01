@@ -25,7 +25,7 @@ impl<'a> TypedPart<'a> {
                 s += "')";
             },
             &TagPart { tag, .. } => { append!(s, "tag!(\"" tag "\")"); },
-            &IntPart { .. } => { s += "int"; },
+            &IntPart { .. } => { s += "parse_int"; },
             &IdentPart { .. } => { s += "ident"; },
             &FnPart { fnc, .. } => { s += fnc; },
             &StringPart { .. } => { s += "quoted_str"; }
@@ -96,7 +96,7 @@ impl<'a> TypedPart<'a> {
                         &AstType::AstStruct(ref type_name) => {
                             append!(s 5, "self.visit_" data.sc(type_name) "(item);\n");
                         },
-                        &AstType::AstEnum(ref type_name) => {
+                        &AstType::AstEnum(ref type_name, ..) => {
                             append!(s 5, "self.visit_" data.sc(type_name) "(item);\n");
                         }
                     }
@@ -107,7 +107,7 @@ impl<'a> TypedPart<'a> {
                         &AstType::AstStruct(ref type_name) => {
                             append!(s 3, "self.visit_" data.sc(type_name) "(item);\n");
                         },
-                        &AstType::AstEnum(ref type_name) => {
+                        &AstType::AstEnum(ref type_name, ..) => {
                             append!(s 3, "self.visit_" data.sc(type_name) "(item);\n");
                         }
                     }
@@ -117,5 +117,69 @@ impl<'a> TypedPart<'a> {
             _ => {}
         }
         s
+    }
+
+    pub fn needs_lifetime(&self, data: &LangData<'a>) -> bool {
+        use lang_data::typed_part::TypedPart::*;
+        match self {
+            &AstPart { key } => {
+                let type_ref = data.type_refs.get(key).expect(&format!("Coult not get ast {}", key));
+                type_ref.needs_lifetime(data)
+            },
+            &ListPart { key } => {
+                let type_ref = data.type_refs.get(key).expect(&format!("Coult not get list {}", key));
+                type_ref.needs_lifetime(data)
+            },
+            &CharPart { .. } => false,
+            &TagPart { .. } => false,
+            &IntPart { .. } => false,
+            &IdentPart { .. } => true,
+            // Depends on function todo
+            &FnPart { .. } => true,
+            &StringPart { .. } => true
+        }
+    }
+
+    pub fn is_option(&self, member: &AstStructMember<'a>) -> bool {
+        use self::TypedPart::*;
+        if member.optional {
+            match self {
+                &CharPart { .. } | &TagPart { .. } => false,
+                _ => true
+            }
+        } else {
+            false
+        }
+    }
+
+    pub fn add_type(&self, mut s: String, 
+                    member: &AstStructMember<'a>, data: &LangData<'a>) 
+                    -> String
+    {
+        use self::TypedPart::*;
+        match self {
+            &AstPart { key } => {
+                s += data.type_refs.get(key).expect(&format!("Coult not get ast {}", key)).get_type_name();
+                if member.tpe.needs_lifetime(data) {
+                    s += "<'a>";
+                }
+                s
+            },
+            &ListPart { key } => {
+                s += "Vec<";
+                s += data.type_refs.get(key).expect(&format!("Coult not get list {}", key)).get_type_name();
+                if member.tpe.needs_lifetime(data) {
+                    s += "<'a>";
+                }
+                s += ">";
+                s
+            },
+            &IntPart { .. }     => { s += "i32"; s },
+            &IdentPart { .. }   => { s += "&'a str"; s },
+            &CharPart { .. }    => { s += "bool"; s },
+            &TagPart { .. }     => { s += "bool"; s },
+            &StringPart { .. }  => { s += "&'a str"; s },
+            &FnPart { tpe, .. } => { s += tpe; s }
+        }
     }
 }

@@ -90,13 +90,13 @@ pub enum AstRule<'a> {
 }
 impl<'a> AstRule<'a> {
     pub fn gen_rule(&self, mut s: String, data: &LangData, type_ref: &AstType<'a>) -> String {
-        let (is_enum, type_name) = match type_ref {
-            &AstType::AstStruct(tn) => (false, tn),
-            &AstType::AstEnum(tn) => (true, tn)
+        let (is_enum, type_name, is_ref) = match type_ref {
+            &AstType::AstStruct(tn) => (false, tn, false),
+            &AstType::AstEnum(tn, is_ref) => (true, tn, is_ref)
         };
         match self {
             &AstRule::RefRule(rule_ref) => {
-                if is_enum {
+                if is_enum && !is_ref {
                     append!(s, "map!(" data.sc(rule_ref) ", |node| { ");
                     append!(s, type_name "::" rule_ref "Item(node) })");
                 } else {

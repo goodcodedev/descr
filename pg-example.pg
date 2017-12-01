@@ -1,4 +1,3 @@
-test "first"
+test 42
+test 43
 (* Commented *)
-test "second"
-test "second"

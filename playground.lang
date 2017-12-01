@@ -1,8 +1,6 @@
-Source (items:sourceItems)
+Source(sourceItems)
 
-sourceItems:SourceItem[] WS {
-    Random("test" string),
-    Comment
+sourceItems:SourceItems[] {
+    Random("test" num:int),
+    Comment("(*" comment:!"*)" "*)")
 }
-
-Comment("(*" comment:!"*)" "*)")

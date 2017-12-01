@@ -112,13 +112,13 @@ impl<'a> LangData<'a> {
         self.snake_cased.get_str(key)
     }
 
-    pub fn add_ast_type(&self, s: String, key: &str) -> String {
+    pub fn add_ast_type(&self, s: String, key: &str, data: &LangData<'a>) -> String {
         match self.type_refs.get(key).unwrap() {
             &AstType::AstStruct(..) => {
-                self.ast_structs.get(key).unwrap().add_type(s)
+                self.ast_structs.get(key).unwrap().add_type(s, data)
             },
             &AstType::AstEnum(..) => {
-                self.ast_enums.get(key).unwrap().add_type(s)
+                self.ast_enums.get(key).unwrap().add_type(s, data)
             }
         }
     }
@@ -184,6 +184,7 @@ impl<'a> LangData<'a> {
                 "GTE" => self.add_tag_token("GTE", ">="),
                 "STAR" => self.add_char_token("STAR", '*'),
                 "EXCL" => self.add_char_token("EXCL", '!'),
+                "DOT" => self.add_char_token("DOT", '.'),
                 "QUESTION" => self.add_char_token("QUESTION", '?'),
                 "WS" => self.add_fn_token("WS", "sp", "&'a str"),
                 "string" => {

@@ -12,9 +12,7 @@ Comment("(*" comment:!"*)" "*)")
 AstSingle(ident LPAREN tokens:tokenList RPAREN)
 AstMany(ident LBRACE items:astItems RBRACE)
 
-
-tokenList[] WS Token
-Token {
+tokenList:Token[] WS {
     NamedToken(name:ident COLON not:EXCL? TokenType optional:QUESTION?),
     SimpleToken(not:EXCL? TokenType optional:QUESTION?)
 }
