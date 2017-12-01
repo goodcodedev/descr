@@ -107,3 +107,39 @@ a language, and a "example.pg" file describing a source.
 Running ```cargo run pg``` in the root will generate language
 code when pg.lang is changed, and show the result of parsing
 example.pg otherwise.
+
+Standard tokens
+---------------
+Token | Value
+---|---
+ident | Identifier (_alpha + alphanumeric)
+string | Reads quoted string
+int | Parse integer
+LPAREN | (
+RPAREN | )
+LBRACE | {
+RBRACE | }
+LBRACKET | [
+RBRACKET | ]
+COMMA | ,
+COLON | :
+SEMICOLON | ;
+EQUAL | =
+LT | <
+GT | >
+LTE | <=
+GTE | >=
+STAR | *
+EXCL | !
+DOT | .
+QUESTION | ?
+WS | Whitespace
+
+Things
+------
+- [x] Self host
+- [ ] To source generator
+- [ ] Include language files, maybe into context
+- [ ] Transform support
+- [ ] Syntax highlight generation
+- [ ] Try some languages, subset of javascript, glsl
