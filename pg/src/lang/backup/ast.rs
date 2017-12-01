@@ -10,7 +10,7 @@ pub struct Random {
 
 #[derive(Debug)]
 pub struct Source<'a> {
-    pub source_items: SourceItems<'a>,
+    pub source_items: Vec<SourceItems<'a>>,
 }
 
 #[derive(Debug)]

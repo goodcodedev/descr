@@ -8,7 +8,9 @@ pub trait Visitor<'a> {
     }
 
     fn visit_source(&mut self, node: &'a Source) {
-        self.visit_source_items(&node.source_items);
+        for item in &node.source_items {
+            self.visit_source_items(item);
+        }
     }
 
     fn visit_source_items(&mut self, node: &'a SourceItems) {

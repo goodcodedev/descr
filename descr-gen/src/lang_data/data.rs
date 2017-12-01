@@ -82,13 +82,32 @@ impl<'a> SnakeCased<'a> {
     }
 }
 
+pub enum ResolvedType<'a> {
+    ResolvedStruct(&'a str),
+    ResolvedEnum(&'a str)
+}
+impl<'a> ResolvedType<'a> {
+    pub fn needs_lifetime(&self, data: &LangData<'a>) -> bool {
+        match self {
+            &ResolvedType::ResolvedEnum(key) => {
+                data.ast_enums.get(key).unwrap().needs_lifetime(data)
+            },
+            &ResolvedType::ResolvedStruct(key) => {
+                data.ast_structs.get(key).unwrap().needs_lifetime(data)
+            }
+        }
+    }
+}
+
 pub struct LangData<'a> {
     pub typed_parts: HashMap<&'a str, TypedPart<'a>>,
     pub ast_data: HashMap<&'a str, AstData<'a>>,
     pub list_data: HashMap<&'a str, ListData<'a>>,
     pub ast_structs: HashMap<&'a str, AstStruct<'a>>,
     pub ast_enums: HashMap<&'a str, AstEnum<'a>>,
-    pub type_refs: HashMap<&'a str, AstType<'a>>,
+    // Type information for rules
+    // Abstracts over ast/enum/reference
+    pub rule_types: HashMap<&'a str, RuleType<'a>>,
     pub snake_cased: SnakeCased<'a>,
     // Assumed to be first item
     pub start_key: Option<&'a str>
@@ -102,9 +121,42 @@ impl<'a> LangData<'a> {
             list_data: HashMap::new(),
             ast_structs: HashMap::new(),
             ast_enums: HashMap::new(),
-            type_refs: HashMap::new(),
+            rule_types: HashMap::new(),
             snake_cased: SnakeCased { cache: HashMap::new() },
             start_key: None
+        }
+    }
+
+    /// Resolve key to enum or struct
+    /// Key could be enum or struct key, or
+    /// rule item key
+    pub fn resolve(&self, key: &'a str) -> ResolvedType<'a> {
+        if self.ast_enums.contains_key(key) {
+            ResolvedType::ResolvedEnum(key)
+        } else if self.ast_structs.contains_key(key) {
+            ResolvedType::ResolvedStruct(key)
+        } else {
+            match self.rule_types.get(key) {
+                Some(rule_type) => match rule_type {
+                    &RuleType::SingleType(type_key) => {
+                        if key != type_key {
+                            self.resolve(type_key)
+                        } else {
+                            panic!("Could not find key: {}", key);
+                        }
+                    },
+                    &RuleType::ManyType(type_key) => {
+                        if key != type_key {
+                            self.resolve(type_key)
+                        } else {
+                            panic!("Could not find key: {}", key);
+                        }
+                    }
+                },
+                None => {
+                    panic!("Could not find key: {}", key);
+                }
+            }
         }
     }
 
@@ -112,13 +164,13 @@ impl<'a> LangData<'a> {
         self.snake_cased.get_str(key)
     }
 
-    pub fn add_ast_type(&self, s: String, key: &str, data: &LangData<'a>) -> String {
-        match self.type_refs.get(key).unwrap() {
-            &AstType::AstStruct(..) => {
-                self.ast_structs.get(key).unwrap().add_type(s, data)
+    pub fn add_ast_type(&self, s: String, key: &str) -> String {
+        match self.resolve(key) {
+            ResolvedType::ResolvedEnum(rkey) => {
+                self.ast_enums.get(rkey).unwrap().add_type(s, self)
             },
-            &AstType::AstEnum(..) => {
-                self.ast_enums.get(key).unwrap().add_type(s, data)
+            ResolvedType::ResolvedStruct(rkey) => {
+                self.ast_structs.get(rkey).unwrap().add_type(s, self)
             }
         }
     }

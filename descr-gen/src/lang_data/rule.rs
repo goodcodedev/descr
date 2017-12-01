@@ -1,6 +1,6 @@
 use lang_data::data::*;
 use lang_data::typed_part::*;
-use lang_data::ast::AstType;
+use lang_data::ast::RuleType;
 use std::collections::HashMap;
 
 /// Parser "rule"
@@ -89,14 +89,14 @@ pub enum AstRule<'a> {
     RefRule(&'a str)
 }
 impl<'a> AstRule<'a> {
-    pub fn gen_rule(&self, mut s: String, data: &LangData, type_ref: &AstType<'a>) -> String {
-        let (is_enum, type_name, is_ref) = match type_ref {
-            &AstType::AstStruct(tn) => (false, tn, false),
-            &AstType::AstEnum(tn, is_ref) => (true, tn, is_ref)
+    pub fn gen_rule(&self, mut s: String, data: &LangData, rule_type: &RuleType<'a>) -> String {
+        let (is_many, type_name) = match rule_type {
+            &RuleType::SingleType(tn) => (false, tn),
+            &RuleType::ManyType(tn) => (true, tn)
         };
         match self {
             &AstRule::RefRule(rule_ref) => {
-                if is_enum && !is_ref {
+                if is_many {
                     append!(s, "map!(" data.sc(rule_ref) ", |node| { ");
                     append!(s, type_name "::" rule_ref "Item(node) })");
                 } else {
@@ -130,7 +130,7 @@ impl<'a> AstRule<'a> {
                     s += " >>\n";
                 }
                 s += "        (";
-                if is_enum {
+                if is_many {
                     append!(s, type_name "::" parts_rule.ast_type "Item(" parts_rule.ast_type " {\n");
                 } else {
                     s += parts_rule.ast_type;
@@ -144,7 +144,7 @@ impl<'a> AstRule<'a> {
                         s += ",\n";
                     }
                 }
-                if is_enum {
+                if is_many {
                     s += "        })))";
                 } else {
                     s += "        }))";

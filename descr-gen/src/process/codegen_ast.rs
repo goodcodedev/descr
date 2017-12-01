@@ -37,7 +37,7 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             s += " {\n";
             for item in &enum_data.items {
                 append!(s 1, item "Item(");
-                s = self.data.add_ast_type(s, item, self.data);
+                s = self.data.add_ast_type(s, item);
                 s += "),\n";
             }
             s += "}\n\n";

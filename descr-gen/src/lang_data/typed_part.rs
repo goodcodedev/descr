@@ -92,22 +92,22 @@ impl<'a> TypedPart<'a> {
                     append!(s 2, "self." member.sc() " match {\n");
                     append!(s 3, "Some(ref inner) => {\n");
                     append!(s 4, "for item in &inner {\n");
-                    match data.type_refs.get(key).unwrap() {
-                        &AstType::AstStruct(ref type_name) => {
+                    match data.rule_types.get(key).unwrap() {
+                        &RuleType::SingleType(ref type_name) => {
                             append!(s 5, "self.visit_" data.sc(type_name) "(item);\n");
                         },
-                        &AstType::AstEnum(ref type_name, ..) => {
+                        &RuleType::ManyType(ref type_name, ..) => {
                             append!(s 5, "self.visit_" data.sc(type_name) "(item);\n");
                         }
                     }
                     append!(s 4, "}\n");
                 } else {
                     append!(s 2, "for item in &node." member.sc() " {\n");
-                    match data.type_refs.get(key).unwrap() {
-                        &AstType::AstStruct(ref type_name) => {
+                    match data.rule_types.get(key).unwrap() {
+                        &RuleType::SingleType(ref type_name) => {
                             append!(s 3, "self.visit_" data.sc(type_name) "(item);\n");
                         },
-                        &AstType::AstEnum(ref type_name, ..) => {
+                        &RuleType::ManyType(ref type_name, ..) => {
                             append!(s 3, "self.visit_" data.sc(type_name) "(item);\n");
                         }
                     }
@@ -123,12 +123,12 @@ impl<'a> TypedPart<'a> {
         use lang_data::typed_part::TypedPart::*;
         match self {
             &AstPart { key } => {
-                let type_ref = data.type_refs.get(key).expect(&format!("Coult not get ast {}", key));
-                type_ref.needs_lifetime(data)
+                let rule_type = data.rule_types.get(key).expect(&format!("Coult not get ast {}", key));
+                rule_type.needs_lifetime(data)
             },
             &ListPart { key } => {
-                let type_ref = data.type_refs.get(key).expect(&format!("Coult not get list {}", key));
-                type_ref.needs_lifetime(data)
+                let rule_type = data.rule_types.get(key).expect(&format!("Coult not get list {}", key));
+                rule_type.needs_lifetime(data)
             },
             &CharPart { .. } => false,
             &TagPart { .. } => false,
@@ -159,7 +159,7 @@ impl<'a> TypedPart<'a> {
         use self::TypedPart::*;
         match self {
             &AstPart { key } => {
-                s += data.type_refs.get(key).expect(&format!("Coult not get ast {}", key)).get_type_name();
+                s += data.rule_types.get(key).expect(&format!("Coult not get ast {}", key)).get_type_name(data);
                 if member.tpe.needs_lifetime(data) {
                     s += "<'a>";
                 }
@@ -167,7 +167,7 @@ impl<'a> TypedPart<'a> {
             },
             &ListPart { key } => {
                 s += "Vec<";
-                s += data.type_refs.get(key).expect(&format!("Coult not get list {}", key)).get_type_name();
+                s += data.rule_types.get(key).expect(&format!("Coult not get list {}", key)).get_type_name(data);
                 if member.tpe.needs_lifetime(data) {
                     s += "<'a>";
                 }

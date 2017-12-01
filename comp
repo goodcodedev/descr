@@ -4,15 +4,9 @@
 
 heading_state = heading
 
-fn uc_first(text: str) {
+uc_first(text: str) (
     string.to_upper(text[0]) + text[1..]
-}
-
-*button {
-    bg-color: light-blue
-    border: darker
-}
-
+)
 
 Plus       => num++
 Minus(inc) => num -= inc
@@ -26,3 +20,8 @@ FetchGql   => ?header_styles(*button.bg_color)
 <div cls=button click=Minus(1)>minus</div>
 <div cls=button click=Fetch>fetch</div>
 
+
+*button (
+    bg-color: light-blue
+    border: darker
+)

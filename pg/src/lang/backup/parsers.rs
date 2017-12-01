@@ -14,7 +14,7 @@ named!(pub source<Source>,
         }))
 );
 
-named!(pub source_items<SourceItems>, alt_complete!(
+named!(pub source_items<Vec<SourceItems>>, many0!(alt_complete!(
     do_parse!(
         sp >> tag!("test") >>
         sp >> num_k: parse_int >>
@@ -28,5 +28,5 @@ named!(pub source_items<SourceItems>, alt_complete!(
         (SourceItems::CommentItem(Comment {
             comment: std::str::from_utf8(comment_k).unwrap(),
         })))
-));
+)));
 

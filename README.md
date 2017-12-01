@@ -50,7 +50,7 @@ Choices {
 ```
 These can be used as struct members as well:
 ```
-StructName(left_side:ident CHOICES right_side:ident)
+StructName(left_side:ident Choices right_side:ident)
 ```
 Here, the "ident" matches are also given a different name.
 
@@ -92,9 +92,9 @@ impl<'a> Visitor<'a> for Interpr {
 
     fn visit_bgcolor(&mut self, node: &'a BgColor) {
         match &node.color {
-            Red => set_bg(255, 180, 180),
-            Green => set_bg(180, 255, 180),
-            Blue => set_bg(180, 180, 255)
+            &Red => set_bg(255, 180, 180),
+            &Green => set_bg(180, 255, 180),
+            &Blue => set_bg(180, 180, 255)
         };
     }
 }
@@ -102,11 +102,11 @@ impl<'a> Visitor<'a> for Interpr {
 
 Exploration
 -----------
-There is a folder, "pg", which contains a pg.lang file describing
-a language, and a "example.pg" file describing a source.
+There is a file called "playground.lang" which is for describing
+a language, and a "pg-example.pg" file describing a source.
 Running ```cargo run pg``` in the root will generate language
 code when pg.lang is changed, and show the result of parsing
-example.pg otherwise.
+pg-example.pg otherwise.
 
 Standard tokens
 ---------------
@@ -137,9 +137,18 @@ WS | Whitespace
 
 Things
 ------
-- [x] Self host
-- [ ] To source generator
+- [x] "Self host"
+- [ ] Recursive data structures (boxed somewhere)
+- [ ] (Back) to source generator
 - [ ] Include language files, maybe into context
+- [ ] Annotations for things like serde integration
+- [ ] "Standard library" with tokens +(?)
+- [ ] Try some languages, subset of javascript, glsl
+- [ ] Look for patterns to generalize
+- [ ] Try to organize languages beside each other
 - [ ] Transform support
 - [ ] Syntax highlight generation
-- [ ] Try some languages, subset of javascript, glsl
+- [ ] Analyze rules to order by longest rule first when conflict
+- [ ] Parse error messages
+- [ ] Provide some language elements and type system?
+- [ ] More editor support, pluggable code completion, language server?

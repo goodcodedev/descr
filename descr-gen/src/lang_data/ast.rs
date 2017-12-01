@@ -136,7 +136,7 @@ impl<'a> AstEnum<'a> {
 
     pub fn needs_lifetime(&self, data: &LangData<'a>) -> bool {
         self.items.iter().any(|item| {
-            data.type_refs.get(item).unwrap().needs_lifetime(data)
+            data.resolve(item).needs_lifetime(data)
         })
     }
 
@@ -153,28 +153,47 @@ impl<'a> AstEnum<'a> {
     }
 }
 
+// Hm does it make sense to split in single/many
+// Was useful at one point to distinguish enums,
+// but data.resolve finds ast type.
+// It *is* needed to find "next key"
+// in rules like listItems[] WS AstKey
 #[derive(Debug)]
-pub enum AstType<'a> {
-    AstStruct(&'a str),
-    AstEnum(&'a str, bool)
+pub enum RuleType<'a> {
+    SingleType(&'a str),
+    ManyType(&'a str)
 }
-impl<'a> AstType<'a> {
-    pub fn get_type_name(&self) -> &str {
+impl<'a> RuleType<'a> {
+    pub fn get_type_name(&self, data: &LangData<'a>) -> &str {
         match self {
-            &AstType::AstStruct(type_name) => type_name,
-            &AstType::AstEnum(type_name, ..) => type_name
+            &RuleType::SingleType(type_name) => match data.resolve(type_name) {
+                ResolvedType::ResolvedEnum(key) => key,
+                ResolvedType::ResolvedStruct(key) => key
+            },
+            &RuleType::ManyType(type_name) => match data.resolve(type_name) {
+                ResolvedType::ResolvedEnum(key) => key,
+                ResolvedType::ResolvedStruct(key) => key
+            }
         }
     }
 
     pub fn needs_lifetime(&self, data: &LangData<'a>) -> bool {
         match self {
-            &AstType::AstStruct(key) => {
-                let struct_data = data.ast_structs.get(key).expect(&format!("Could not get ast struct {}", key));
-                struct_data.needs_lifetime(data)
+            &RuleType::SingleType(type_name) => match data.resolve(type_name) {
+                ResolvedType::ResolvedEnum(key) => {
+                    data.ast_enums.get(key).unwrap().needs_lifetime(data)
+                },
+                ResolvedType::ResolvedStruct(key) => {
+                    data.ast_structs.get(key).unwrap().needs_lifetime(data)
+                }
             },
-            &AstType::AstEnum(key, ..) => {
-                let enum_data = data.ast_enums.get(key).expect(&format!("Could not get enum: {}", key));
-                enum_data.needs_lifetime(data)
+            &RuleType::ManyType(type_name) => match data.resolve(type_name) {
+                ResolvedType::ResolvedEnum(key) => {
+                    data.ast_enums.get(key).unwrap().needs_lifetime(data)
+                },
+                ResolvedType::ResolvedStruct(key) => {
+                    data.ast_structs.get(key).unwrap().needs_lifetime(data)
+                }
             }
         }
     }
