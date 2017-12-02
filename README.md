@@ -139,16 +139,35 @@ impl<'a> Visitor<'a> for Interpr {
     }
 }
 ```
-See [descr.lang](https://github.com/goodcodedev/descr/blob/master/descr.lang) for a more
-complete example, as well as the definition of the language.
 
-Exploration
------------
-There is a file called "playground.lang" which is for describing
-a language, and a "pg-example.pg" file describing a source.
-Running ```cargo run pg``` in the root will generate language
-code when pg.lang is changed, and show the result of parsing
-pg-example.pg otherwise.
+### Named tokens
+Tokens can be given names that will resolve to member names:
+```
+TwoIdents(first:ident second:ident)
+```
+```rust
+pub struct TwoIdents<'a> {
+    first: &'a str,
+    second: &'a str
+}
+```
+
+### Optional token
+A token can be made optional with a question mark:
+```
+Optionally("opt" ident? SEMICOLON)
+```
+When named, chars and tags will resolve to booleans,
+other will resolve to Option.
+
+### Until match
+Parse string until token matches:
+```
+Until("text" parsed:!SEMICOLON)
+```
+
+See [descr.lang](https://github.com/goodcodedev/descr/blob/master/descr.lang)
+for a more complete example, as well as the definition of the language.
 
 Standard tokens
 ---------------
@@ -177,31 +196,13 @@ DOT | .
 QUESTION | ?
 WS | Whitespace
 
-### Named tokens
-Tokens can be given names that will resolve to member names:
-```
-TwoIdents(first:ident second:ident)
-```
-```rust
-pub struct TwoIdents<'a> {
-    first: &'a str,
-    second: &'a str
-}
-```
-
-### Optional token
-A token can be made optional with a question mark:
-```
-Optionally("opt" ident? SEMICOLON)
-```
-When named, chars and tags will resolve to booleans,
-other will resolve to Option.
-
-### Until match
-Parse string until token matches:
-```
-Until("text" parsed:!SEMICOLON)
-```
+Exploration
+-----------
+There is a file called "playground.lang" which is for describing
+a language, and a "pg-example.pg" file describing a source.
+Running ```cargo run pg``` in the root will generate language
+code when pg.lang is changed, and show the result of parsing
+pg-example.pg otherwise.
 
 Things
 ------
