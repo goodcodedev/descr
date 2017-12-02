@@ -26,7 +26,7 @@ pub struct AstName<'a> {
     ident: &'a str
 }
 ```
-Another struct could have this as a member with this addition:
+Another struct could have this as a member:
 ```
 Container(ident COLON AstName)
 
@@ -36,15 +36,32 @@ Which would recognize the following source:
 ```
 container_ident: (some_ident)
 ```
+And parse it into:
+```
+Container {
+    ident: "container_ident",
+    ast_name: AstName {
+        ident: "some_ident"
+    }
+}
+```
 
 Enums
 -----
 To allow alternatives, an enum can be described like this:
 ```
-Choices {
-    EQUAL => Choice1,
-    LT => Choice2,
-    GT => Choice3
+Comparison {
+    "=" => Equal,
+    "<" => Lt,
+    ">" => Gt
+}
+```
+Which creates a simple enum struct:
+```rust
+Comparison {
+    Equal,
+    Lt,
+    Gt
 }
 ```
 The variations could also have data, which generates structs for each,
@@ -56,7 +73,7 @@ Alternatives {
     Ident(ident)
 }
 ```
-
+Generates:
 ```rust
 pub enum Alternatives {
     IntConstItem(IntConst),
@@ -160,9 +177,36 @@ DOT | .
 QUESTION | ?
 WS | Whitespace
 
+### Named tokens
+Tokens can be given names that will resolve to member names:
+```
+TwoIdents(first:ident second:ident)
+```
+```rust
+pub struct TwoIdents<'a> {
+    first: &'a str,
+    second: &'a str
+}
+```
+
+### Optional token
+A token can be made optional with a question mark:
+```
+Optionally("opt" ident? SEMICOLON)
+```
+When named, chars and tags will resolve to booleans,
+other will resolve to Option.
+
+### Until match
+Parse string until token matches:
+```
+Until("text" parsed:!SEMICOLON)
+```
+
 Things
 ------
 - [ ] Recursive data structures (boxed somewhere)
+- [ ] Groups of tokens: Data(token1 (token2 token3)?)
 - [ ] (Back) to source generator
 - [ ] Include language files, maybe into context
 - [ ] Annotations for things like serde integration

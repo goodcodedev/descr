@@ -1,14 +1,3 @@
-Source (statements)
+Container(ident COLON AstName)
 
-statements:Statement[] {
-    ("say" string) => Say,
-    ("bg" Color)   => BgColor
-}
-
-(* Alternative syntax also
- * work for list items *)
-Color {
-    Red("red"),
-    Green("green"),
-    Blue("blue")
-}
+AstName(LPAREN ident RPAREN)

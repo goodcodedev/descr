@@ -1,28 +1,11 @@
 #[derive(Debug)]
-pub struct BgColor {
-    pub color: Color,
+pub struct AstName<'a> {
+    pub ident: &'a str,
 }
 
 #[derive(Debug)]
-pub struct Say<'a> {
-    pub string: &'a str,
-}
-
-#[derive(Debug)]
-pub struct Source<'a> {
-    pub statements: Vec<Statement<'a>>,
-}
-
-#[derive(Debug)]
-pub enum Color {
-    Red,
-    Green,
-    Blue,
-}
-
-#[derive(Debug)]
-pub enum Statement<'a> {
-    SayItem(Say<'a>),
-    BgColorItem(BgColor),
+pub struct Container<'a> {
+    pub ast_name: AstName<'a>,
+    pub ident: &'a str,
 }
 

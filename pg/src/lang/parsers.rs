@@ -4,40 +4,26 @@ use self::nom::*;
 use std;
 use super::ast::*;
 
-named!(pub start<Source>, do_parse!(res: source >> (res)));
+named!(pub start<Container>, do_parse!(res: container >> (res)));
 
-named!(pub color<Color>, alt_complete!(
+named!(pub ast_name<AstName>,
     do_parse!(
-        sp >> tag!("red") >>
-        (Color::Red        ))
-    | do_parse!(
-        sp >> tag!("green") >>
-        (Color::Green        ))
-    | do_parse!(
-        sp >> tag!("blue") >>
-        (Color::Blue        ))
-));
-
-named!(pub source<Source>,
-    do_parse!(
-        sp >> statements_k: statements >>
-        (Source {
-            statements: statements_k,
+        sp >> char!('(') >>
+        sp >> ident_k: ident >>
+        sp >> char!(')') >>
+        (AstName {
+            ident: ident_k,
         }))
 );
 
-named!(pub statements<Vec<Statement>>, many0!(alt_complete!(
+named!(pub container<Container>,
     do_parse!(
-        sp >> tag!("say") >>
-        sp >> string_k: quoted_str >>
-        (Statement::SayItem(Say {
-            string: string_k,
-        })))
-    | do_parse!(
-        sp >> tag!("bg") >>
-        sp >> color_k: color >>
-        (Statement::BgColorItem(BgColor {
-            color: color_k,
-        })))
-)));
+        sp >> ident_k: ident >>
+        sp >> char!(':') >>
+        sp >> ast_name_k: ast_name >>
+        (Container {
+            ident: ident_k,
+            ast_name: ast_name_k,
+        }))
+);
 
