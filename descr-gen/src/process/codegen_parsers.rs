@@ -35,19 +35,20 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
         // Ast data
         for (key, ast_data) in self.data.ast_data.sorted_iter() {
             let rule_type = self.data.rule_types.get(key).unwrap();
+            let resolved = &self.data.resolve(key);
             match ast_data.rules.len() {
                 0 => {},
                 1 => {
                     let rule = ast_data.rules.first().unwrap();
                     append!(s, "named!(pub " self.data.sc(ast_data.ast_type) "<" ast_data.ast_type ">,\n    ");
-                    s = rule.gen_rule(s, self.data, rule_type);
+                    s = rule.gen_rule(s, self.data, rule_type, resolved);
                     s += "\n);\n\n";
                 },
                 len => {
                     // Alt rule
                     append!(s, "named!(pub " self.data.sc(ast_data.ast_type) "<" ast_data.ast_type ">, alt_complete!(\n    ");
                     for (i, rule) in ast_data.rules.iter().enumerate() {
-                        s = rule.gen_rule(s, self.data, rule_type);
+                        s = rule.gen_rule(s, self.data, rule_type, resolved);
                         if i < len - 1 {
                             s += "\n    | ";
                         }
@@ -59,6 +60,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
         // List data
         for (key, list_data) in self.data.list_data.sorted_iter() {
             let rule_type = self.data.rule_types.get(key).unwrap();
+            let resolved = &self.data.resolve(key);
             match list_data.rules.len() {
                 0 => {},
                 1 => {
@@ -79,7 +81,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                             append!(s, "many0!(\n    ");
                         }
                     }
-                    s = rule.ast_rule.gen_rule(s, self.data, rule_type);
+                    s = rule.ast_rule.gen_rule(s, self.data, rule_type, resolved);
                     s += "\n));\n\n";
                 },
                 len => {
@@ -101,7 +103,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                     }
                     append!(s, "alt_complete!(\n    ");
                     for (i, rule) in list_data.rules.iter().enumerate() {
-                        s = rule.ast_rule.gen_rule(s, self.data, rule_type);
+                        s = rule.ast_rule.gen_rule(s, self.data, rule_type, resolved);
                         if i < len - 1 { s += "\n    | "; }
                     }
                     s += "\n)));\n\n";

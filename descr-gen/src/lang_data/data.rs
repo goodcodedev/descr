@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 use lang_data::ast::*;
 use lang_data::rule::*;
 use lang_data::typed_part::*;
@@ -97,6 +98,17 @@ impl<'a> ResolvedType<'a> {
             }
         }
     }
+
+    pub fn is_simple(&self, data: &LangData<'a>) -> bool {
+        match self {
+            &ResolvedType::ResolvedEnum(key) => {
+                data.ast_enums.get(key).unwrap().is_simple(data)
+            },
+            &ResolvedType::ResolvedStruct(key) => {
+                data.ast_structs.get(key).unwrap().is_simple()
+            }
+        }
+    }
 }
 
 pub struct LangData<'a> {
@@ -110,7 +122,13 @@ pub struct LangData<'a> {
     pub rule_types: HashMap<&'a str, RuleType<'a>>,
     pub snake_cased: SnakeCased<'a>,
     // Assumed to be first item
-    pub start_key: Option<&'a str>
+    pub start_key: Option<&'a str>,
+    pub simple_enums: HashSet<&'a str>,
+    // Structs are currently removed,
+    // So not sure if this is needed,
+    // possibly key to enum is needed
+    // sometime.
+    pub simple_structs: HashSet<&'a str>
 }
 
 impl<'a> LangData<'a> {
@@ -123,7 +141,9 @@ impl<'a> LangData<'a> {
             ast_enums: HashMap::new(),
             rule_types: HashMap::new(),
             snake_cased: SnakeCased { cache: HashMap::new() },
-            start_key: None
+            start_key: None,
+            simple_enums: HashSet::new(),
+            simple_structs: HashSet::new(),
         }
     }
 
@@ -257,7 +277,14 @@ impl<'a> LangData<'a> {
                         TypedPart::IntPart { key }
                     );
                 }
-                _ => panic!("Could not find token: {}", key)
+                _ => {
+                    println!("Could not find token: {}", key);
+                    println!("Structs: {:#?}", self.ast_structs.keys());
+                    println!("Enums: {:#?}", self.ast_enums.keys());
+                    println!("Ast rules: {:#?}", self.ast_data.keys());
+                    println!("List rules: {:#?}", self.list_data.keys());
+                    panic!("Could not find token: {}", key)
+                }
             };
         }
     }

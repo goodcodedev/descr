@@ -1,6 +1,14 @@
-Source(sourceItems)
+Source (statements)
 
-sourceItems:SourceItems[] {
-    Random("test" num:int),
-    Comment("(*" comment:!"*)" "*)")
+statements:Statement[] {
+    ("say" string) => Say,
+    ("bg" Color)   => BgColor
+}
+
+(* Alternative syntax also
+ * work for list items *)
+Color {
+    Red("red"),
+    Green("green"),
+    Blue("blue")
 }

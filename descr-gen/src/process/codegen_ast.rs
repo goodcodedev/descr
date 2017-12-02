@@ -15,7 +15,10 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             25 * 3 * self.data.ast_structs.len()
             + 25 * 3 * self.data.ast_enums.len()
         );
-        for (_key, ast_struct) in self.data.ast_structs.sorted_iter() {
+        for (key, ast_struct) in self.data.ast_structs.sorted_iter() {
+            if self.data.simple_structs.contains(key) {
+                continue;
+            }
             append!(s, "#[derive(Debug)]\n");
             append!(s, "pub struct ");
             s = ast_struct.add_type(s, self.data);
@@ -30,15 +33,20 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             }
             s += "}\n\n";
         }
-        for (_key, enum_data) in self.data.ast_enums.sorted_iter() {
+        for (key, enum_data) in self.data.ast_enums.sorted_iter() {
+            let is_simple = self.data.simple_enums.contains(key);
             append!(s, "#[derive(Debug)]\n");
             append!(s, "pub enum ");
             s = enum_data.add_type(s, self.data);
             s += " {\n";
             for item in &enum_data.items {
-                append!(s 1, item "Item(");
-                s = self.data.add_ast_type(s, item);
-                s += "),\n";
+                if is_simple {
+                    append!(s 1, item ",\n");
+                } else {
+                    append!(s 1, item "Item(");
+                    s = self.data.add_ast_type(s, item);
+                    s += "),\n";
+                }
             }
             s += "}\n\n";
         }

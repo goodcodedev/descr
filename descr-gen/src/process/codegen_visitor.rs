@@ -26,8 +26,12 @@ impl<'a, 'd> CodegenVisitor<'a, 'd> {
             s += "    }\n\n";
         }
         // Ast enums
-        for (_key, ast_enum) in self.data.ast_enums.sorted_iter() {
+        for (key, ast_enum) in self.data.ast_enums.sorted_iter() {
             append!(s 1, "fn visit_" ast_enum.sc() "(&mut self, node: &'a " ast_enum.name ") {\n");
+            if self.data.simple_enums.contains(key) {
+                s += "    }\n\n";
+                continue;
+            }
             append!(s 2, "match node {\n");
             for enum_item in &ast_enum.items {
                 append!(s 3, "&" ast_enum.name "::" enum_item "Item(ref inner) => self.visit_" self.data.sc(enum_item) "(inner),\n");

@@ -6,27 +6,38 @@ use super::ast::*;
 
 named!(pub start<Source>, do_parse!(res: source >> (res)));
 
+named!(pub color<Color>, alt_complete!(
+    do_parse!(
+        sp >> tag!("red") >>
+        (Color::Red        ))
+    | do_parse!(
+        sp >> tag!("green") >>
+        (Color::Green        ))
+    | do_parse!(
+        sp >> tag!("blue") >>
+        (Color::Blue        ))
+));
+
 named!(pub source<Source>,
     do_parse!(
-        sp >> source_items_k: source_items >>
+        sp >> statements_k: statements >>
         (Source {
-            source_items: source_items_k,
+            statements: statements_k,
         }))
 );
 
-named!(pub source_items<Vec<SourceItems>>, many0!(alt_complete!(
+named!(pub statements<Vec<Statement>>, many0!(alt_complete!(
     do_parse!(
-        sp >> tag!("test") >>
-        sp >> num_k: parse_int >>
-        (SourceItems::RandomItem(Random {
-            num: num_k,
+        sp >> tag!("say") >>
+        sp >> string_k: quoted_str >>
+        (Statement::SayItem(Say {
+            string: string_k,
         })))
     | do_parse!(
-        sp >> tag!("(*") >>
-        comment_k: until_done_result!(tag!("*)")) >>
-        sp >> tag!("*)") >>
-        (SourceItems::CommentItem(Comment {
-            comment: std::str::from_utf8(comment_k).unwrap(),
+        sp >> tag!("bg") >>
+        sp >> color_k: color >>
+        (Statement::BgColorItem(BgColor {
+            color: color_k,
         })))
 )));
 

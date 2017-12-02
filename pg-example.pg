@@ -1,3 +1,2 @@
-test 42
-test 43
-(* Commented *)
+bg blue
+say "Hello world"

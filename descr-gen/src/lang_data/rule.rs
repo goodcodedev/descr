@@ -89,13 +89,15 @@ pub enum AstRule<'a> {
     RefRule(&'a str)
 }
 impl<'a> AstRule<'a> {
-    pub fn gen_rule(&self, mut s: String, data: &LangData, rule_type: &RuleType<'a>) -> String {
+    pub fn gen_rule(&self, mut s: String, data: &LangData, rule_type: &RuleType<'a>, resolved: &ResolvedType<'a>) -> String {
         let (is_many, type_name) = match rule_type {
             &RuleType::SingleType(tn) => (false, tn),
             &RuleType::ManyType(tn) => (true, tn)
         };
         match self {
             &AstRule::RefRule(rule_ref) => {
+                // When is_many, an enum is assumed generated for
+                // the rule
                 if is_many {
                     append!(s, "map!(" data.sc(rule_ref) ", |node| { ");
                     append!(s, type_name "::" rule_ref "Item(node) })");
@@ -130,24 +132,35 @@ impl<'a> AstRule<'a> {
                     s += " >>\n";
                 }
                 s += "        (";
+                // There could also be "simple enum" here
+                // which is enums without data
+                let is_simple = is_many && resolved.is_simple(data);
                 if is_many {
-                    append!(s, type_name "::" parts_rule.ast_type "Item(" parts_rule.ast_type " {\n");
+                    if is_simple {
+                        append!(s, type_name "::" parts_rule.ast_type);
+                    } else {
+                        append!(s, type_name "::" parts_rule.ast_type "Item(" parts_rule.ast_type " {\n");
+                    }
                 } else {
                     s += parts_rule.ast_type;
                     s += " {\n";
                 }
-                for part in &parts_rule.parts {
-                    if let Some(member_key) = part.member_key {
-                        let typed_part = part.get_typed_part(data);
-                        append!(s 3, data.sc(member_key) ": ");
-                        s = typed_part.gen_parser_val(s, part, data);
-                        s += ",\n";
-                    }
-                }
-                if is_many {
-                    s += "        })))";
+                if is_simple {
+                    s += "        ))";
                 } else {
-                    s += "        }))";
+                    for part in &parts_rule.parts {
+                        if let Some(member_key) = part.member_key {
+                            let typed_part = part.get_typed_part(data);
+                            append!(s 3, data.sc(member_key) ": ");
+                            s = typed_part.gen_parser_val(s, part, data);
+                            s += ",\n";
+                        }
+                    }
+                    if is_many {
+                        s += "        })))";
+                    } else {
+                        s += "        }))";
+                    }
                 }
             }
         }

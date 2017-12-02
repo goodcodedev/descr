@@ -1,22 +1,26 @@
 use super::ast::*;
 
 pub trait Visitor<'a> {
-    fn visit_comment(&mut self, node: &'a Comment) {
+    fn visit_bg_color(&mut self, node: &'a BgColor) {
+        self.visit_color(&node.color);
     }
 
-    fn visit_random(&mut self, node: &'a Random) {
+    fn visit_say(&mut self, node: &'a Say) {
     }
 
     fn visit_source(&mut self, node: &'a Source) {
-        for item in &node.source_items {
-            self.visit_source_items(item);
+        for item in &node.statements {
+            self.visit_statement(item);
         }
     }
 
-    fn visit_source_items(&mut self, node: &'a SourceItems) {
+    fn visit_color(&mut self, node: &'a Color) {
+    }
+
+    fn visit_statement(&mut self, node: &'a Statement) {
         match node {
-            &SourceItems::RandomItem(ref inner) => self.visit_random(inner),
-            &SourceItems::CommentItem(ref inner) => self.visit_comment(inner),
+            &Statement::SayItem(ref inner) => self.visit_say(inner),
+            &Statement::BgColorItem(ref inner) => self.visit_bg_color(inner),
         }
     }
 

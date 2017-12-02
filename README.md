@@ -16,16 +16,15 @@ Ast structs can be described like this:
 ```
 AstName(LPAREN ident RPAREN)
 ```
-This will create an ast-struct like this:
+By now the parser will recognize the following source:
+```
+(some_ident)
+```
+And parse it into a generated struct:
 ```rust
 pub struct AstName<'a> {
     ident: &'a str
 }
-```
-By now the parser will recognize the following source and
-parse it into the struct:
-```
-(some_ident)
 ```
 Another struct could have this as a member with this addition:
 ```
@@ -48,11 +47,33 @@ Choices {
     GT => Choice3
 }
 ```
-These can be used as struct members as well:
+The variations could also have data, which generates structs for each,
+and an enum container, "Alternatives":
 ```
-StructName(left_side:ident Choices right_side:ident)
+Alternatives {
+    IntConst(int),
+    Quoted(string),
+    Ident(ident)
+}
 ```
-Here, the "ident" matches are also given a different name.
+
+```rust
+pub enum Alternatives {
+    IntConstItem(IntConst),
+    QuotedItem(Quoted),
+    ...
+}
+
+pub struct IntConst {
+    pub int: i32
+}
+
+pub struct Quoted<'a> {
+    pub string: &'a str
+}
+...
+```
+(recursive structures are still todo)
 
 Lists
 -----
@@ -62,7 +83,7 @@ whether there are variations among the possibilities:
 Source (statements)
 
 statements:Statement[] {
-    ("say" quoted) => Say,
+    ("say" string) => Say,
     ("bg" Color)   => BgColor
 }
 
@@ -71,7 +92,7 @@ statements:Statement[] {
 Color {
     Red("red"),
     Green("green"),
-    Blue("blue)
+    Blue("blue")
 }
 ```
 This definition would recognize the following source:
@@ -82,15 +103,17 @@ say "Hello world"
 To traverse these items, the following code could be created:
 ```rust
 use lang::visitor::Visitor;
+use lang::ast::*;
 
 struct Interpr;
 impl<'a> Visitor<'a> for Interpr {
 
     fn visit_say(&mut self, node: &'a Say) {
-        println!("Saying: {}", node.quoted);
+        println!("Saying: {}", node.string);
     }
 
-    fn visit_bgcolor(&mut self, node: &'a BgColor) {
+    fn visit_bg_color(&mut self, node: &'a BgColor) {
+        use Color::*;
         match &node.color {
             &Red => set_bg(255, 180, 180),
             &Green => set_bg(180, 255, 180),
@@ -99,6 +122,8 @@ impl<'a> Visitor<'a> for Interpr {
     }
 }
 ```
+See [descr.lang](https://github.com/goodcodedev/descr/blob/master/descr.lang) for a more
+complete example, as well as the definition of the language.
 
 Exploration
 -----------
@@ -137,7 +162,6 @@ WS | Whitespace
 
 Things
 ------
-- [x] "Self host"
 - [ ] Recursive data structures (boxed somewhere)
 - [ ] (Back) to source generator
 - [ ] Include language files, maybe into context
@@ -152,3 +176,4 @@ Things
 - [ ] Parse error messages
 - [ ] Provide some language elements and type system?
 - [ ] More editor support, pluggable code completion, language server?
+- [ ] Generate code for other languages (ocaml maybe) and set up serialization (just to_source?)

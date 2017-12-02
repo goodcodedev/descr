@@ -117,6 +117,10 @@ impl<'a> AstStruct<'a> {
         }
         s
     }
+
+    pub fn is_simple(&self) -> bool {
+        self.members.len() == 0
+    }
 }
 
 #[derive(Debug)]
@@ -135,9 +139,13 @@ impl<'a> AstEnum<'a> {
     }
 
     pub fn needs_lifetime(&self, data: &LangData<'a>) -> bool {
-        self.items.iter().any(|item| {
-            data.resolve(item).needs_lifetime(data)
-        })
+        if data.simple_enums.contains(self.name) {
+            false
+        } else {
+            self.items.iter().any(|item| {
+                data.resolve(item).needs_lifetime(data)
+            })
+        }
     }
 
     pub fn add_type(&self, mut s: String, data: &LangData<'a>) -> String {
@@ -146,6 +154,21 @@ impl<'a> AstEnum<'a> {
             s += "<'a>";
         }
         s
+    }
+
+    pub fn is_simple(&self, data: &LangData<'a>) -> bool {
+        if data.simple_enums.contains(self.name) {
+            true
+        } else {
+            let mut is_simple = true;
+            for item in &self.items {
+                if !data.resolve(item).is_simple(data) {
+                    is_simple = false;
+                    break;
+                }
+            }
+            is_simple
+        }
     }
 
     pub fn sc(&self) -> &str {

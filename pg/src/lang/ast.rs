@@ -1,21 +1,28 @@
 #[derive(Debug)]
-pub struct Comment<'a> {
-    pub comment: &'a str,
+pub struct BgColor {
+    pub color: Color,
 }
 
 #[derive(Debug)]
-pub struct Random {
-    pub num: i32,
+pub struct Say<'a> {
+    pub string: &'a str,
 }
 
 #[derive(Debug)]
 pub struct Source<'a> {
-    pub source_items: Vec<SourceItems<'a>>,
+    pub statements: Vec<Statement<'a>>,
 }
 
 #[derive(Debug)]
-pub enum SourceItems<'a> {
-    RandomItem(Random),
-    CommentItem(Comment<'a>),
+pub enum Color {
+    Red,
+    Green,
+    Blue,
+}
+
+#[derive(Debug)]
+pub enum Statement<'a> {
+    SayItem(Say<'a>),
+    BgColorItem(BgColor),
 }
 

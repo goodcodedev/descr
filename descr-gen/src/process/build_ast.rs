@@ -231,6 +231,23 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         }
     }
 
+    pub fn check_simple(&mut self) {
+        // Check for simple enums
+        // Not sure how to best do this,
+        // it makes the result a bit
+        // unpredictable. Maybe some
+        // annotations later
+        for (key, enum_data) in &self.data.ast_enums {
+            if enum_data.is_simple(self.data) {
+                self.data.simple_enums.insert(key);
+                for item in &enum_data.items {
+                    self.data.simple_structs.insert(item);
+                    self.data.ast_structs.remove(item);
+                }
+            }
+        }
+    }
+
     pub fn build_ast(&mut self) {
         Self::build_from_ast_data(
             &self.data.ast_data, 
@@ -238,13 +255,16 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
             &mut self.data.ast_enums,
             &self.data.typed_parts,
             &mut self.data.rule_types,
-            &mut self.data.snake_cased);
+            &mut self.data.snake_cased
+        );
         Self::build_from_list_data(
             &self.data.list_data, 
             &mut self.data.ast_structs,
             &mut self.data.ast_enums,
             &self.data.typed_parts,
             &mut self.data.rule_types,
-            &mut self.data.snake_cased);
+            &mut self.data.snake_cased
+        );
+        self.check_simple();
     }
 }
