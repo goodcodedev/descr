@@ -25,6 +25,12 @@ pub trait Visitor<'a> {
     fn visit_comment(&mut self, node: &'a Comment) {
     }
 
+    fn visit_func_token(&mut self, node: &'a FuncToken) {
+        for item in &node.fn_args {
+            self.visit_func_arg(item);
+        }
+    }
+
     fn visit_key_token(&mut self, node: &'a KeyToken) {
     }
 
@@ -65,10 +71,25 @@ pub trait Visitor<'a> {
         }
     }
 
+    fn visit_func_arg(&mut self, node: &'a FuncArg) {
+        match node {
+            &FuncArg::QuotedItem(ref inner) => self.visit_quoted(inner),
+        }
+    }
+
     fn visit_list(&mut self, node: &'a List) {
         match node {
             &List::ListSingleItem(ref inner) => self.visit_list_single(inner),
             &List::ListManyItem(ref inner) => self.visit_list_many(inner),
+        }
+    }
+
+    fn visit_source_item(&mut self, node: &'a SourceItem) {
+        match node {
+            &SourceItem::AstSingleItem(ref inner) => self.visit_ast_single(inner),
+            &SourceItem::AstManyItem(ref inner) => self.visit_ast_many(inner),
+            &SourceItem::ListItem(ref inner) => self.visit_list(inner),
+            &SourceItem::CommentItem(ref inner) => self.visit_comment(inner),
         }
     }
 
@@ -81,17 +102,9 @@ pub trait Visitor<'a> {
 
     fn visit_token_type(&mut self, node: &'a TokenType) {
         match node {
+            &TokenType::FuncTokenItem(ref inner) => self.visit_func_token(inner),
             &TokenType::KeyTokenItem(ref inner) => self.visit_key_token(inner),
             &TokenType::QuotedItem(ref inner) => self.visit_quoted(inner),
-        }
-    }
-
-    fn visit_source_item(&mut self, node: &'a SourceItem) {
-        match node {
-            &SourceItem::AstSingleItem(ref inner) => self.visit_ast_single(inner),
-            &SourceItem::AstManyItem(ref inner) => self.visit_ast_many(inner),
-            &SourceItem::ListItem(ref inner) => self.visit_list(inner),
-            &SourceItem::CommentItem(ref inner) => self.visit_comment(inner),
         }
     }
 

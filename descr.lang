@@ -18,7 +18,11 @@ tokenList:Token[] WS {
 }
 
 TokenType {
+    ident LPAREN fnArgs RPAREN => FuncToken,
     key:ident => KeyToken,
+    string => Quoted
+}
+fnArgs:FuncArg[] COMMA {
     string => Quoted
 }
 

@@ -123,7 +123,52 @@ named!(pub source<Source>,
         }))
 );
 
-named!(pub token<Token>, alt_complete!(
+named!(pub token_type<TokenType>, alt_complete!(
+    do_parse!(
+        sp >> ident_k: ident >>
+        sp >> char!('(') >>
+        sp >> fn_args_k: fn_args >>
+        sp >> char!(')') >>
+        (TokenType::FuncTokenItem(FuncToken {
+            ident: ident_k,
+            fn_args: fn_args_k,
+        })))
+    | do_parse!(
+        sp >> key_k: ident >>
+        (TokenType::KeyTokenItem(KeyToken {
+            key: key_k,
+        })))
+    | do_parse!(
+        sp >> string_k: quoted_str >>
+        (TokenType::QuotedItem(Quoted {
+            string: string_k,
+        })))
+));
+
+named!(pub ast_items<Vec<AstItem>>, separated_list!(char!(','), 
+    ast_item
+));
+
+named!(pub fn_args<Vec<FuncArg>>, separated_list!(char!(','), 
+    do_parse!(
+        sp >> string_k: quoted_str >>
+        (FuncArg::QuotedItem(Quoted {
+            string: string_k,
+        })))
+));
+
+named!(pub list_items<Vec<ListItem>>, separated_list!(char!(','), 
+    list_item
+));
+
+named!(pub source_items<Vec<SourceItem>>, separated_list!(sp, alt_complete!(
+    map!(ast_single, |node| { SourceItem::AstSingleItem(node) })
+    | map!(ast_many, |node| { SourceItem::AstManyItem(node) })
+    | map!(list, |node| { SourceItem::ListItem(node) })
+    | map!(comment, |node| { SourceItem::CommentItem(node) })
+)));
+
+named!(pub token_list<Vec<Token>>, separated_list!(sp, alt_complete!(
     do_parse!(
         sp >> name_k: ident >>
         sp >> char!(':') >>
@@ -145,37 +190,5 @@ named!(pub token<Token>, alt_complete!(
             token_type: token_type_k,
             optional: optional_k.is_some(),
         })))
-));
-
-named!(pub token_type<TokenType>, alt_complete!(
-    do_parse!(
-        sp >> key_k: ident >>
-        (TokenType::KeyTokenItem(KeyToken {
-            key: key_k,
-        })))
-    | do_parse!(
-        sp >> string_k: quoted_str >>
-        (TokenType::QuotedItem(Quoted {
-            string: string_k,
-        })))
-));
-
-named!(pub ast_items<Vec<AstItem>>, separated_list!(char!(','), 
-    ast_item
-));
-
-named!(pub list_items<Vec<ListItem>>, separated_list!(char!(','), 
-    list_item
-));
-
-named!(pub source_items<Vec<SourceItem>>, separated_list!(sp, alt_complete!(
-    map!(ast_single, |node| { SourceItem::AstSingleItem(node) })
-    | map!(ast_many, |node| { SourceItem::AstManyItem(node) })
-    | map!(list, |node| { SourceItem::ListItem(node) })
-    | map!(comment, |node| { SourceItem::CommentItem(node) })
 )));
-
-named!(pub token_list<Vec<Token>>, separated_list!(sp, 
-    token
-));
 

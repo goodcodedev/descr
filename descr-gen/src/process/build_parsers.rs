@@ -72,6 +72,22 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                                 optional,
                                 not
                             });
+                        },
+                        &TokenType::FuncTokenItem(FuncToken {ident, ref fn_args}) => {
+                            rule.parts.push(AstRulePart {
+                                token: AstRuleToken::Func(
+                                    ident,
+                                    fn_args.iter().map(|arg| {
+                                        match arg {
+                                            &FuncArg::QuotedItem(Quoted{string})
+                                                => RuleFuncArg::Quoted(string)
+                                        }
+                                    }).collect::<Vec<_>>()
+                                ),
+                                member_key: None,
+                                optional,
+                                not
+                            });
                         }
                     }
                 },
@@ -107,6 +123,22 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                             // Tag rule, not considered member
                             rule.parts.push(AstRulePart {
                                 token: AstRuleToken::Tag(string),
+                                member_key: Some(name),
+                                optional,
+                                not
+                            });
+                        },
+                        &TokenType::FuncTokenItem(FuncToken {ident, ref fn_args}) => {
+                            rule.parts.push(AstRulePart {
+                                token: AstRuleToken::Func(
+                                    ident,
+                                    fn_args.iter().map(|arg| {
+                                        match arg {
+                                            &FuncArg::QuotedItem(Quoted{string})
+                                                => RuleFuncArg::Quoted(string)
+                                        }
+                                    }).collect::<Vec<_>>()
+                                ),
                                 member_key: Some(name),
                                 optional,
                                 not

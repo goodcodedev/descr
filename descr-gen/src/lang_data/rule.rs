@@ -36,11 +36,21 @@ pub struct AstRulePart<'a> {
 #[derive(Debug)]
 pub enum AstRuleToken<'a> {
     Key(&'a str),
-    Tag(&'a str)
+    Tag(&'a str),
+    Func(&'a str, Vec<RuleFuncArg<'a>>)
+}
+
+#[derive(Debug)]
+pub enum RuleFuncArg<'a> {
+    Quoted(&'a str)
 }
 
 pub enum TypedRulePart<'a> {
     Keyed(&'a TypedPart<'a>),
+    Quoted(&'a str),
+    Func(&'a str, Vec<TypedRuleFuncArg<'a>>)
+}
+pub enum TypedRuleFuncArg<'a> {
     Quoted(&'a str)
 }
 impl<'a, 'b> TypedRulePart<'a> {
@@ -49,6 +59,22 @@ impl<'a, 'b> TypedRulePart<'a> {
             &TypedRulePart::Keyed(part) => part.gen_parser(s, data),
             &TypedRulePart::Quoted(string) => {
                 append!(s, "tag!(\"" string "\")");
+                s
+            },
+            &TypedRulePart::Func(ident, ref args) => {
+                append!(s, ident "!(");
+                let num_args = args.len();
+                for (i, arg) in args.iter().enumerate() {
+                    match arg {
+                        &TypedRuleFuncArg::Quoted(string) => {
+                            append!(s, "\"" string "\"");
+                        }
+                    }
+                    if i < num_args - 1 {
+                        s += ", ";
+                    }
+                }
+                s += ")";
                 s
             }
         }
@@ -67,6 +93,11 @@ impl<'a, 'b> TypedRulePart<'a> {
                 &TypedRulePart::Quoted(..) => {
                     s += "true";
                     s
+                },
+                &TypedRulePart::Func(..) => {
+                    s += part.member_key.unwrap();
+                    s += "_k";
+                    s
                 }
             }
         }
@@ -77,7 +108,17 @@ impl<'a> AstRulePart<'a> {
     pub fn get_typed_part(&self, data: &'a LangData<'a>) -> TypedRulePart<'a> {
         match &self.token {
             &AstRuleToken::Key(key) => TypedRulePart::Keyed(data.typed_parts.get(key).unwrap()),
-            &AstRuleToken::Tag(string) => TypedRulePart::Quoted(string)
+            &AstRuleToken::Tag(string) => TypedRulePart::Quoted(string),
+            &AstRuleToken::Func(ident, ref args) => {
+                TypedRulePart::Func(
+                    ident,
+                    args.iter().map(|arg| {
+                        match arg {
+                            &RuleFuncArg::Quoted(string) => TypedRuleFuncArg::Quoted(string)
+                        }
+                    }).collect::<Vec<_>>()
+                )
+            }
         }
     }
 }

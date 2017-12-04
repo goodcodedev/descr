@@ -22,7 +22,14 @@ pub struct AstSingle<'a> {
 }
 
 #[derive(Debug)]
-pub struct Comment {
+pub struct Comment<'a> {
+    pub comment: &'a str,
+}
+
+#[derive(Debug)]
+pub struct FuncToken<'a> {
+    pub fn_args: Vec<FuncArg<'a>>,
+    pub ident: &'a str,
 }
 
 #[derive(Debug)]
@@ -83,9 +90,22 @@ pub enum AstItem<'a> {
 }
 
 #[derive(Debug)]
+pub enum FuncArg<'a> {
+    QuotedItem(Quoted<'a>),
+}
+
+#[derive(Debug)]
 pub enum List<'a> {
     ListSingleItem(ListSingle<'a>),
     ListManyItem(ListMany<'a>),
+}
+
+#[derive(Debug)]
+pub enum SourceItem<'a> {
+    AstSingleItem(AstSingle<'a>),
+    AstManyItem(AstMany<'a>),
+    ListItem(List<'a>),
+    CommentItem(Comment<'a>),
 }
 
 #[derive(Debug)]
@@ -96,15 +116,8 @@ pub enum Token<'a> {
 
 #[derive(Debug)]
 pub enum TokenType<'a> {
+    FuncTokenItem(FuncToken<'a>),
     KeyTokenItem(KeyToken<'a>),
     QuotedItem(Quoted<'a>),
-}
-
-#[derive(Debug)]
-pub enum SourceItem<'a> {
-    AstSingleItem(AstSingle<'a>),
-    AstManyItem(AstMany<'a>),
-    ListItem(List<'a>),
-    CommentItem(Comment),
 }
 

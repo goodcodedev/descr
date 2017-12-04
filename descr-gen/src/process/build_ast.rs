@@ -114,6 +114,18 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                             part.not,
                             snake_cased);
                     }
+                },
+                &AstRuleToken::Func(..) => {
+                    if let Some(member_key) = part.member_key {
+                        Self::reg_struct_member(
+                            struct_data,
+                            rule.ast_type, 
+                            member_key,
+                            "",
+                            part.optional,
+                            part.not,
+                            snake_cased);
+                    }
                 }
             }
         }

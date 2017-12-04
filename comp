@@ -4,15 +4,15 @@
 
 heading_state = heading
 
-uc_first(text: str) (
+uc_first(text: str) {
     string.to_upper(text[0]) + text[1..]
-)
+}
 
-Plus       => num++
-Minus(inc) => num -= inc
-Fetch      => next_header(Heading)
-Heading(next) => heading_state = next
-FetchGql   => ?header_styles(*button.bg_color)
+-> Plus num++
+-> Minus(inc) num -= inc
+-> Fetch => next_header(Heading)
+-> Heading(next) => heading_state = next
+-> FetchGql   => ?header_styles(*button.bg_color)
 
 <h1 onclick=Plus>
     $heading_state >> uc_first
