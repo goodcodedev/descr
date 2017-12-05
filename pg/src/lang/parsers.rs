@@ -4,26 +4,21 @@ use self::nom::*;
 use std;
 use super::ast::*;
 
-named!(pub start<Container>, do_parse!(res: container >> (res)));
+named!(pub start<Expr>, do_parse!(res: expr >> (res)));
 
-named!(pub ast_name<AstName>,
-    do_parse!(
-        sp >> char!('(') >>
-        sp >> ident_k: ident >>
-        sp >> char!(')') >>
-        (AstName {
-            ident: ident_k,
-        }))
-);
-
-named!(pub container<Container>,
+named!(pub expr<Expr>, alt_complete!(
     do_parse!(
         sp >> ident_k: ident >>
-        sp >> char!(':') >>
-        sp >> ast_name_k: ast_name >>
-        (Container {
+        (Expr::VarNameItem(VarName {
             ident: ident_k,
-            ast_name: ast_name_k,
-        }))
-);
+        })))
+    | do_parse!(
+        sp >> op1_k: expr >>
+        sp >> tag!("+") >>
+        sp >> op2_k: expr >>
+        (Expr::PlusItem(Box::new(Plus {
+            op1: op1_k,
+            op2: op2_k,
+        }))))
+));
 

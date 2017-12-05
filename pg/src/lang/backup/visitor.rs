@@ -1,26 +1,18 @@
 use super::ast::*;
 
 pub trait Visitor<'a> {
-    fn visit_bg_color(&mut self, node: &'a BgColor) {
-        self.visit_color(&node.color);
+    fn visit_plus(&mut self, node: &'a Plus) {
+        self.visit_expr(&node.op1);
+        self.visit_expr(&node.op2);
     }
 
-    fn visit_say(&mut self, node: &'a Say) {
+    fn visit_var_name(&mut self, node: &'a VarName) {
     }
 
-    fn visit_source(&mut self, node: &'a Source) {
-        for item in &node.statements {
-            self.visit_statement(item);
-        }
-    }
-
-    fn visit_color(&mut self, node: &'a Color) {
-    }
-
-    fn visit_statement(&mut self, node: &'a Statement) {
+    fn visit_expr(&mut self, node: &'a Expr) {
         match node {
-            &Statement::SayItem(ref inner) => self.visit_say(inner),
-            &Statement::BgColorItem(ref inner) => self.visit_bg_color(inner),
+            &Expr::VarNameItem(ref inner) => self.visit_var_name(inner),
+            &Expr::PlusItem(ref inner) => self.visit_plus(inner),
         }
     }
 

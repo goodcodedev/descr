@@ -4,40 +4,21 @@ use self::nom::*;
 use std;
 use super::ast::*;
 
-named!(pub start<Source>, do_parse!(res: source >> (res)));
+named!(pub start<Expr>, do_parse!(res: expr >> (res)));
 
-named!(pub color<Color>, alt_complete!(
+named!(pub expr<Expr>, alt_complete!(
     do_parse!(
-        sp >> tag!("red") >>
-        (Color::Red        ))
+        sp >> ident_k: ident >>
+        (Expr::VarNameItem(VarName {
+            ident: ident_k,
+        })))
     | do_parse!(
-        sp >> tag!("green") >>
-        (Color::Green        ))
-    | do_parse!(
-        sp >> tag!("blue") >>
-        (Color::Blue        ))
+        sp >> op1_k: expr >>
+        sp >> tag!("+") >>
+        sp >> op2_k: expr >>
+        (Expr::PlusItem(Box::new(Plus {
+            op1: op1_k,
+            op2: op2_k,
+        }))))
 ));
-
-named!(pub source<Source>,
-    do_parse!(
-        sp >> statements_k: statements >>
-        (Source {
-            statements: statements_k,
-        }))
-);
-
-named!(pub statements<Vec<Statement>>, many0!(alt_complete!(
-    do_parse!(
-        sp >> tag!("say") >>
-        sp >> string_k: quoted_str >>
-        (Statement::SayItem(Say {
-            string: string_k,
-        })))
-    | do_parse!(
-        sp >> tag!("bg") >>
-        sp >> color_k: color >>
-        (Statement::BgColorItem(BgColor {
-            color: color_k,
-        })))
-)));
 

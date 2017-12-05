@@ -1,5 +1,6 @@
 use lang_data::data::*;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 #[derive(Debug)]
 pub struct AstStructMember<'a> {
@@ -11,7 +12,8 @@ pub struct AstStructMember<'a> {
     pub type_name: &'a str,
     pub optional: bool,
     pub not: bool,
-    pub tpe: AstMemberType<'a>
+    pub tpe: AstMemberType<'a>,
+    pub boxed: bool
 }
 impl<'a> AstStructMember<'a> {
     pub fn new(name: &'a str, snake_case: String, 
@@ -27,7 +29,8 @@ impl<'a> AstStructMember<'a> {
             type_name,
             optional,
             not,
-            tpe
+            tpe,
+            boxed: false
         }
     }
 
@@ -127,14 +130,16 @@ impl<'a> AstStruct<'a> {
 pub struct AstEnum<'a> {
     pub name: &'a str,
     pub snake_case: String,
-    pub items: Vec<&'a str>
+    pub items: Vec<&'a str>,
+    pub boxed_items: HashSet<&'a str>
 }
 impl<'a> AstEnum<'a> {
     pub fn new(name: &'a str, snake_case: String) -> AstEnum<'a> {
         AstEnum {
             name,
             snake_case,
-            items: Vec::new()
+            items: Vec::new(),
+            boxed_items: HashSet::new()
         }
     }
 

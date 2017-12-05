@@ -29,6 +29,7 @@ impl<'a, 'd> Visitor<'d> for RegisterKeys<'a, 'd> {
     }
 
     fn visit_ast_many(&mut self, node: &'d AstMany) {
+        self.check_start(node.ident);
         self.data.ast_data.insert(
             node.ident,
             AstData::new(node.ident, node.ident)
@@ -36,6 +37,7 @@ impl<'a, 'd> Visitor<'d> for RegisterKeys<'a, 'd> {
     }
 
     fn visit_list_single(&mut self, node: &'d ListSingle) {
+        self.check_start(node.ident);
         self.data.list_data.insert(
             node.ident,
             ListData::new(node.ident, None, Some(node.sep))
@@ -43,6 +45,7 @@ impl<'a, 'd> Visitor<'d> for RegisterKeys<'a, 'd> {
     }
 
     fn visit_list_many(&mut self, node: &'d ListMany) {
+        self.check_start(node.ident);
         self.data.list_data.insert(
             node.ident,
             ListData::new(node.ident, Some(node.ast_type), node.sep)

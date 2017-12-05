@@ -129,7 +129,37 @@ pub struct LangData<'a> {
     // possibly key to enum is needed
     // sometime.
     pub simple_structs: HashSet<&'a str>,
-    pub debug: bool
+    pub debug: bool,
+    // Key: enum/struct name, Set: Parents - can be from
+    // member to owning struct/enum, or from
+    // struct/enum to another where it is a member
+    // Can be traversed to check for references up
+    // in the tree, where the member or item should be
+    // boxed to avoid infinite structures
+    pub parent_refs: ParentRefs<'a>
+}
+#[derive(Debug)]
+pub struct ParentRefs<'a> {
+    pub refs: HashMap<&'a str, HashSet<ParentRef<'a>>>
+}
+impl<'a> ParentRefs<'a> {
+    pub fn add_ref(&mut self, key: &'a str, parent_ref: ParentRef<'a>) {
+        if !self.refs.contains_key(key) {
+            self.refs.insert(key, HashSet::new());
+        }
+        self.refs.get_mut(key).unwrap().insert(parent_ref);
+    }
+}
+#[derive(PartialEq, Eq, Hash, Debug)]
+pub enum ParentRef<'a> {
+    StructMember {
+        struct_name: &'a str,
+        member_name: &'a str
+    },
+    EnumItem {
+        enum_name: &'a str,
+        item_name: &'a str
+    }
 }
 
 impl<'a> LangData<'a> {
@@ -145,7 +175,23 @@ impl<'a> LangData<'a> {
             start_key: None,
             simple_enums: HashSet::new(),
             simple_structs: HashSet::new(),
-            debug
+            debug,
+            parent_refs: ParentRefs {
+                refs: HashMap::new()
+            }
+        }
+    }
+
+    // Gets ast key (struct/enum) from part_key
+    pub fn get_ast_key(&self, key: &'a str) -> Option<&'a str> {
+        if self.typed_parts.contains_key(key) {
+            match self.typed_parts.get(key).unwrap() {
+                &TypedPart::AstPart{key} => Some(key),
+                &TypedPart::ListPart{key} => Some(key),
+                _ => None
+            }
+        } else {
+            None
         }
     }
 

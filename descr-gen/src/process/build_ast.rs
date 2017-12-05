@@ -279,5 +279,139 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
             &mut self.data.snake_cased
         );
         self.check_simple();
+        // Build parent refs
+        // Set member type
+        for (struct_name, struct_data) in &self.data.ast_structs {
+            for (member_name, member) in &struct_data.members {
+                match self.data.get_ast_key(member.part_key) {
+                    Some(ast_key) => {
+                        // Insert struct/enum members
+                        match self.data.resolve(member.part_key) {
+                            ResolvedType::ResolvedStruct(key) => {
+                                self.data.parent_refs.add_ref(
+                                    key,
+                                    ParentRef::StructMember {
+                                        struct_name,
+                                        member_name
+                                    }
+                                );
+                            },
+                            ResolvedType::ResolvedEnum(key) => {
+                                self.data.parent_refs.add_ref(
+                                    key,
+                                    ParentRef::StructMember {
+                                        struct_name,
+                                        member_name
+                                    }
+                                );
+                            }
+                        }
+                    },
+                    None => {}
+                }
+            }
+        }
+        for (enum_name, enum_data) in &self.data.ast_enums {
+            for item in &enum_data.items {
+                // Insert struct/enum members
+                match self.data.resolve(item) {
+                    ResolvedType::ResolvedStruct(key) => {
+                        self.data.parent_refs.add_ref(
+                            key,
+                            ParentRef::EnumItem {
+                                enum_name,
+                                item_name: item
+                            }
+                        );
+                    },
+                    ResolvedType::ResolvedEnum(key) => {
+                        self.data.parent_refs.add_ref(
+                            key,
+                            ParentRef::EnumItem {
+                                enum_name,
+                                item_name: item
+                            }
+                        );
+                    }
+                }
+            }
+        }
+        //println!("{:#?}", self.data.parent_refs);
+        // Go through each struct member, and check
+        // for parent reference.
+        // If found, set the reference to boxed
+        let mut to_box = Vec::new();
+        let mut visited = HashMap::new();
+        use std::collections::HashSet;
+        for (struct_name, struct_data) in &self.data.ast_structs {
+            for (member_name, member) in &struct_data.members {
+                match self.data.get_ast_key(member.part_key) {
+                    Some(ast_key) => {
+                        if !visited.contains_key(ast_key) {
+                            visited.insert(ast_key, HashSet::new());
+                        }
+                        to_box.append(&mut Self::set_boxed(
+                            ast_key, struct_name, 
+                            &self.data.parent_refs, visited.get_mut(ast_key).unwrap()
+                        ));
+                    },
+                    None => {}
+                }
+            }
+        }
+        //println!("{:#?}", to_box);
+        for to_box_item in &to_box {
+            match to_box_item {
+                &ToBox::StructMember { struct_name, member_name } => {
+                    let struct_data = self.data.ast_structs.get_mut(struct_name).unwrap();
+                    let member_data = struct_data.members.get_mut(member_name).unwrap();
+                    member_data.boxed = true;
+                },
+                &ToBox::EnumItem { enum_name, item_name } => {
+                    let enum_data = self.data.ast_enums.get_mut(enum_name).unwrap();
+                    enum_data.boxed_items.insert(item_name);
+                }
+            }
+        }
+    }
+
+    fn set_boxed(to_box: &'d str, from_ast: &'d str, parent_refs: &ParentRefs<'d>, visited: &mut HashSet<&'d str>) -> Vec<ToBox<'d>> {
+        let mut v = Vec::new();
+        if visited.contains(from_ast) {
+            return v;
+        }
+        visited.insert(from_ast);
+        if parent_refs.refs.contains_key(from_ast) {
+            for parent_ref in parent_refs.refs.get(from_ast).unwrap() {
+                //println!("Traversed: {}, {:?}",to_box, parent_ref);
+                match parent_ref {
+                    &ParentRef::StructMember { struct_name, member_name } => {
+                        if struct_name == to_box {
+                            v.push(ToBox::StructMember { struct_name, member_name });
+                        }
+                        v.append(&mut Self::set_boxed(to_box, struct_name, parent_refs, visited));
+                    },
+                    &ParentRef::EnumItem { enum_name, item_name } => {
+                        if enum_name == to_box {
+                            v.push(ToBox::EnumItem { enum_name, item_name });
+                        }
+                        v.append(&mut Self::set_boxed(to_box, enum_name, parent_refs, visited));
+                    }
+                }
+            }
+        }
+        v
+    }
+}
+
+#[derive(Debug)]
+enum ToBox<'a> {
+    StructMember {
+        struct_name: &'a str,
+        member_name: &'a str
+    },
+    EnumItem {
+        enum_name: &'a str,
+        item_name: &'a str
     }
 }

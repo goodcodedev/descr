@@ -27,7 +27,9 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
                 append!(s 1, "pub " member.sc() ": ");
                 let is_option = member.tpe.is_option(member, self.data);
                 if is_option { s += "Option<"; }
+                if member.boxed { s += "Box<"; }
                 s = member.tpe.add_type(s, member, self.data);
+                if member.boxed { s += ">"; }
                 if is_option { s += ">"; }
                 s += ",\n";
             }
@@ -44,7 +46,10 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
                     append!(s 1, item ",\n");
                 } else {
                     append!(s 1, item "Item(");
+                    let is_boxed = enum_data.boxed_items.contains(item);
+                    if is_boxed { s += "Box<"; }
                     s = self.data.add_ast_type(s, item);
+                    if is_boxed { s += ">"; }
                     s += "),\n";
                 }
             }

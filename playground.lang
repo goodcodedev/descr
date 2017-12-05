@@ -1,3 +1,4 @@
-Container(ident COLON AstName)
-
-AstName(LPAREN ident RPAREN)
+Expr {
+    VarName(ident),
+    Plus(op1:Expr "+" op2:Expr)
+}

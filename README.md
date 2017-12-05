@@ -90,7 +90,6 @@ pub struct Quoted<'a> {
 }
 ...
 ```
-(recursive structures are still todo)
 
 Lists
 -----
@@ -206,7 +205,7 @@ pg-example.pg otherwise.
 
 Things
 ------
-- [ ] Recursive data structures (boxed somewhere)
+- [x] Recursive data structures (boxed somewhere)
 - [ ] Groups of tokens: Data(token1 (token2 token3)?)
 - [ ] (Back) to source generator
 - [ ] Include language files, maybe into context

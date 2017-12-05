@@ -161,14 +161,14 @@ named!(pub list_items<Vec<ListItem>>, separated_list!(char!(','),
     list_item
 ));
 
-named!(pub source_items<Vec<SourceItem>>, separated_list!(sp, alt_complete!(
+named!(pub source_items<Vec<SourceItem>>, many0!(alt_complete!(
     map!(ast_single, |node| { SourceItem::AstSingleItem(node) })
     | map!(ast_many, |node| { SourceItem::AstManyItem(node) })
     | map!(list, |node| { SourceItem::ListItem(node) })
     | map!(comment, |node| { SourceItem::CommentItem(node) })
 )));
 
-named!(pub token_list<Vec<Token>>, separated_list!(sp, alt_complete!(
+named!(pub token_list<Vec<Token>>, many0!(alt_complete!(
     do_parse!(
         sp >> name_k: ident >>
         sp >> char!(':') >>

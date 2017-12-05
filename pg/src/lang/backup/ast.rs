@@ -1,28 +1,17 @@
 #[derive(Debug)]
-pub struct BgColor {
-    pub color: Color,
+pub struct Plus<'a> {
+    pub op1: Expr<'a>,
+    pub op2: Expr<'a>,
 }
 
 #[derive(Debug)]
-pub struct Say<'a> {
-    pub string: &'a str,
+pub struct VarName<'a> {
+    pub ident: &'a str,
 }
 
 #[derive(Debug)]
-pub struct Source<'a> {
-    pub statements: Vec<Statement<'a>>,
-}
-
-#[derive(Debug)]
-pub enum Color {
-    Red,
-    Green,
-    Blue,
-}
-
-#[derive(Debug)]
-pub enum Statement<'a> {
-    SayItem(Say<'a>),
-    BgColorItem(BgColor),
+pub enum Expr<'a> {
+    VarNameItem(VarName<'a>),
+    PlusItem(Box<Plus<'a>>),
 }
 

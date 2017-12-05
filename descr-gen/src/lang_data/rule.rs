@@ -147,11 +147,29 @@ impl<'a> AstRule<'a> {
             &RuleType::SingleType(tn) => (false, tn),
             &RuleType::ManyType(tn) => (true, tn)
         };
+        let (struct_data, enum_data) = match resolved {
+            &ResolvedType::ResolvedEnum(key) => {
+                (None, data.ast_enums.get(key))
+            },
+            &ResolvedType::ResolvedStruct(key) => {
+                (data.ast_structs.get(key), None)
+            }
+        };
         match self {
             &AstRule::RefRule(rule_ref) => {
                 // When is_many, an enum is assumed generated for
                 // the rule
                 if is_many {
+                    let node_expr = match enum_data {
+                        Some(enum_data) => {
+                            if enum_data.boxed_items.contains(rule_ref) {
+                                "Box::new(node)"
+                            } else {
+                                "node"
+                            }
+                        },
+                        _ => "node"
+                    };
                     append!(s, "map!(" data.sc(rule_ref) ", |node| { ");
                     append!(s, type_name "::" rule_ref "Item(node) })");
                 } else {
@@ -188,11 +206,27 @@ impl<'a> AstRule<'a> {
                 // There could also be "simple enum" here
                 // which is enums without data
                 let is_simple = is_many && resolved.is_simple(data);
-                if is_many {
+                let is_boxed_item = match enum_data {
+                    Some(enum_data) => {
+                        if enum_data.boxed_items.contains(parts_rule.ast_type) {
+                            true
+                        } else {
+                            false
+                        }
+                    },
+                    _ => false
+                };
+                if is_many { // Could "resolved" be used instead?
                     if is_simple {
                         append!(s, type_name "::" parts_rule.ast_type);
                     } else {
-                        append!(s, type_name "::" parts_rule.ast_type "Item(" parts_rule.ast_type " {\n");
+                        append!(s, type_name "::" parts_rule.ast_type "Item(");
+                        if is_boxed_item {
+                            append!(s, "Box::new(" parts_rule.ast_type "");
+                        } else {
+                            s += parts_rule.ast_type;
+                        }
+                        s +=  " {\n";
                     }
                 } else {
                     s += parts_rule.ast_type;
@@ -203,14 +237,21 @@ impl<'a> AstRule<'a> {
                 } else {
                     for part in &parts_rule.parts {
                         if let Some(member_key) = part.member_key {
+                            let is_boxed = match struct_data {
+                                Some(struct_data) => struct_data.members.get(member_key).unwrap().boxed,
+                                _ => false
+                            };
                             let typed_part = part.get_typed_part(data);
                             append!(s 3, data.sc(member_key) ": ");
+                            if is_boxed { s += "Box::new("; }
                             s = typed_part.gen_parser_val(s, part, data);
+                            if is_boxed { s += ")"; }
                             s += ",\n";
                         }
                     }
                     if is_many {
                         s += "        })))";
+                        if is_boxed_item { s += ")"; }
                     } else {
                         s += "        }))";
                     }
