@@ -11,11 +11,15 @@ pub enum TypedPart<'a> {
     IntPart     { key: &'a str },
     IdentPart   { key: &'a str },
     FnPart      { key: &'a str, fnc: &'a str, tpe: &'a str },
-    StringPart  { key: &'a str }
+    StringPart  { key: &'a str },
+    WSPart
 }
 impl<'a> TypedPart<'a> {
     pub fn gen_parser(&self, mut s: String, data: &LangData) -> String {
         use lang_data::typed_part::TypedPart::*;
+        if data.debug {
+            s += "debug_wrap!(";
+        }
         match self {
             &AstPart { key } => { s += data.sc(key); },
             &ListPart { key } => { s += data.sc(key); },
@@ -28,7 +32,11 @@ impl<'a> TypedPart<'a> {
             &IntPart { .. } => { s += "parse_int"; },
             &IdentPart { .. } => { s += "ident"; },
             &FnPart { fnc, .. } => { s += fnc; },
-            &StringPart { .. } => { s += "quoted_str"; }
+            &StringPart { .. } => { s += "quoted_str"; },
+            &WSPart => { s += "sp" }
+        }
+        if data.debug {
+            s += ")";
         }
         s
     }
@@ -67,6 +75,9 @@ impl<'a> TypedPart<'a> {
                 append!(s, member_key "_k");
             },
             &StringPart { .. } => {
+                append!(s, member_key "_k");
+            },
+            &WSPart => {
                 append!(s, member_key "_k");
             }
         }
@@ -136,7 +147,8 @@ impl<'a> TypedPart<'a> {
             &IdentPart { .. } => true,
             // Depends on function todo
             &FnPart { .. } => true,
-            &StringPart { .. } => true
+            &StringPart { .. } => true,
+            &WSPart => true
         }
     }
 
@@ -179,7 +191,8 @@ impl<'a> TypedPart<'a> {
             &CharPart { .. }    => { s += "bool"; s },
             &TagPart { .. }     => { s += "bool"; s },
             &StringPart { .. }  => { s += "&'a str"; s },
-            &FnPart { tpe, .. } => { s += tpe; s }
+            &FnPart { tpe, .. } => { s += tpe; s },
+            &WSPart => { s += "&'a str"; s }
         }
     }
 }

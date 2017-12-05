@@ -128,11 +128,12 @@ pub struct LangData<'a> {
     // So not sure if this is needed,
     // possibly key to enum is needed
     // sometime.
-    pub simple_structs: HashSet<&'a str>
+    pub simple_structs: HashSet<&'a str>,
+    pub debug: bool
 }
 
 impl<'a> LangData<'a> {
-    pub fn new() -> LangData<'a> {
+    pub fn new(debug: bool) -> LangData<'a> {
         LangData {
             typed_parts: HashMap::new(),
             ast_data: HashMap::new(),
@@ -144,6 +145,7 @@ impl<'a> LangData<'a> {
             start_key: None,
             simple_enums: HashSet::new(),
             simple_structs: HashSet::new(),
+            debug
         }
     }
 
@@ -258,7 +260,13 @@ impl<'a> LangData<'a> {
                 "EXCL" => self.add_char_token("EXCL", '!'),
                 "DOT" => self.add_char_token("DOT", '.'),
                 "QUESTION" => self.add_char_token("QUESTION", '?'),
-                "WS" => self.add_fn_token("WS", "sp", "&'a str"),
+                "WS" => {
+                    self.typed_parts.insert(
+                        "WS",
+                        TypedPart::WSPart
+                    );
+                },
+                //"WS" => self.add_fn_token("WS", "sp", "&'a str"),
                 "string" => {
                     self.typed_parts.insert(
                         "string",

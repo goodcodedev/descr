@@ -106,6 +106,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                                 | &CharPart { .. }
                                 | &FnPart { .. }
                                 | &StringPart { .. }
+                                | &WSPart
                                 | &TagPart { .. } => {
                                     rule.member_idxs.insert(name, i);
                                     rule.idx_members.insert(i, name);

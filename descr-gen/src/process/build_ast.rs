@@ -87,6 +87,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                         },
                         &CharPart { .. }
                         | &FnPart { .. }
+                        | &WSPart
                         | &TagPart { .. } => {
                             // Count as member if member name is given
                             if let Some(member_key) = part.member_key {

@@ -61,6 +61,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
         for (key, list_data) in self.data.list_data.sorted_iter() {
             let rule_type = self.data.rule_types.get(key).unwrap();
             let resolved = &self.data.resolve(key);
+            use lang_data::typed_part::TypedPart;
             match list_data.rules.len() {
                 0 => {},
                 1 => {
@@ -73,9 +74,17 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                         ">>, ");
                     match list_data.sep {
                         Some(sep) => {
-                            append!(s, "separated_list!(");
-                            s = self.data.typed_parts.get(sep).unwrap().gen_parser(s, self.data);
-                            s += ", \n    ";
+                            let tp = self.data.typed_parts.get(sep).unwrap();
+                            match tp {
+                                &TypedPart::WSPart => {
+                                    append!(s, "many0!(\n    ");
+                                },
+                                _ => {
+                                    append!(s, "separated_list!(");
+                                    s = tp.gen_parser(s, self.data);
+                                    s += ", \n    ";
+                                }
+                            }
                         },
                         None => {
                             append!(s, "many0!(\n    ");
@@ -93,9 +102,17 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
                         ">>, ");
                     match list_data.sep {
                         Some(sep) => {
-                            append!(s, "separated_list!(");
-                            s = self.data.typed_parts.get(sep).unwrap().gen_parser(s, self.data);
-                            s += ", ";
+                            let tp = self.data.typed_parts.get(sep).unwrap();
+                            match tp {
+                                &TypedPart::WSPart => {
+                                    append!(s, "many0!(");
+                                },
+                                _ => {
+                                    append!(s, "separated_list!(");
+                                    s = tp.gen_parser(s, self.data);
+                                    s += ", ";
+                                }
+                            }
                         },
                         None => {
                             append!(s, "many0!(");

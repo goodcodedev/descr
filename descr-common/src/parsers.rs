@@ -97,11 +97,10 @@ pub fn special_chars(input: &[u8]) -> IResult<&[u8], &str> {
 #[macro_export]
 macro_rules! until_done_result (
     ($i:expr, $submac:ident!( $($args:tt)* )) => ({
-        let input = $i;
         let mut index = 0;
         let mut is_done = false;
         loop {
-            let i_ = input.slice(index..);
+            let i_ = $i.slice(index..);
             match peek!(i_, $submac!($($args)* )) {
                 IResult::Done(..) => {
                     is_done = true;
@@ -110,14 +109,81 @@ macro_rules! until_done_result (
                 _ => {}
             }
             index += 1;
-            if index > input.len() {
+            if index > $i.len() {
                 break;
             }
         }
-        if is_done {
-            IResult::Done(input.slice(index..), input.slice(..index))
+        if is_done && index > 0 {
+            IResult::Done($i.slice(index..), $i.slice(..index))
         } else {
             IResult::Incomplete(Needed::Unknown)
         }
     });
+);
+
+#[macro_export]
+macro_rules! stringify_submac (
+    ($submac:ident( $($args:tt)* )) => ({
+        let mut s = String::new();
+        s += stringify!($submac);
+        s += "!(";
+        $(s += stringify!($args);)*
+        s += ")";
+        s
+    });
+    ($submac:ident) => ({
+        stringify!($submac)
+    })
+);
+
+#[macro_export]
+macro_rules! debug_wrap (
+    ($i:expr, $submac:ident!( $($args:tt)* )) => ({
+        let input = $i;
+        let to = if input.len() > 10 { 10 } else { input.len() };
+        use std;
+        let start_str = std::str::from_utf8(&input[..to]).unwrap();
+        println!("Starting {} at: {}...", stringify_submac!($submac($($args)*)), start_str);
+        {
+            let result = $submac!(input, $($args)*);
+            match result {
+                IResult::Done(ref inp, ref out) => {
+                    let to = if inp.len() > 10 { 10 } else { inp.len() };
+                    let done_str = std::str::from_utf8(&inp[..to]).unwrap();
+                    println!("Done with {}: {:#?}, rest: {}...", stringify_submac!($submac($($args)*)), out, done_str);
+                },
+                IResult::Error(ref err) => {
+                    println!("Error {}: {:#?}", stringify_submac!($submac($($args)*)), err);
+                },
+                IResult::Incomplete(ref inc) => {
+                    println!("Incomplete {}: {:#?}", stringify_submac!($submac($($args)*)), inc);
+                }
+            }
+            result
+        }
+    });
+    ($i:expr, $submac:ident) => ({
+        let input = $i;
+        let to = if input.len() > 10 { 10 } else { input.len() };
+        use std;
+        let start_str = std::str::from_utf8(&input[..to]).unwrap();
+        println!("Starting {} at: {}...", stringify!($submac), start_str);
+        {
+            let result = $submac(input);
+            match result {
+                IResult::Done(ref inp, ref out) => {
+                    let to = if inp.len() > 10 { 10 } else { inp.len() };
+                    let done_str = std::str::from_utf8(&inp[..to]).unwrap();
+                    println!("Done with {}: {:#?}, rest: {}...", stringify!($submac), out, done_str);
+                },
+                IResult::Error(ref err) => {
+                    println!("Error {}: {:#?}", stringify!($submac), err);
+                },
+                IResult::Incomplete(ref inc) => {
+                    println!("Incomplete {}: {:#?}", stringify!($submac), inc);
+                }
+            }
+            result
+        }
+    })
 );

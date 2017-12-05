@@ -100,7 +100,7 @@ fn main() {
         });
         println!("Parse: {}", elapsed);
         //println!("{:#?}", res);
-        let mut data = LangData::new();
+        let mut data = LangData::new(false);
         {
             match res {
                 nom::IResult::Done(_, ref source) => {

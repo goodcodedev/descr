@@ -58,10 +58,19 @@ impl<'a, 'b> TypedRulePart<'a> {
         match self {
             &TypedRulePart::Keyed(part) => part.gen_parser(s, data),
             &TypedRulePart::Quoted(string) => {
+                if data.debug {
+                    s += "debug_wrap!(";
+                }
                 append!(s, "tag!(\"" string "\")");
+                if data.debug {
+                    s += ")";
+                }
                 s
             },
             &TypedRulePart::Func(ident, ref args) => {
+                if data.debug {
+                    s += "debug_wrap!(";
+                }
                 append!(s, ident "!(");
                 let num_args = args.len();
                 for (i, arg) in args.iter().enumerate() {
@@ -75,6 +84,9 @@ impl<'a, 'b> TypedRulePart<'a> {
                     }
                 }
                 s += ")";
+                if data.debug {
+                    s += ")";
+                }
                 s
             }
         }
