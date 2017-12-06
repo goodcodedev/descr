@@ -1,0 +1,34 @@
+Source(sourceItems)
+sourceItems:SourceItem[] {
+    RsStruct,
+    RsEnum
+}
+
+(*** Types ***)
+TpeSpes(Tpe GenericItem?)
+Tpe {
+    RsU32("u32"),
+    RsI32("i32"),
+    RsString("String"),
+    RsStr("str"),
+    Bool("bool")
+}
+GenericItem {
+    LifeTime,
+    GenType(ident)
+}
+LifeTime("'" ident)
+Generic("<" genericItems ">")
+genericItems[] COMMA GenericItem
+
+(*** Struct ***)
+RsStruct(public:"pub"? "struct" ident Generic? LBRACE structMembers RBRACE)
+structMembers:StructMember[] COMMA {
+    StructMember(public:"pub"? ident COLON TpeSpes)
+}
+
+(*** Enum ***)
+RsEnum(public:"pub"? "enum" ident LBRACE enumItems RBRACE)
+enumItems:EnumItem[] COMMA {
+    EnumItem(ident)
+}
