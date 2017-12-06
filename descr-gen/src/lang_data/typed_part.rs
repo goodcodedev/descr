@@ -128,8 +128,8 @@ impl<'a> TypedPart<'a> {
         match self {
             &AstPart { key } => {
                 if member.optional {
-                    append!(s 2, "self." member.sc() "match {\n");
-                    append!(s 3, "Some(ref inner) => self.visit_" key "(inner),\n");
+                    append!(s 2, "match node." member.sc() " {\n");
+                    append!(s 3, "Some(ref inner) => self.visit_" data.sc(key) "(inner),\n");
                     append!(s 3, "None => {}\n");
                     append!(s 2, "}\n");
                 } else {
@@ -138,7 +138,7 @@ impl<'a> TypedPart<'a> {
             }
             &ListPart { key } => {
                 if member.optional {
-                    append!(s 2, "self." member.sc() " match {\n");
+                    append!(s 2, "node." member.sc() " match {\n");
                     append!(s 3, "Some(ref inner) => {\n");
                     append!(s 4, "for item in &inner {\n");
                     match data.rule_types.get(key).unwrap() {
@@ -204,6 +204,85 @@ impl<'a> TypedPart<'a> {
         } else {
             false
         }
+    }
+
+    pub fn add_to_source(&self, mut s: String, part: &AstRulePart<'a>, data: &LangData<'a>) -> String {
+        match self {
+            &TypedPart::AstPart{key} => {
+                if let Some(member_key) = part.member_key {
+                    if part.optional {
+                        append!(s 2, "if let Some(ref some_val) = node." data.sc(member_key) " {\n    ");
+                    }
+                    let ast_type = data.resolve(key).get_ast_type();
+                    append!(s 2, "s = Self::to_source_" data.sc(ast_type) "(s, ");
+                    if part.optional {
+                        s += "some_val);\n";
+                        s += "        }\n";
+                    } else {
+                        append!(s, "&node." data.sc(member_key) ");\n");
+                    }
+                }
+            },
+            &TypedPart::ListPart{key} => {
+                if let Some(member_key) = part.member_key {
+                    if part.optional {
+                        append!(s 2, "if let Some(ref some_val) = node." data.sc(member_key) " {\n    ");
+                    }
+                    let ast_type = data.resolve(key).get_ast_type();
+                    append!(s 2, "for item in &");
+                    if part.optional { s += "some_val"; } else { append!(s, "node." data.sc(member_key)); }
+                    s += " {\n";
+                    append!(s 3, "s = Self::to_source_" data.sc(ast_type) "(s, item);\n");
+                    append!(s 2, "}\n");
+                    if part.optional {
+                        s += "    }\n";
+                    }
+                }
+            },
+            &TypedPart::IntPart{..}
+            | &TypedPart::IdentPart{..}
+            | &TypedPart::StringPart{..}
+            | &TypedPart::FnPart{..} // Todo: Fn should probably be able to handle own
+             => {
+                if let Some(member_key) = part.member_key {
+                    if part.optional {
+                        append!(s 2, "if node." member_key ".is_some() {\n    ");
+                    }
+                    append!(s 2, "s += node." member_key ";\n");
+                    if part.optional {
+                        s += "    }";
+                    }
+                }
+            },
+            &TypedPart::CharPart{chr, ..} => {
+                if let Some(member_key) = part.member_key {
+                    // Assuming parsed to bool
+                    append!(s 2, "if node." member_key " {\n    ");
+                    append!(s 3, "s.push('");
+                    s.push(chr);
+                    s += "');\n";
+                    s += "    }";
+                } else {
+                    append!(s 2, "s.push('");
+                    s.push(chr);
+                    s += "');\n";
+                }
+            },
+            &TypedPart::TagPart{tag, ..} => {
+                if let Some(member_key) = part.member_key {
+                    // Assuming parsed to bool
+                    append!(s 2, "if node." member_key " {\n    ");
+                    append!(s 3, "s += \"" tag "\";\n");
+                    s += "    }";
+                } else {
+                    append!(s 2, "s += \"" tag "\";\n");
+                }
+            },
+            &TypedPart::WSPart => {
+                append!(s 2, "s += \" \"");
+            }
+        }
+        s
     }
 
     pub fn add_type(

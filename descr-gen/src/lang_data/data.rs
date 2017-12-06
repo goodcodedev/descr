@@ -107,6 +107,13 @@ impl<'a> ResolvedType<'a> {
             &ResolvedType::ResolvedStruct(key) => data.ast_structs.get(key).unwrap().is_simple(),
         }
     }
+
+    pub fn get_ast_type(&self) -> &'a str {
+        match self {
+            &ResolvedType::ResolvedEnum(key) => key,
+            &ResolvedType::ResolvedStruct(key) => key,
+        }
+    }
 }
 
 pub struct LangData<'a> {

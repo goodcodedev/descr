@@ -123,6 +123,36 @@ impl<'a, 'b> TypedRulePart<'a> {
             }
         }
     }
+
+    pub fn add_to_source(&self, mut s: String, part: &AstRulePart<'a>, data: &LangData<'a>) -> String {
+        if part.not {
+            if let Some(member_key) = part.member_key {
+                if part.optional {
+                    append!(s 2, "if let Some(not_part) = node." member_key "{ s += not_part }\n");
+                } else {
+                    append!(s 2, "s += node" member_key ";\n");
+                }
+            }
+        } else {
+            match self {
+                &TypedRulePart::Keyed(typed_part) => s = typed_part.add_to_source(s, part, data),
+                &TypedRulePart::Quoted(quoted) => {
+                    if part.optional {
+                        if let Some(member_key) = part.member_key {
+                            append!(s 2, "if node." data.sc(member_key) " { s += \"" quoted "\"; }\n");
+                        }
+                    } else {
+                        append!(s 2, "s += \"" quoted "\";\n");
+                    }
+                },
+                &TypedRulePart::Func(..) => {
+                    // Todo, make map of functions and let it handle
+                    //panic!("func to source todo");
+                }
+            }
+        }
+        s
+    }
 }
 
 impl<'a> AstRulePart<'a> {

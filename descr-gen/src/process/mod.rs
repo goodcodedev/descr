@@ -5,6 +5,7 @@ pub mod build_ast;
 pub mod codegen_ast;
 pub mod codegen_parsers;
 pub mod codegen_visitor;
+pub mod codegen_tosource;
 
 use std::fs::File;
 use std::fs;
@@ -17,6 +18,7 @@ use self::build_ast::BuildAst;
 use self::codegen_ast::CodegenAst;
 use self::codegen_parsers::CodegenParsers;
 use self::codegen_visitor::CodegenVisitor;
+use self::codegen_tosource::CodegenToSource;
 use descr_lang::gen::ast;
 use lang_data::data::*;
 use std::path::Path;
@@ -66,6 +68,12 @@ pub fn process<'a, 'b, 'c>(res: &'a ast::Source, data: &'b mut LangData<'a>, pat
                 write_file(path, "visitor.rs", codegen_visitor.gen());
             });
         }
+        {
+            measure!("Codegen tosource", {
+                let codegen_tosource = CodegenToSource::new(data);
+                write_file(path, "to_source.rs", codegen_tosource.gen());
+            });
+        }
         // Generate mod file
         gen_mod(path);
     });
@@ -73,7 +81,7 @@ pub fn process<'a, 'b, 'c>(res: &'a ast::Source, data: &'b mut LangData<'a>, pat
 }
 
 pub fn gen_mod(path: &str) {
-    let s = "pub mod ast;\npub mod parsers;\npub mod visitor;".to_string();
+    let s = "pub mod ast;\npub mod parsers;\npub mod visitor;\npub mod to_source;".to_string();
     write_file(path, "mod.rs", s);
 }
 

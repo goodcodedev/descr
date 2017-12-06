@@ -8,4 +8,14 @@ fn main() {
     let res = lang::parsers::start(&buf[..]);
     println!("\n= Result ===========================");
     println!("{:#?}", res);
+    /*
+    match res {
+        nom::IResult::Done(i, ref o) => {
+            let src = String::new();
+            let src = lang::to_source::ToSource::to_source_source(src, o);
+            println!("{}", src);
+        },
+        _ => {}
+    }
+    */
 }
