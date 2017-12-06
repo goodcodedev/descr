@@ -103,7 +103,11 @@ impl<'a, 'b> TypedRulePart<'a> {
             match self {
                 &TypedRulePart::Keyed(typed_part) => typed_part.gen_parser_val(s, part, data),
                 &TypedRulePart::Quoted(..) => {
-                    s += "true";
+                    if part.optional {
+                        append!(s, part.member_key.unwrap() "_k.is_some()");
+                    } else {
+                        s += "true";
+                    }
                     s
                 },
                 &TypedRulePart::Func(..) => {

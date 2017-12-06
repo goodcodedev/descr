@@ -31,7 +31,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
 
     fn reg_struct_member(data: &mut HashMap<&'d str, AstStruct<'d>>, 
                              struct_name: &'d str, member_name: &'d str,
-                             part_key: &'d str, optional: bool, not: bool,
+                             part_key: &'d str, optional: bool, not: bool, tag: bool,
                              snake_cased: &mut SnakeCased<'d>) {
         let ast_struct = data.get_mut(struct_name).unwrap();
         if ast_struct.members.contains_key(member_name) {
@@ -52,6 +52,8 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                     not,
                     if not {
                         AstMemberType::NotString
+                    } else if tag {
+                        AstMemberType::TagBool(part_key)
                     } else {
                         AstMemberType::KeyedToken(part_key)
                     })
@@ -83,12 +85,12 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                                 key,
                                 part.optional,
                                 part.not,
+                                false,
                                 snake_cased);
                         },
                         &CharPart { .. }
                         | &FnPart { .. }
-                        | &WSPart
-                        | &TagPart { .. } => {
+                        | &WSPart => {
                             // Count as member if member name is given
                             if let Some(member_key) = part.member_key {
                                 Self::reg_struct_member(
@@ -98,6 +100,23 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                                     key,
                                     part.optional,
                                     part.not,
+                                    false,
+                                    snake_cased);
+                            }
+                        },
+                        &TagPart { .. } => {
+                            // I think this is handled below in AstRuleToken::Tag.
+                            // Need big cleanup..
+                            // Count as member if member name is given
+                            if let Some(member_key) = part.member_key {
+                                Self::reg_struct_member(
+                                    struct_data,
+                                    rule.ast_type, 
+                                    member_key,
+                                    key,
+                                    part.optional,
+                                    part.not,
+                                    true,
                                     snake_cased);
                             }
                         }
@@ -113,6 +132,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                             string,
                             part.optional,
                             part.not,
+                            true,
                             snake_cased);
                     }
                 },
@@ -125,6 +145,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                             "",
                             part.optional,
                             part.not,
+                            false,
                             snake_cased);
                     }
                 }
@@ -312,6 +333,9 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
             }
         }
         for (enum_name, enum_data) in &self.data.ast_enums {
+            if enum_data.is_simple(self.data) {
+                continue;
+            }
             for item in &enum_data.items {
                 // Insert struct/enum members
                 match self.data.resolve(item) {

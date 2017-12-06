@@ -210,18 +210,21 @@ impl<'a> LangData<'a> {
                         if key != type_key {
                             self.resolve(type_key)
                         } else {
-                            panic!("Could not find key: {}", key);
+                            panic!("Could not find singletype key: {}", key);
                         }
                     },
                     &RuleType::ManyType(type_key) => {
                         if key != type_key {
                             self.resolve(type_key)
                         } else {
-                            panic!("Could not find key: {}", key);
+                            panic!("Could not find manytype key: {}", key);
                         }
                     }
                 },
                 None => {
+                    println!("{:#?}", self.ast_enums.keys());
+                    println!("{:#?}", self.ast_structs.keys());
+                    println!("{:#?}", self.rule_types);
                     panic!("Could not find key: {}", key);
                 }
             }

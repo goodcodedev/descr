@@ -35,8 +35,13 @@ impl<'a> AstStructMember<'a> {
     }
 
     pub fn gen_visitor(&self, s: String, ast_struct: &AstStruct, data: &LangData) -> String {
-        let typed_part = data.typed_parts.get(self.part_key).unwrap();
-        typed_part.gen_visitor(s, self, ast_struct, data)
+        match self.tpe {
+            AstMemberType::KeyedToken(part_key) => {
+                let typed_part = data.typed_parts.get(part_key).unwrap();
+                typed_part.gen_visitor(s, self, ast_struct, data)
+            },
+            _ => s
+        }
     }
 
     pub fn sc(&self) -> &str {
@@ -47,6 +52,7 @@ impl<'a> AstStructMember<'a> {
 #[derive(Debug)]
 pub enum AstMemberType<'a> {
     KeyedToken(&'a str),
+    TagBool(&'a str),
     NotString,
 }
 
@@ -57,7 +63,8 @@ impl<'a> AstMemberType<'a> {
                 let part = data.typed_parts.get(key).unwrap();
                 part.needs_lifetime(data)
             },
-            &AstMemberType::NotString => true
+            &AstMemberType::NotString => true,
+            &AstMemberType::TagBool(..) => false
         }
     }
 
@@ -68,7 +75,8 @@ impl<'a> AstMemberType<'a> {
                 part.is_option(member)
             },
             // Not sure if it makes sense with option + not
-            &AstMemberType::NotString => false
+            &AstMemberType::NotString => false,
+            &AstMemberType::TagBool(..) => false
         }
     }
 
@@ -80,6 +88,10 @@ impl<'a> AstMemberType<'a> {
             },
             &AstMemberType::NotString => {
                 s += "&'a str";
+                s
+            },
+            &AstMemberType::TagBool(..) => {
+                s += "bool";
                 s
             }
         }
