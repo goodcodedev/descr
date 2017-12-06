@@ -4,16 +4,19 @@ use descr_lang::gen::ast::*;
 use descr_lang::gen::visitor::Visitor;
 
 pub struct BuildParsers<'a, 'd: 'a> {
-    data: &'a mut LangData<'d>
+    data: &'a mut LangData<'d>,
 }
 impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
     pub fn new(data: &'a mut LangData<'d>) -> BuildParsers<'a, 'd> {
-        BuildParsers {
-            data
-        }
+        BuildParsers { data }
     }
-    pub fn add_tokens_to_rule(&mut self, is_ast: bool, ident: &'d str, name: &'d str, 
-                              token_list: &Vec<Token<'d>>) {
+    pub fn add_tokens_to_rule(
+        &mut self,
+        is_ast: bool,
+        ident: &'d str,
+        name: &'d str,
+        token_list: &Vec<Token<'d>>,
+    ) {
         use lang_data::rule::AstRule::*;
         let rule = {
             if is_ast {
@@ -21,17 +24,17 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                 ast_data.rules.push(PartsRule(AstPartsRule::new(name)));
                 match ast_data.rules.last_mut().unwrap() {
                     &mut PartsRule(ref mut parts_rule) => parts_rule,
-                    _ => panic!()
+                    _ => panic!(),
                 }
             } else {
                 let list_data = self.data.list_data.get_mut(ident).unwrap();
                 list_data.rules.push(ListRule::new(
                     Some(ident),
-                    PartsRule(AstPartsRule::new(name))
+                    PartsRule(AstPartsRule::new(name)),
                 ));
                 match &mut list_data.rules.last_mut().unwrap().ast_rule {
                     &mut PartsRule(ref mut parts_rule) => parts_rule,
-                    _ => panic!()
+                    _ => panic!(),
                 }
             }
         };
@@ -39,7 +42,11 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
             use self::Token::*;
             use lang_data::typed_part::TypedPart::*;
             match token {
-                &SimpleTokenItem(SimpleToken{ref token_type, optional, not}) => {
+                &SimpleTokenItem(SimpleToken {
+                    ref token_type,
+                    optional,
+                    not,
+                }) => {
                     match token_type {
                         &TokenType::KeyTokenItem(KeyToken { key }) => {
                             let part = self.data.typed_parts.get(key).unwrap();
@@ -54,44 +61,51 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                                     rule.member_idxs.insert(key, i);
                                     rule.idx_members.insert(i, key);
                                     Some(key)
-                                },
-                                _ => None
+                                }
+                                _ => None,
                             };
                             rule.parts.push(AstRulePart {
                                 token: AstRuleToken::Key(key),
                                 member_key,
                                 optional,
-                                not
+                                not,
                             });
-                        },
+                        }
                         &TokenType::QuotedItem(Quoted { string }) => {
                             // Tag rule, not considered member
                             rule.parts.push(AstRulePart {
                                 token: AstRuleToken::Tag(string),
                                 member_key: None,
                                 optional,
-                                not
+                                not,
                             });
-                        },
-                        &TokenType::FuncTokenItem(FuncToken {ident, ref fn_args}) => {
+                        }
+                        &TokenType::FuncTokenItem(FuncToken { ident, ref fn_args }) => {
                             rule.parts.push(AstRulePart {
                                 token: AstRuleToken::Func(
                                     ident,
-                                    fn_args.iter().map(|arg| {
-                                        match arg {
-                                            &FuncArg::QuotedItem(Quoted{string})
-                                                => RuleFuncArg::Quoted(string)
-                                        }
-                                    }).collect::<Vec<_>>()
+                                    fn_args
+                                        .iter()
+                                        .map(|arg| match arg {
+                                            &FuncArg::QuotedItem(Quoted { string }) => {
+                                                RuleFuncArg::Quoted(string)
+                                            }
+                                        })
+                                        .collect::<Vec<_>>(),
                                 ),
                                 member_key: None,
                                 optional,
-                                not
+                                not,
                             });
                         }
                     }
-                },
-                &NamedTokenItem(NamedToken{ref token_type, name, optional, not}) => {
+                }
+                &NamedTokenItem(NamedToken {
+                    ref token_type,
+                    name,
+                    optional,
+                    not,
+                }) => {
                     match token_type {
                         &TokenType::KeyTokenItem(KeyToken { key }) => {
                             let part = self.data.typed_parts.get(key).unwrap();
@@ -117,32 +131,34 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                                 token: AstRuleToken::Key(key),
                                 member_key,
                                 optional,
-                                not
+                                not,
                             });
-                        },
+                        }
                         &TokenType::QuotedItem(Quoted { string }) => {
                             // Tag rule, not considered member
                             rule.parts.push(AstRulePart {
                                 token: AstRuleToken::Tag(string),
                                 member_key: Some(name),
                                 optional,
-                                not
+                                not,
                             });
-                        },
-                        &TokenType::FuncTokenItem(FuncToken {ident, ref fn_args}) => {
+                        }
+                        &TokenType::FuncTokenItem(FuncToken { ident, ref fn_args }) => {
                             rule.parts.push(AstRulePart {
                                 token: AstRuleToken::Func(
                                     ident,
-                                    fn_args.iter().map(|arg| {
-                                        match arg {
-                                            &FuncArg::QuotedItem(Quoted{string})
-                                                => RuleFuncArg::Quoted(string)
-                                        }
-                                    }).collect::<Vec<_>>()
+                                    fn_args
+                                        .iter()
+                                        .map(|arg| match arg {
+                                            &FuncArg::QuotedItem(Quoted { string }) => {
+                                                RuleFuncArg::Quoted(string)
+                                            }
+                                        })
+                                        .collect::<Vec<_>>(),
                                 ),
                                 member_key: Some(name),
                                 optional,
-                                not
+                                not,
                             });
                         }
                     }
@@ -157,12 +173,20 @@ impl<'a, 'd> Visitor<'d> for BuildParsers<'a, 'd> {
             use lang_data::rule::AstRule::*;
             use self::AstItem::*;
             match item {
-                &AstDefItem(AstDef{ref ident, ref tokens}) => {
+                &AstDefItem(AstDef {
+                    ref ident,
+                    ref tokens,
+                }) => {
                     let name = ident.unwrap_or(node.ident);
                     self.add_tokens_to_rule(true, node.ident, name, tokens);
-                },
-                &AstRefItem(AstRef{ref ident}) => {
-                    self.data.ast_data.get_mut(node.ident).unwrap().rules.push(RefRule(ident));
+                }
+                &AstRefItem(AstRef { ref ident }) => {
+                    self.data
+                        .ast_data
+                        .get_mut(node.ident)
+                        .unwrap()
+                        .rules
+                        .push(RefRule(ident));
                 }
             }
         }
@@ -173,14 +197,20 @@ impl<'a, 'd> Visitor<'d> for BuildParsers<'a, 'd> {
             use self::AstItem::*;
             use lang_data::rule::AstRule::*;
             match &item.ast_item {
-                &AstDefItem(AstDef{ref ident, ref tokens}) => {
+                &AstDefItem(AstDef {
+                    ref ident,
+                    ref tokens,
+                }) => {
                     let name = ident.unwrap_or(node.ident);
                     self.add_tokens_to_rule(false, node.ident, name, tokens);
-                },
-                &AstRefItem(AstRef{ref ident}) => {
-                    self.data.list_data.get_mut(node.ident).unwrap().rules.push(
-                        ListRule::new(item.sep, RefRule(ident))
-                    );
+                }
+                &AstRefItem(AstRef { ref ident }) => {
+                    self.data
+                        .list_data
+                        .get_mut(node.ident)
+                        .unwrap()
+                        .rules
+                        .push(ListRule::new(item.sep, RefRule(ident)));
                 }
             }
         }
@@ -189,9 +219,9 @@ impl<'a, 'd> Visitor<'d> for BuildParsers<'a, 'd> {
     fn visit_list_single(&mut self, node: &'d ListSingle) {
         let list_data = self.data.list_data.get_mut(node.ident).unwrap();
         use lang_data::rule::AstRule::*;
-        list_data.rules.push(
-            ListRule::new(None, RefRule(node.reference))
-        );
+        list_data
+            .rules
+            .push(ListRule::new(None, RefRule(node.reference)));
     }
 
     fn visit_ast_single(&mut self, node: &'d AstSingle) {

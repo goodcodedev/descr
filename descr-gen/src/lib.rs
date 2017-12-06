@@ -1,8 +1,8 @@
-extern crate nom;
-extern crate elapsed;
 #[macro_use]
 extern crate descr_common;
 extern crate descr_lang;
+extern crate elapsed;
+extern crate nom;
 pub mod lang_data;
 pub mod process;
 

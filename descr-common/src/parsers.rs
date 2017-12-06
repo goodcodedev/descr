@@ -31,10 +31,13 @@ pub fn ident(input: &[u8]) -> IResult<&[u8], &str> {
         if first.is_alpha() || first == '_' as u8 {
             for (i, val) in input[1..].iter().enumerate() {
                 if !(val.is_alphanum() || val.as_char() == '_') {
-                    return IResult::Done(&input[i+1..], str::from_utf8(&input[..i+1]).unwrap());
+                    return IResult::Done(&input[i + 1..], str::from_utf8(&input[..i + 1]).unwrap());
                 }
             }
-            return IResult::Done(&input[input.len()..], str::from_utf8(&input[..input.len()]).unwrap());
+            return IResult::Done(
+                &input[input.len()..],
+                str::from_utf8(&input[..input.len()]).unwrap(),
+            );
         } else {
             return IResult::Error(error_code!(ErrorKind::Custom(42)));
         }
@@ -73,14 +76,15 @@ pub fn special_chars(input: &[u8]) -> IResult<&[u8], &str> {
         return IResult::Incomplete(Needed::Size(1));
     } else {
         let mut i = 0;
-        while i <  input.len() {
+        while i < input.len() {
             if !(input[i] == 0x21 // !, then skip quote (")
                 || (input[i] >= 0x23 && input[i] <= 0x26) // # - &, then skip single quote
                 || input[i] == 0x28 // (, then skip )
                 || (input[i] >= 0x2A && input[i] <= 0x2F) // * - /
                 || (input[i] >= 0x3A && input[i] <= 0x40) // : - @
                 || (input[i] >= 0x5B && input[i] <= 0x60) // [ - `
-                || (input[i] >= 0x7B && input[i] <= 0x7E)) // { - ~
+                || (input[i] >= 0x7B && input[i] <= 0x7E))
+            // { - ~
             {
                 break;
             }

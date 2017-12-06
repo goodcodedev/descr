@@ -2,8 +2,8 @@ extern crate elapsed;
 extern crate nom;
 use elapsed::measure_time;
 extern crate descr_common;
-extern crate descr_lang;
 extern crate descr_gen;
+extern crate descr_lang;
 use std::fs::File;
 use std::io::prelude::*;
 use std::env;
@@ -34,14 +34,15 @@ enum Command {
     Pg,
     PgRes,
     DescrLang,
-    Custom
+    Custom,
 }
 
 fn compile_pg() {
     let output = process::Command::new("cargo")
         .current_dir("pg")
         .arg("build")
-        .output().expect("Could not run pg build");
+        .output()
+        .expect("Could not run pg build");
     println!("{}", String::from_utf8_lossy(&output.stdout));
     println!("{}", String::from_utf8_lossy(&output.stderr));
 }
@@ -50,7 +51,8 @@ fn run_pg() {
     let output = process::Command::new("cargo")
         .current_dir("pg")
         .arg("run")
-        .output().expect("Could not run pg");
+        .output()
+        .expect("Could not run pg");
     println!("{}", String::from_utf8_lossy(&output.stdout));
     println!("{}", String::from_utf8_lossy(&output.stderr));
 }
@@ -59,9 +61,14 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let (filename, output_dir, command, check_change) = match args.len() {
         2 => match args[1].as_str() {
-            "pg-lang"     => ("playground.lang", "pg/src/lang", Command::Pg, false),
-            "pg"          => ("playground.lang", "pg/src/lang", Command::PgRes, true),
-            "descr-lang"  => ("descr.lang", "descr-lang/src/gen", Command::DescrLang, false),
+            "pg-lang" => ("playground.lang", "pg/src/lang", Command::Pg, false),
+            "pg" => ("playground.lang", "pg/src/lang", Command::PgRes, true),
+            "descr-lang" => (
+                "descr.lang",
+                "descr-lang/src/gen",
+                Command::DescrLang,
+                false,
+            ),
             _ => {
                 invalid_args();
                 return;
@@ -84,9 +91,9 @@ fn main() {
         match file_meta.modified() {
             Ok(file_time) => match ast_meta.modified() {
                 Ok(ast_time) => file_time > ast_time,
-                _ => true
+                _ => true,
             },
-            _ => true
+            _ => true,
         }
     };
     if check_change && !is_changed {
@@ -94,10 +101,9 @@ fn main() {
     } else {
         let mut f = File::open(filename).expect(format!("Could not open {}", filename).as_str());
         let mut buf = Vec::with_capacity(1024);
-        f.read_to_end(&mut buf).expect(format!("Could not open {}", filename).as_str());
-        let (elapsed, res) = measure_time(|| {
-            descr_lang::gen::parsers::source(&buf[..])
-        });
+        f.read_to_end(&mut buf)
+            .expect(format!("Could not open {}", filename).as_str());
+        let (elapsed, res) = measure_time(|| descr_lang::gen::parsers::source(&buf[..]));
         println!("Parse: {}", elapsed);
         //println!("{:#?}", res);
         let mut data = LangData::new(false);
@@ -106,7 +112,7 @@ fn main() {
                 nom::IResult::Done(_, ref source) => {
                     descr_gen::process::process(source, &mut data, output_dir);
                 }
-                _ => ()
+                _ => (),
             }
         }
     }
@@ -114,7 +120,7 @@ fn main() {
         Command::Pg => {
             println!("Playground lang updated, compiling..");
             compile_pg();
-        },
+        }
         Command::PgRes => {
             if is_changed {
                 println!("Playground lang updated, compiling..");
@@ -123,9 +129,9 @@ fn main() {
             } else {
                 run_pg();
             }
-        },
+        }
         Command::DescrLang => println!("Descr lang updated"),
-        Command::Custom => println!("Langfile processed")
+        Command::Custom => println!("Langfile processed"),
     };
 
     /*

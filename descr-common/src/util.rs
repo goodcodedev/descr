@@ -6,13 +6,14 @@ pub trait SortedHashMap<K, V> {
 }
 
 impl<K, V> SortedHashMap<K, V> for HashMap<K, V>
-    where K: std::cmp::Eq + std::hash::Hash + std::cmp::Ord
+where
+    K: std::cmp::Eq + std::hash::Hash + std::cmp::Ord,
 {
     fn sorted_iter(&self) -> SortedHashMapIter<K, V> {
         SortedHashMapIter {
             inner: self,
             keys: self.keys().collect::<Vec<_>>(),
-            i: 0
+            i: 0,
         }
     }
 }
@@ -20,10 +21,11 @@ impl<K, V> SortedHashMap<K, V> for HashMap<K, V>
 pub struct SortedHashMapIter<'a, K: 'a, V: 'a> {
     inner: &'a HashMap<K, V>,
     keys: Vec<&'a K>,
-    i: usize
+    i: usize,
 }
-impl<'a, K: 'a, V: 'a> Iterator for SortedHashMapIter<'a, K, V> 
-    where K: std::cmp::Eq + std::hash::Hash + std::cmp::Ord
+impl<'a, K: 'a, V: 'a> Iterator for SortedHashMapIter<'a, K, V>
+where
+    K: std::cmp::Eq + std::hash::Hash + std::cmp::Ord,
 {
     type Item = (&'a K, &'a V);
     fn next(&mut self) -> Option<Self::Item> {
@@ -45,7 +47,8 @@ pub fn load_file(filename: &str) -> Vec<u8> {
     use std::io::prelude::*;
     let mut f = File::open(filename).expect(format!("Could not open file: {}", filename).as_str());
     let mut buf = Vec::with_capacity(1024);
-    f.read_to_end(&mut buf).expect(format!("Could not read file: {}", filename).as_str());
+    f.read_to_end(&mut buf)
+        .expect(format!("Could not read file: {}", filename).as_str());
     buf
 }
 

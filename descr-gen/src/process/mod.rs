@@ -84,6 +84,8 @@ pub fn write_file<'a, 'b>(path: &'a str, name: &'b str, content: String) {
         let backup_p = Path::new(path).join("backup").join(name);
         fs::copy(&p, backup_p).expect("Could not backup file");
     }
-    let mut file = File::create(p).expect(format!("Could not open path: {}, file: {}", path, name).as_str());
-    file.write_all(content.as_bytes()).expect(format!("Could not write to path: {}, file: {}", path, name).as_str());
+    let mut file =
+        File::create(p).expect(format!("Could not open path: {}, file: {}", path, name).as_str());
+    file.write_all(content.as_bytes())
+        .expect(format!("Could not write to path: {}, file: {}", path, name).as_str());
 }

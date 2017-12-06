@@ -5,14 +5,14 @@ use std::collections::HashMap;
 
 /// Parser "rule"
 /// List of tokens that makes up some ast type
-/// The tokens themselves are stored in 
+/// The tokens themselves are stored in
 /// lang_data, and referenced by key
 #[derive(Debug)]
 pub struct AstPartsRule<'a> {
     pub parts: Vec<AstRulePart<'a>>,
     pub ast_type: &'a str,
     pub member_idxs: HashMap<&'a str, usize>,
-    pub idx_members: HashMap<usize, &'a str>
+    pub idx_members: HashMap<usize, &'a str>,
 }
 impl<'a> AstPartsRule<'a> {
     pub fn new(ast_type: &'a str) -> AstPartsRule<'a> {
@@ -20,7 +20,7 @@ impl<'a> AstPartsRule<'a> {
             parts: Vec::new(),
             ast_type,
             member_idxs: HashMap::new(),
-            idx_members: HashMap::new()
+            idx_members: HashMap::new(),
         }
     }
 }
@@ -30,28 +30,28 @@ pub struct AstRulePart<'a> {
     pub token: AstRuleToken<'a>,
     pub member_key: Option<&'a str>,
     pub optional: bool,
-    pub not: bool
+    pub not: bool,
 }
 
 #[derive(Debug)]
 pub enum AstRuleToken<'a> {
     Key(&'a str),
     Tag(&'a str),
-    Func(&'a str, Vec<RuleFuncArg<'a>>)
+    Func(&'a str, Vec<RuleFuncArg<'a>>),
 }
 
 #[derive(Debug)]
 pub enum RuleFuncArg<'a> {
-    Quoted(&'a str)
+    Quoted(&'a str),
 }
 
 pub enum TypedRulePart<'a> {
     Keyed(&'a TypedPart<'a>),
     Quoted(&'a str),
-    Func(&'a str, Vec<TypedRuleFuncArg<'a>>)
+    Func(&'a str, Vec<TypedRuleFuncArg<'a>>),
 }
 pub enum TypedRuleFuncArg<'a> {
-    Quoted(&'a str)
+    Quoted(&'a str),
 }
 impl<'a, 'b> TypedRulePart<'a> {
     pub fn gen_parser(&self, mut s: String, data: &'b LangData<'a>) -> String {
@@ -66,7 +66,7 @@ impl<'a, 'b> TypedRulePart<'a> {
                     s += ")";
                 }
                 s
-            },
+            }
             &TypedRulePart::Func(ident, ref args) => {
                 if data.debug {
                     s += "debug_wrap!(";
@@ -92,7 +92,12 @@ impl<'a, 'b> TypedRulePart<'a> {
         }
     }
 
-    pub fn gen_parser_val(&self, mut s: String, part: &'b AstRulePart<'a>, data: &'b LangData<'a>) -> String {
+    pub fn gen_parser_val(
+        &self,
+        mut s: String,
+        part: &'b AstRulePart<'a>,
+        data: &'b LangData<'a>,
+    ) -> String {
         if part.not {
             // Not is collected as str
             s += "std::str::from_utf8(";
@@ -109,7 +114,7 @@ impl<'a, 'b> TypedRulePart<'a> {
                         s += "true";
                     }
                     s
-                },
+                }
                 &TypedRulePart::Func(..) => {
                     s += part.member_key.unwrap();
                     s += "_k";
@@ -125,16 +130,14 @@ impl<'a> AstRulePart<'a> {
         match &self.token {
             &AstRuleToken::Key(key) => TypedRulePart::Keyed(data.typed_parts.get(key).unwrap()),
             &AstRuleToken::Tag(string) => TypedRulePart::Quoted(string),
-            &AstRuleToken::Func(ident, ref args) => {
-                TypedRulePart::Func(
-                    ident,
-                    args.iter().map(|arg| {
-                        match arg {
-                            &RuleFuncArg::Quoted(string) => TypedRuleFuncArg::Quoted(string)
-                        }
-                    }).collect::<Vec<_>>()
-                )
-            }
+            &AstRuleToken::Func(ident, ref args) => TypedRulePart::Func(
+                ident,
+                args.iter()
+                    .map(|arg| match arg {
+                        &RuleFuncArg::Quoted(string) => TypedRuleFuncArg::Quoted(string),
+                    })
+                    .collect::<Vec<_>>(),
+            ),
         }
     }
 }
@@ -143,21 +146,23 @@ impl<'a> AstRulePart<'a> {
 #[derive(Debug)]
 pub enum AstRule<'a> {
     PartsRule(AstPartsRule<'a>),
-    RefRule(&'a str)
+    RefRule(&'a str),
 }
 impl<'a> AstRule<'a> {
-    pub fn gen_rule(&self, mut s: String, data: &LangData, rule_type: &RuleType<'a>, resolved: &ResolvedType<'a>) -> String {
+    pub fn gen_rule(
+        &self,
+        mut s: String,
+        data: &LangData,
+        rule_type: &RuleType<'a>,
+        resolved: &ResolvedType<'a>,
+    ) -> String {
         let (is_many, type_name) = match rule_type {
             &RuleType::SingleType(tn) => (false, tn),
-            &RuleType::ManyType(tn) => (true, tn)
+            &RuleType::ManyType(tn) => (true, tn),
         };
         let (struct_data, enum_data) = match resolved {
-            &ResolvedType::ResolvedEnum(key) => {
-                (None, data.ast_enums.get(key))
-            },
-            &ResolvedType::ResolvedStruct(key) => {
-                (data.ast_structs.get(key), None)
-            }
+            &ResolvedType::ResolvedEnum(key) => (None, data.ast_enums.get(key)),
+            &ResolvedType::ResolvedStruct(key) => (data.ast_structs.get(key), None),
         };
         match self {
             &AstRule::RefRule(rule_ref) => {
@@ -171,15 +176,15 @@ impl<'a> AstRule<'a> {
                             } else {
                                 "node"
                             }
-                        },
-                        _ => "node"
+                        }
+                        _ => "node",
                     };
                     append!(s, "map!(" data.sc(rule_ref) ", |node| { ");
                     append!(s, type_name "::" rule_ref "Item(node) })");
                 } else {
                     s += data.sc(rule_ref);
                 }
-            },
+            }
             &AstRule::PartsRule(ref parts_rule) => {
                 s += "do_parse!(\n";
                 for part in &parts_rule.parts {
@@ -217,10 +222,11 @@ impl<'a> AstRule<'a> {
                         } else {
                             false
                         }
-                    },
-                    _ => false
+                    }
+                    _ => false,
                 };
-                if is_many { // Could "resolved" be used instead?
+                if is_many {
+                    // Could "resolved" be used instead?
                     if is_simple {
                         append!(s, type_name "::" parts_rule.ast_type);
                     } else {
@@ -230,7 +236,7 @@ impl<'a> AstRule<'a> {
                         } else {
                             s += parts_rule.ast_type;
                         }
-                        s +=  " {\n";
+                        s += " {\n";
                     }
                 } else {
                     s += parts_rule.ast_type;
@@ -242,20 +248,28 @@ impl<'a> AstRule<'a> {
                     for part in &parts_rule.parts {
                         if let Some(member_key) = part.member_key {
                             let is_boxed = match struct_data {
-                                Some(struct_data) => struct_data.members.get(member_key).unwrap().boxed,
-                                _ => false
+                                Some(struct_data) => {
+                                    struct_data.members.get(member_key).unwrap().boxed
+                                }
+                                _ => false,
                             };
                             let typed_part = part.get_typed_part(data);
                             append!(s 3, data.sc(member_key) ": ");
-                            if is_boxed { s += "Box::new("; }
+                            if is_boxed {
+                                s += "Box::new(";
+                            }
                             s = typed_part.gen_parser_val(s, part, data);
-                            if is_boxed { s += ")"; }
+                            if is_boxed {
+                                s += ")";
+                            }
                             s += ",\n";
                         }
                     }
                     if is_many {
                         s += "        })))";
-                        if is_boxed_item { s += ")"; }
+                        if is_boxed_item {
+                            s += ")";
+                        }
                     } else {
                         s += "        }))";
                     }
@@ -269,13 +283,10 @@ impl<'a> AstRule<'a> {
 #[derive(Debug)]
 pub struct ListRule<'a> {
     pub ast_rule: AstRule<'a>,
-    pub sep: Option<&'a str>
+    pub sep: Option<&'a str>,
 }
 impl<'a> ListRule<'a> {
     pub fn new(sep: Option<&'a str>, ast_rule: AstRule<'a>) -> ListRule<'a> {
-        ListRule {
-            sep,
-            ast_rule
-        }
+        ListRule { sep, ast_rule }
     }
 }

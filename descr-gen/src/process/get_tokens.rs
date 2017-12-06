@@ -3,19 +3,16 @@ use descr_lang::gen::ast::*;
 use descr_lang::gen::visitor::Visitor;
 
 pub struct GetTokens<'a, 'd: 'a> {
-    data: &'a mut LangData<'d>
+    data: &'a mut LangData<'d>,
 }
 
 impl<'a, 'd> GetTokens<'a, 'd> {
     pub fn new(data: &'a mut LangData<'d>) -> GetTokens<'a, 'd> {
-        GetTokens {
-            data
-        }
+        GetTokens { data }
     }
 }
 
 impl<'a, 'd> Visitor<'d> for GetTokens<'a, 'd> {
-
     fn visit_key_token(&mut self, node: &'d KeyToken) {
         self.data.resolve_typed_part(node.key);
     }
@@ -33,5 +30,4 @@ impl<'a, 'd> Visitor<'d> for GetTokens<'a, 'd> {
             self.visit_list_item(item);
         }
     }
-
 }

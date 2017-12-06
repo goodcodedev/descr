@@ -13,14 +13,18 @@ pub struct AstStructMember<'a> {
     pub optional: bool,
     pub not: bool,
     pub tpe: AstMemberType<'a>,
-    pub boxed: bool
+    pub boxed: bool,
 }
 impl<'a> AstStructMember<'a> {
-    pub fn new(name: &'a str, snake_case: String, 
-               part_key: &'a str, type_name: &'a str, 
-               optional: bool, not: bool,
-               tpe: AstMemberType<'a>) 
-               -> AstStructMember<'a> {
+    pub fn new(
+        name: &'a str,
+        snake_case: String,
+        part_key: &'a str,
+        type_name: &'a str,
+        optional: bool,
+        not: bool,
+        tpe: AstMemberType<'a>,
+    ) -> AstStructMember<'a> {
         AstStructMember {
             num_patterns: 0,
             name,
@@ -30,7 +34,7 @@ impl<'a> AstStructMember<'a> {
             optional,
             not,
             tpe,
-            boxed: false
+            boxed: false,
         }
     }
 
@@ -39,8 +43,8 @@ impl<'a> AstStructMember<'a> {
             AstMemberType::KeyedToken(part_key) => {
                 let typed_part = data.typed_parts.get(part_key).unwrap();
                 typed_part.gen_visitor(s, self, ast_struct, data)
-            },
-            _ => s
+            }
+            _ => s,
         }
     }
 
@@ -62,9 +66,9 @@ impl<'a> AstMemberType<'a> {
             &AstMemberType::KeyedToken(key) => {
                 let part = data.typed_parts.get(key).unwrap();
                 part.needs_lifetime(data)
-            },
+            }
             &AstMemberType::NotString => true,
-            &AstMemberType::TagBool(..) => false
+            &AstMemberType::TagBool(..) => false,
         }
     }
 
@@ -73,23 +77,28 @@ impl<'a> AstMemberType<'a> {
             &AstMemberType::KeyedToken(key) => {
                 let part = data.typed_parts.get(key).unwrap();
                 part.is_option(member)
-            },
+            }
             // Not sure if it makes sense with option + not
             &AstMemberType::NotString => false,
-            &AstMemberType::TagBool(..) => false
+            &AstMemberType::TagBool(..) => false,
         }
     }
 
-    pub fn add_type(&self, mut s: String, member: &AstStructMember<'a>, data: &LangData<'a>) -> String {
+    pub fn add_type(
+        &self,
+        mut s: String,
+        member: &AstStructMember<'a>,
+        data: &LangData<'a>,
+    ) -> String {
         match self {
             &AstMemberType::KeyedToken(key) => {
                 let part = data.typed_parts.get(key).unwrap();
                 part.add_type(s, member, data)
-            },
+            }
             &AstMemberType::NotString => {
                 s += "&'a str";
                 s
-            },
+            }
             &AstMemberType::TagBool(..) => {
                 s += "bool";
                 s
@@ -108,7 +117,7 @@ pub struct AstStruct<'a> {
     pub name: &'a str,
     pub snake_case: String,
     pub num_patterns: u32,
-    pub members: HashMap<&'a str, AstStructMember<'a>>
+    pub members: HashMap<&'a str, AstStructMember<'a>>,
 }
 impl<'a> AstStruct<'a> {
     pub fn new(name: &'a str, snake_case: String) -> AstStruct<'a> {
@@ -116,14 +125,16 @@ impl<'a> AstStruct<'a> {
             name,
             snake_case,
             num_patterns: 0,
-            members: HashMap::new()
+            members: HashMap::new(),
         }
     }
     pub fn sc(&self) -> &str {
         self.snake_case.as_str()
     }
     pub fn needs_lifetime(&self, data: &LangData<'a>) -> bool {
-        self.members.values().any(|member| { member.tpe.needs_lifetime(data) })
+        self.members
+            .values()
+            .any(|member| member.tpe.needs_lifetime(data))
     }
     pub fn add_type(&self, mut s: String, data: &LangData<'a>) -> String {
         s += self.name;
@@ -143,7 +154,7 @@ pub struct AstEnum<'a> {
     pub name: &'a str,
     pub snake_case: String,
     pub items: Vec<&'a str>,
-    pub boxed_items: HashSet<&'a str>
+    pub boxed_items: HashSet<&'a str>,
 }
 impl<'a> AstEnum<'a> {
     pub fn new(name: &'a str, snake_case: String) -> AstEnum<'a> {
@@ -151,7 +162,7 @@ impl<'a> AstEnum<'a> {
             name,
             snake_case,
             items: Vec::new(),
-            boxed_items: HashSet::new()
+            boxed_items: HashSet::new(),
         }
     }
 
@@ -159,9 +170,9 @@ impl<'a> AstEnum<'a> {
         if data.simple_enums.contains(self.name) {
             false
         } else {
-            self.items.iter().any(|item| {
-                data.resolve(item).needs_lifetime(data)
-            })
+            self.items
+                .iter()
+                .any(|item| data.resolve(item).needs_lifetime(data))
         }
     }
 
@@ -201,19 +212,19 @@ impl<'a> AstEnum<'a> {
 #[derive(Debug)]
 pub enum RuleType<'a> {
     SingleType(&'a str),
-    ManyType(&'a str)
+    ManyType(&'a str),
 }
 impl<'a> RuleType<'a> {
     pub fn get_type_name(&self, data: &LangData<'a>) -> &str {
         match self {
             &RuleType::SingleType(type_name) => match data.resolve(type_name) {
                 ResolvedType::ResolvedEnum(key) => key,
-                ResolvedType::ResolvedStruct(key) => key
+                ResolvedType::ResolvedStruct(key) => key,
             },
             &RuleType::ManyType(type_name) => match data.resolve(type_name) {
                 ResolvedType::ResolvedEnum(key) => key,
-                ResolvedType::ResolvedStruct(key) => key
-            }
+                ResolvedType::ResolvedStruct(key) => key,
+            },
         }
     }
 
@@ -222,7 +233,7 @@ impl<'a> RuleType<'a> {
             &RuleType::SingleType(type_name) => match data.resolve(type_name) {
                 ResolvedType::ResolvedEnum(key) => {
                     data.ast_enums.get(key).unwrap().needs_lifetime(data)
-                },
+                }
                 ResolvedType::ResolvedStruct(key) => {
                     data.ast_structs.get(key).unwrap().needs_lifetime(data)
                 }
@@ -230,11 +241,11 @@ impl<'a> RuleType<'a> {
             &RuleType::ManyType(type_name) => match data.resolve(type_name) {
                 ResolvedType::ResolvedEnum(key) => {
                     data.ast_enums.get(key).unwrap().needs_lifetime(data)
-                },
+                }
                 ResolvedType::ResolvedStruct(key) => {
                     data.ast_structs.get(key).unwrap().needs_lifetime(data)
                 }
-            }
+            },
         }
     }
 }

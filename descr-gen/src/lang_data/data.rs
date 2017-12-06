@@ -10,14 +10,14 @@ use lang_data::typed_part::*;
 pub struct AstData<'a> {
     pub key: &'a str,
     pub ast_type: &'a str,
-    pub rules: Vec<AstRule<'a>>
+    pub rules: Vec<AstRule<'a>>,
 }
 impl<'a> AstData<'a> {
     pub fn new(key: &'a str, ast_type: &'a str) -> AstData<'a> {
         AstData {
             key,
             ast_type,
-            rules: Vec::new()
+            rules: Vec::new(),
         }
     }
 }
@@ -27,7 +27,7 @@ pub struct ListData<'a> {
     pub key: &'a str,
     pub ast_type: Option<&'a str>,
     pub sep: Option<&'a str>,
-    pub rules: Vec<ListRule<'a>>
+    pub rules: Vec<ListRule<'a>>,
 }
 
 
@@ -37,13 +37,13 @@ impl<'a> ListData<'a> {
             key,
             ast_type,
             sep,
-            rules: Vec::new()
+            rules: Vec::new(),
         }
     }
 }
 
 pub struct SnakeCased<'a> {
-    pub cache: HashMap<&'a str, String>
+    pub cache: HashMap<&'a str, String>,
 }
 impl<'a> SnakeCased<'a> {
     pub fn reg(&mut self, key: &'a str) {
@@ -62,7 +62,9 @@ impl<'a> SnakeCased<'a> {
                 } else {
                     s.push(chr);
                 }
-                if is_first { is_first = false; }
+                if is_first {
+                    is_first = false;
+                }
             }
             self.cache.insert(key, s);
         }
@@ -78,21 +80,21 @@ impl<'a> SnakeCased<'a> {
     pub fn get_str(&self, key: &str) -> &str {
         match self.cache.get(key) {
             Some(ref s) => s.as_str(),
-            None => panic!("Could not find snake cased for: {}", key)
+            None => panic!("Could not find snake cased for: {}", key),
         }
     }
 }
 
 pub enum ResolvedType<'a> {
     ResolvedStruct(&'a str),
-    ResolvedEnum(&'a str)
+    ResolvedEnum(&'a str),
 }
 impl<'a> ResolvedType<'a> {
     pub fn needs_lifetime(&self, data: &LangData<'a>) -> bool {
         match self {
             &ResolvedType::ResolvedEnum(key) => {
                 data.ast_enums.get(key).unwrap().needs_lifetime(data)
-            },
+            }
             &ResolvedType::ResolvedStruct(key) => {
                 data.ast_structs.get(key).unwrap().needs_lifetime(data)
             }
@@ -101,12 +103,8 @@ impl<'a> ResolvedType<'a> {
 
     pub fn is_simple(&self, data: &LangData<'a>) -> bool {
         match self {
-            &ResolvedType::ResolvedEnum(key) => {
-                data.ast_enums.get(key).unwrap().is_simple(data)
-            },
-            &ResolvedType::ResolvedStruct(key) => {
-                data.ast_structs.get(key).unwrap().is_simple()
-            }
+            &ResolvedType::ResolvedEnum(key) => data.ast_enums.get(key).unwrap().is_simple(data),
+            &ResolvedType::ResolvedStruct(key) => data.ast_structs.get(key).unwrap().is_simple(),
         }
     }
 }
@@ -136,11 +134,11 @@ pub struct LangData<'a> {
     // Can be traversed to check for references up
     // in the tree, where the member or item should be
     // boxed to avoid infinite structures
-    pub parent_refs: ParentRefs<'a>
+    pub parent_refs: ParentRefs<'a>,
 }
 #[derive(Debug)]
 pub struct ParentRefs<'a> {
-    pub refs: HashMap<&'a str, HashSet<ParentRef<'a>>>
+    pub refs: HashMap<&'a str, HashSet<ParentRef<'a>>>,
 }
 impl<'a> ParentRefs<'a> {
     pub fn add_ref(&mut self, key: &'a str, parent_ref: ParentRef<'a>) {
@@ -154,12 +152,12 @@ impl<'a> ParentRefs<'a> {
 pub enum ParentRef<'a> {
     StructMember {
         struct_name: &'a str,
-        member_name: &'a str
+        member_name: &'a str,
     },
     EnumItem {
         enum_name: &'a str,
-        item_name: &'a str
-    }
+        item_name: &'a str,
+    },
 }
 
 impl<'a> LangData<'a> {
@@ -171,14 +169,16 @@ impl<'a> LangData<'a> {
             ast_structs: HashMap::new(),
             ast_enums: HashMap::new(),
             rule_types: HashMap::new(),
-            snake_cased: SnakeCased { cache: HashMap::new() },
+            snake_cased: SnakeCased {
+                cache: HashMap::new(),
+            },
             start_key: None,
             simple_enums: HashSet::new(),
             simple_structs: HashSet::new(),
             debug,
             parent_refs: ParentRefs {
-                refs: HashMap::new()
-            }
+                refs: HashMap::new(),
+            },
         }
     }
 
@@ -186,9 +186,9 @@ impl<'a> LangData<'a> {
     pub fn get_ast_key(&self, key: &'a str) -> Option<&'a str> {
         if self.typed_parts.contains_key(key) {
             match self.typed_parts.get(key).unwrap() {
-                &TypedPart::AstPart{key} => Some(key),
-                &TypedPart::ListPart{key} => Some(key),
-                _ => None
+                &TypedPart::AstPart { key } => Some(key),
+                &TypedPart::ListPart { key } => Some(key),
+                _ => None,
             }
         } else {
             None
@@ -212,7 +212,7 @@ impl<'a> LangData<'a> {
                         } else {
                             panic!("Could not find singletype key: {}", key);
                         }
-                    },
+                    }
                     &RuleType::ManyType(type_key) => {
                         if key != type_key {
                             self.resolve(type_key)
@@ -237,9 +237,7 @@ impl<'a> LangData<'a> {
 
     pub fn add_ast_type(&self, s: String, key: &str) -> String {
         match self.resolve(key) {
-            ResolvedType::ResolvedEnum(rkey) => {
-                self.ast_enums.get(rkey).unwrap().add_type(s, self)
-            },
+            ResolvedType::ResolvedEnum(rkey) => self.ast_enums.get(rkey).unwrap().add_type(s, self),
             ResolvedType::ResolvedStruct(rkey) => {
                 self.ast_structs.get(rkey).unwrap().add_type(s, self)
             }
@@ -247,46 +245,27 @@ impl<'a> LangData<'a> {
     }
 
     fn add_tag_token(&mut self, key: &'a str, tag: &'a str) {
-        self.typed_parts.insert(
-            key,
-            TypedPart::TagPart {
-                key: key,
-                tag: tag
-            }
-        );
+        self.typed_parts
+            .insert(key, TypedPart::TagPart { key: key, tag: tag });
     }
 
     fn add_char_token(&mut self, key: &'a str, chr: char) {
-        self.typed_parts.insert(
-            key,
-            TypedPart::CharPart { key, chr }
-        );
+        self.typed_parts
+            .insert(key, TypedPart::CharPart { key, chr });
     }
 
     fn add_fn_token(&mut self, key: &'a str, fnc: &'a str, tpe: &'a str) {
-        self.typed_parts.insert(
-            key,
-            TypedPart::FnPart { key, fnc, tpe }
-        );
+        self.typed_parts
+            .insert(key, TypedPart::FnPart { key, fnc, tpe });
     }
 
     /// Resolve typed part assuming keys
     /// are registered
     pub fn resolve_typed_part(&mut self, key: &'a str) {
         if self.ast_data.contains_key(key) {
-            self.typed_parts.insert(
-                key,
-                TypedPart::AstPart {
-                    key
-                }
-            );
+            self.typed_parts.insert(key, TypedPart::AstPart { key });
         } else if self.list_data.contains_key(key) {
-            self.typed_parts.insert(
-                key,
-                TypedPart::ListPart {
-                    key
-                }
-            );
+            self.typed_parts.insert(key, TypedPart::ListPart { key });
         } else {
             // Some hardcoded tokens, these could
             // be from some standard library later
@@ -310,29 +289,18 @@ impl<'a> LangData<'a> {
                 "DOT" => self.add_char_token("DOT", '.'),
                 "QUESTION" => self.add_char_token("QUESTION", '?'),
                 "WS" => {
-                    self.typed_parts.insert(
-                        "WS",
-                        TypedPart::WSPart
-                    );
-                },
+                    self.typed_parts.insert("WS", TypedPart::WSPart);
+                }
                 //"WS" => self.add_fn_token("WS", "sp", "&'a str"),
                 "string" => {
-                    self.typed_parts.insert(
-                        "string",
-                        TypedPart::StringPart { key }
-                    );
-                },
+                    self.typed_parts
+                        .insert("string", TypedPart::StringPart { key });
+                }
                 "ident" => {
-                    self.typed_parts.insert(
-                        key,
-                        TypedPart::IdentPart { key }
-                    );
-                },
+                    self.typed_parts.insert(key, TypedPart::IdentPart { key });
+                }
                 "int" => {
-                    self.typed_parts.insert(
-                        key,
-                        TypedPart::IntPart { key }
-                    );
+                    self.typed_parts.insert(key, TypedPart::IntPart { key });
                 }
                 _ => {
                     println!("Could not find token: {}", key);

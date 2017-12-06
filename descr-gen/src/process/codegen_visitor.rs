@@ -2,7 +2,7 @@ use lang_data::data::*;
 use descr_common::util::*;
 
 pub struct CodegenVisitor<'a, 'd: 'a> {
-    pub data: &'a LangData<'d>
+    pub data: &'a LangData<'d>,
 }
 impl<'a, 'd> CodegenVisitor<'a, 'd> {
     pub fn new(data: &'a LangData<'d>) -> CodegenVisitor<'a, 'd> {
@@ -10,9 +10,7 @@ impl<'a, 'd> CodegenVisitor<'a, 'd> {
     }
 
     pub fn gen(&self) -> String {
-        let mut s = String::with_capacity(
-            1024
-        );
+        let mut s = String::with_capacity(1024);
         s += "use super::ast::*;\n\n";
         s += "pub trait Visitor<'a> {\n";
         // Ast structs

@@ -4,15 +4,35 @@ use lang_data::rule::*;
 
 #[derive(Debug)]
 pub enum TypedPart<'a> {
-    AstPart     { key: &'a str },
-    ListPart    { key: &'a str },
-    CharPart    { key: &'a str, chr: char },
-    TagPart     { key: &'a str, tag: &'a str },
-    IntPart     { key: &'a str },
-    IdentPart   { key: &'a str },
-    FnPart      { key: &'a str, fnc: &'a str, tpe: &'a str },
-    StringPart  { key: &'a str },
-    WSPart
+    AstPart {
+        key: &'a str,
+    },
+    ListPart {
+        key: &'a str,
+    },
+    CharPart {
+        key: &'a str,
+        chr: char,
+    },
+    TagPart {
+        key: &'a str,
+        tag: &'a str,
+    },
+    IntPart {
+        key: &'a str,
+    },
+    IdentPart {
+        key: &'a str,
+    },
+    FnPart {
+        key: &'a str,
+        fnc: &'a str,
+        tpe: &'a str,
+    },
+    StringPart {
+        key: &'a str,
+    },
+    WSPart,
 }
 impl<'a> TypedPart<'a> {
     pub fn gen_parser(&self, mut s: String, data: &LangData) -> String {
@@ -21,19 +41,33 @@ impl<'a> TypedPart<'a> {
             s += "debug_wrap!(";
         }
         match self {
-            &AstPart { key } => { s += data.sc(key); },
-            &ListPart { key } => { s += data.sc(key); },
+            &AstPart { key } => {
+                s += data.sc(key);
+            }
+            &ListPart { key } => {
+                s += data.sc(key);
+            }
             &CharPart { chr, .. } => {
                 s += "char!('";
                 s.push(chr);
                 s += "')";
-            },
-            &TagPart { tag, .. } => { append!(s, "tag!(\"" tag "\")"); },
-            &IntPart { .. } => { s += "parse_int"; },
-            &IdentPart { .. } => { s += "ident"; },
-            &FnPart { fnc, .. } => { s += fnc; },
-            &StringPart { .. } => { s += "quoted_str"; },
-            &WSPart => { s += "sp" }
+            }
+            &TagPart { tag, .. } => {
+                append!(s, "tag!(\"" tag "\")");
+            }
+            &IntPart { .. } => {
+                s += "parse_int";
+            }
+            &IdentPart { .. } => {
+                s += "ident";
+            }
+            &FnPart { fnc, .. } => {
+                s += fnc;
+            }
+            &StringPart { .. } => {
+                s += "quoted_str";
+            }
+            &WSPart => s += "sp",
         }
         if data.debug {
             s += ")";
@@ -45,8 +79,7 @@ impl<'a> TypedPart<'a> {
         use lang_data::typed_part::TypedPart::*;
         let member_key = data.sc(part.member_key.unwrap());
         match self {
-            &AstPart { .. }
-            | &ListPart { .. } => {
+            &AstPart { .. } | &ListPart { .. } => {
                 append!(s, member_key "_k");
             }
             &CharPart { .. } => {
@@ -59,24 +92,24 @@ impl<'a> TypedPart<'a> {
                     // matched.
                     append!(s, "true");
                 }
-            },
+            }
             &TagPart { .. } => {
                 if part.optional {
                     append!(s, member_key "_k.is_some()");
                 }
-            },
+            }
             &IntPart { .. } => {
                 append!(s, member_key "_k");
-            },
+            }
             &IdentPart { .. } => {
                 append!(s, member_key "_k");
-            },
+            }
             &FnPart { .. } => {
                 append!(s, member_key "_k");
-            },
+            }
             &StringPart { .. } => {
                 append!(s, member_key "_k");
-            },
+            }
             &WSPart => {
                 append!(s, member_key "_k");
             }
@@ -84,8 +117,13 @@ impl<'a> TypedPart<'a> {
         s
     }
 
-    pub fn gen_visitor(&self, mut s: String, member: &AstStructMember,
-                       _ast_struct: &AstStruct, data: &LangData) -> String {
+    pub fn gen_visitor(
+        &self,
+        mut s: String,
+        member: &AstStructMember,
+        _ast_struct: &AstStruct,
+        data: &LangData,
+    ) -> String {
         use lang_data::typed_part::TypedPart::*;
         match self {
             &AstPart { key } => {
@@ -97,7 +135,7 @@ impl<'a> TypedPart<'a> {
                 } else {
                     append!(s 2, "self.visit_" data.sc(key) "(&node." member.sc() ");\n");
                 }
-            },
+            }
             &ListPart { key } => {
                 if member.optional {
                     append!(s 2, "self." member.sc() " match {\n");
@@ -106,7 +144,7 @@ impl<'a> TypedPart<'a> {
                     match data.rule_types.get(key).unwrap() {
                         &RuleType::SingleType(ref type_name) => {
                             append!(s 5, "self.visit_" data.sc(type_name) "(item);\n");
-                        },
+                        }
                         &RuleType::ManyType(ref type_name, ..) => {
                             append!(s 5, "self.visit_" data.sc(type_name) "(item);\n");
                         }
@@ -117,14 +155,14 @@ impl<'a> TypedPart<'a> {
                     match data.rule_types.get(key).unwrap() {
                         &RuleType::SingleType(ref type_name) => {
                             append!(s 3, "self.visit_" data.sc(type_name) "(item);\n");
-                        },
+                        }
                         &RuleType::ManyType(ref type_name, ..) => {
                             append!(s 3, "self.visit_" data.sc(type_name) "(item);\n");
                         }
                     }
                     append!(s 2, "}\n");
                 }
-            },
+            }
             _ => {}
         }
         s
@@ -134,13 +172,17 @@ impl<'a> TypedPart<'a> {
         use lang_data::typed_part::TypedPart::*;
         match self {
             &AstPart { key } => {
-                let rule_type = data.rule_types.get(key).expect(&format!("Coult not get ast {}", key));
+                let rule_type = data.rule_types
+                    .get(key)
+                    .expect(&format!("Coult not get ast {}", key));
                 rule_type.needs_lifetime(data)
-            },
+            }
             &ListPart { key } => {
-                let rule_type = data.rule_types.get(key).expect(&format!("Coult not get list {}", key));
+                let rule_type = data.rule_types
+                    .get(key)
+                    .expect(&format!("Coult not get list {}", key));
                 rule_type.needs_lifetime(data)
-            },
+            }
             &CharPart { .. } => false,
             &TagPart { .. } => false,
             &IntPart { .. } => false,
@@ -148,7 +190,7 @@ impl<'a> TypedPart<'a> {
             // Depends on function todo
             &FnPart { .. } => true,
             &StringPart { .. } => true,
-            &WSPart => true
+            &WSPart => true,
         }
     }
 
@@ -157,42 +199,71 @@ impl<'a> TypedPart<'a> {
         if member.optional {
             match self {
                 &CharPart { .. } | &TagPart { .. } => false,
-                _ => true
+                _ => true,
             }
         } else {
             false
         }
     }
 
-    pub fn add_type(&self, mut s: String, 
-                    member: &AstStructMember<'a>, data: &LangData<'a>) 
-                    -> String
-    {
+    pub fn add_type(
+        &self,
+        mut s: String,
+        member: &AstStructMember<'a>,
+        data: &LangData<'a>,
+    ) -> String {
         use self::TypedPart::*;
         match self {
             &AstPart { key } => {
-                s += data.rule_types.get(key).expect(&format!("Coult not get ast {}", key)).get_type_name(data);
+                s += data.rule_types
+                    .get(key)
+                    .expect(&format!("Coult not get ast {}", key))
+                    .get_type_name(data);
                 if member.tpe.needs_lifetime(data) {
                     s += "<'a>";
                 }
                 s
-            },
+            }
             &ListPart { key } => {
                 s += "Vec<";
-                s += data.rule_types.get(key).expect(&format!("Coult not get list {}", key)).get_type_name(data);
+                s += data.rule_types
+                    .get(key)
+                    .expect(&format!("Coult not get list {}", key))
+                    .get_type_name(data);
                 if member.tpe.needs_lifetime(data) {
                     s += "<'a>";
                 }
                 s += ">";
                 s
-            },
-            &IntPart { .. }     => { s += "i32"; s },
-            &IdentPart { .. }   => { s += "&'a str"; s },
-            &CharPart { .. }    => { s += "bool"; s },
-            &TagPart { .. }     => { s += "bool"; s },
-            &StringPart { .. }  => { s += "&'a str"; s },
-            &FnPart { tpe, .. } => { s += tpe; s },
-            &WSPart => { s += "&'a str"; s }
+            }
+            &IntPart { .. } => {
+                s += "i32";
+                s
+            }
+            &IdentPart { .. } => {
+                s += "&'a str";
+                s
+            }
+            &CharPart { .. } => {
+                s += "bool";
+                s
+            }
+            &TagPart { .. } => {
+                s += "bool";
+                s
+            }
+            &StringPart { .. } => {
+                s += "&'a str";
+                s
+            }
+            &FnPart { tpe, .. } => {
+                s += tpe;
+                s
+            }
+            &WSPart => {
+                s += "&'a str";
+                s
+            }
         }
     }
 }
