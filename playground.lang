@@ -1,3 +1,8 @@
+@annot
+@annot2(arg=1)
+Source(exprs)
+
+exprs[] SEMICOLON Expr
 Expr {
     VarName(ident),
     Plus(op1:Expr "+" op2:Expr)

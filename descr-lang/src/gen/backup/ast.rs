@@ -1,4 +1,21 @@
 #[derive(Debug)]
+pub struct AnnotArg<'a> {
+    pub annot_arg_val: AnnotArgVal<'a>,
+    pub key: &'a str,
+}
+
+#[derive(Debug)]
+pub struct AnnotArgs<'a> {
+    pub annot_arg_list: Vec<AnnotArg<'a>>,
+}
+
+#[derive(Debug)]
+pub struct Annotation<'a> {
+    pub annot_args: Option<AnnotArgs<'a>>,
+    pub ident: &'a str,
+}
+
+#[derive(Debug)]
 pub struct AstDef<'a> {
     pub ident: Option<&'a str>,
     pub tokens: Vec<Token<'a>>,
@@ -17,6 +34,7 @@ pub struct AstRef<'a> {
 
 #[derive(Debug)]
 pub struct AstSingle<'a> {
+    pub annotations: Vec<Annotation<'a>>,
     pub ident: &'a str,
     pub tokens: Vec<Token<'a>>,
 }
@@ -30,6 +48,16 @@ pub struct Comment<'a> {
 pub struct FuncToken<'a> {
     pub fn_args: Vec<FuncArg<'a>>,
     pub ident: &'a str,
+}
+
+#[derive(Debug)]
+pub struct Ident<'a> {
+    pub ident: &'a str,
+}
+
+#[derive(Debug)]
+pub struct IntConst {
+    pub int: u32,
 }
 
 #[derive(Debug)]
@@ -81,6 +109,13 @@ pub struct SimpleToken<'a> {
 #[derive(Debug)]
 pub struct Source<'a> {
     pub items: Vec<SourceItem<'a>>,
+}
+
+#[derive(Debug)]
+pub enum AnnotArgVal<'a> {
+    QuotedItem(Quoted<'a>),
+    IdentItem(Ident<'a>),
+    IntConstItem(IntConst),
 }
 
 #[derive(Debug)]

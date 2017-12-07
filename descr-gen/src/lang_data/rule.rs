@@ -1,6 +1,7 @@
 use lang_data::data::*;
 use lang_data::typed_part::*;
 use lang_data::ast::RuleType;
+use lang_data::annotations::*;
 use std::collections::HashMap;
 
 /// Parser "rule"
@@ -13,14 +14,16 @@ pub struct AstPartsRule<'a> {
     pub ast_type: &'a str,
     pub member_idxs: HashMap<&'a str, usize>,
     pub idx_members: HashMap<usize, &'a str>,
+    pub annots: AnnotList<'a>
 }
 impl<'a> AstPartsRule<'a> {
-    pub fn new(ast_type: &'a str) -> AstPartsRule<'a> {
+    pub fn new(ast_type: &'a str, annots: AnnotList<'a>) -> AstPartsRule<'a> {
         AstPartsRule {
             parts: Vec::new(),
             ast_type,
             member_idxs: HashMap::new(),
             idx_members: HashMap::new(),
+            annots
         }
     }
 }
@@ -31,6 +34,7 @@ pub struct AstRulePart<'a> {
     pub member_key: Option<&'a str>,
     pub optional: bool,
     pub not: bool,
+    pub annots: AnnotList<'a>
 }
 
 #[derive(Debug)]
@@ -130,7 +134,7 @@ impl<'a, 'b> TypedRulePart<'a> {
                 if part.optional {
                     append!(s 2, "if let Some(not_part) = node." member_key "{ s += not_part }\n");
                 } else {
-                    append!(s 2, "s += node" member_key ";\n");
+                    append!(s 2, "s += node." member_key ";\n");
                 }
             }
         } else {

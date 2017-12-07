@@ -61,11 +61,11 @@ pub enum AstMemberType<'a> {
 }
 
 impl<'a> AstMemberType<'a> {
-    pub fn needs_lifetime(&self, data: &LangData) -> bool {
+    pub fn needs_lifetime(&self, data: &LangData<'a>, visited: &mut HashSet<&'a str>) -> bool {
         match self {
             &AstMemberType::KeyedToken(key) => {
                 let part = data.typed_parts.get(key).unwrap();
-                part.needs_lifetime(data)
+                part.needs_lifetime(data, visited)
             }
             &AstMemberType::NotString => true,
             &AstMemberType::TagBool(..) => false,
@@ -131,14 +131,19 @@ impl<'a> AstStruct<'a> {
     pub fn sc(&self) -> &str {
         self.snake_case.as_str()
     }
-    pub fn needs_lifetime(&self, data: &LangData<'a>) -> bool {
-        self.members
-            .values()
-            .any(|member| member.tpe.needs_lifetime(data))
+    pub fn needs_lifetime(&self, data: &LangData<'a>, visited: &mut HashSet<&'a str>) -> bool {
+        if visited.contains(self.name) {
+            false
+        } else {
+            visited.insert(self.name);
+            self.members
+                .values()
+                .any(|member| member.tpe.needs_lifetime(data, visited))
+        }
     }
     pub fn add_type(&self, mut s: String, data: &LangData<'a>) -> String {
         s += self.name;
-        if self.needs_lifetime(data) {
+        if self.needs_lifetime(data, &mut HashSet::new()) {
             s += "<'a>";
         }
         s
@@ -166,19 +171,24 @@ impl<'a> AstEnum<'a> {
         }
     }
 
-    pub fn needs_lifetime(&self, data: &LangData<'a>) -> bool {
-        if data.simple_enums.contains(self.name) {
+    pub fn needs_lifetime(&self, data: &LangData<'a>, visited: &mut HashSet<&'a str>) -> bool {
+        if visited.contains(self.name) {
             false
         } else {
-            self.items
-                .iter()
-                .any(|item| data.resolve(item).needs_lifetime(data))
+            visited.insert(self.name);
+            if data.simple_enums.contains(self.name) {
+                false
+            } else {
+                self.items
+                    .iter()
+                    .any(|item| data.resolve(item).needs_lifetime(data, visited))
+            }
         }
     }
 
     pub fn add_type(&self, mut s: String, data: &LangData<'a>) -> String {
         s += self.name;
-        if self.needs_lifetime(data) {
+        if self.needs_lifetime(data, &mut HashSet::new()) {
             s += "<'a>";
         }
         s
@@ -228,22 +238,22 @@ impl<'a> RuleType<'a> {
         }
     }
 
-    pub fn needs_lifetime(&self, data: &LangData<'a>) -> bool {
+    pub fn needs_lifetime(&self, data: &LangData<'a>, visited: &mut HashSet<&'a str>) -> bool {
         match self {
             &RuleType::SingleType(type_name) => match data.resolve(type_name) {
                 ResolvedType::ResolvedEnum(key) => {
-                    data.ast_enums.get(key).unwrap().needs_lifetime(data)
+                    data.ast_enums.get(key).unwrap().needs_lifetime(data, visited)
                 }
                 ResolvedType::ResolvedStruct(key) => {
-                    data.ast_structs.get(key).unwrap().needs_lifetime(data)
+                    data.ast_structs.get(key).unwrap().needs_lifetime(data, visited)
                 }
             },
             &RuleType::ManyType(type_name) => match data.resolve(type_name) {
                 ResolvedType::ResolvedEnum(key) => {
-                    data.ast_enums.get(key).unwrap().needs_lifetime(data)
+                    data.ast_enums.get(key).unwrap().needs_lifetime(data, visited)
                 }
                 ResolvedType::ResolvedStruct(key) => {
-                    data.ast_structs.get(key).unwrap().needs_lifetime(data)
+                    data.ast_structs.get(key).unwrap().needs_lifetime(data, visited)
                 }
             },
         }

@@ -64,29 +64,27 @@ Comparison {
     Gt
 }
 ```
-The variations could also have data, which generates structs for each,
-and an enum container, "Alternatives":
+The variations could also have data, which generates structs for each:
 ```
-Alternatives {
+Expr {
     IntConst(int),
-    Quoted(string),
-    Ident(ident)
+    Plus(op1:Expr "+" op2: Expr)
 }
 ```
 Generates:
 ```rust
-pub enum Alternatives {
+pub enum Expr<'a> {
     IntConstItem(IntConst),
-    QuotedItem(Quoted),
-    ...
+    PlusItem(Box<Plus<'a>>)
 }
 
 pub struct IntConst {
     pub int: i32
 }
 
-pub struct Quoted<'a> {
-    pub string: &'a str
+pub struct Plus<'a> {
+    pub op1: Expr<'a>,
+    pub op2: Expr<'a>
 }
 ...
 ```
@@ -129,11 +127,10 @@ impl<'a> Visitor<'a> for Interpr {
     }
 
     fn visit_bg_color(&mut self, node: &'a BgColor) {
-        use Color::*;
         match &node.color {
-            &Red => set_bg(255, 180, 180),
-            &Green => set_bg(180, 255, 180),
-            &Blue => set_bg(180, 180, 255)
+            &Color::Red   => set_bg(255, 180, 180),
+            &Color::Green => set_bg(180, 255, 180),
+            &Color::Blue  => set_bg(180, 180, 255)
         };
     }
 }

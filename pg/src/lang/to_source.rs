@@ -2,9 +2,11 @@ use super::ast::*;
 
 pub struct ToSource;
 impl<'a> ToSource {
-    pub fn to_source_var_name(mut s: String, node: &'a VarName) -> String {
+    pub fn to_source_source(mut s: String, node: &'a Source) -> String {
         s += " ";
-        s += node.ident;
+        for item in &node.exprs {
+            s = Self::to_source_expr(s, item);
+        }
         s
     }
 
@@ -15,6 +17,12 @@ impl<'a> ToSource {
         s += "+";
         s += " ";
         s = Self::to_source_expr(s, &node.op2);
+        s
+    }
+
+    pub fn to_source_var_name(mut s: String, node: &'a VarName) -> String {
+        s += " ";
+        s += node.ident;
         s
     }
 

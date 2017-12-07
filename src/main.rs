@@ -106,7 +106,7 @@ fn main() {
         let (elapsed, res) = measure_time(|| descr_lang::gen::parsers::source(&buf[..]));
         println!("Parse: {}", elapsed);
         //println!("{:#?}", res);
-        let mut data = LangData::new(false);
+        let mut data = LangData::new(true);
         {
             match res {
                 nom::IResult::Done(_, ref source) => {

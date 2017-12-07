@@ -1,5 +1,6 @@
 use lang_data::data::*;
 use lang_data::rule::*;
+use lang_data::annotations::*;
 use descr_lang::gen::ast::*;
 use descr_lang::gen::visitor::Visitor;
 
@@ -16,12 +17,13 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
         ident: &'d str,
         name: &'d str,
         token_list: &Vec<Token<'d>>,
+        annots: AnnotList<'d>
     ) {
         use lang_data::rule::AstRule::*;
         let rule = {
             if is_ast {
                 let ast_data = self.data.ast_data.get_mut(ident).unwrap();
-                ast_data.rules.push(PartsRule(AstPartsRule::new(name)));
+                ast_data.rules.push(PartsRule(AstPartsRule::new(name, annots)));
                 match ast_data.rules.last_mut().unwrap() {
                     &mut PartsRule(ref mut parts_rule) => parts_rule,
                     _ => panic!(),
@@ -30,7 +32,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                 let list_data = self.data.list_data.get_mut(ident).unwrap();
                 list_data.rules.push(ListRule::new(
                     Some(ident),
-                    PartsRule(AstPartsRule::new(name)),
+                    PartsRule(AstPartsRule::new(name, annots)),
                 ));
                 match &mut list_data.rules.last_mut().unwrap().ast_rule {
                     &mut PartsRule(ref mut parts_rule) => parts_rule,
@@ -46,7 +48,9 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                     ref token_type,
                     optional,
                     not,
+                    ref annots
                 }) => {
+                    let annots = parse_annots(annots);
                     match token_type {
                         &TokenType::KeyTokenItem(KeyToken { key }) => {
                             let part = self.data.typed_parts.get(key).unwrap();
@@ -69,6 +73,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                                 member_key,
                                 optional,
                                 not,
+                                annots
                             });
                         }
                         &TokenType::QuotedItem(Quoted { string }) => {
@@ -78,6 +83,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                                 member_key: None,
                                 optional,
                                 not,
+                                annots
                             });
                         }
                         &TokenType::FuncTokenItem(FuncToken { ident, ref fn_args }) => {
@@ -96,6 +102,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                                 member_key: None,
                                 optional,
                                 not,
+                                annots
                             });
                         }
                     }
@@ -105,7 +112,9 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                     name,
                     optional,
                     not,
+                    ref annots
                 }) => {
+                    let annots = parse_annots(annots);
                     match token_type {
                         &TokenType::KeyTokenItem(KeyToken { key }) => {
                             let part = self.data.typed_parts.get(key).unwrap();
@@ -132,6 +141,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                                 member_key,
                                 optional,
                                 not,
+                                annots
                             });
                         }
                         &TokenType::QuotedItem(Quoted { string }) => {
@@ -141,6 +151,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                                 member_key: Some(name),
                                 optional,
                                 not,
+                                annots
                             });
                         }
                         &TokenType::FuncTokenItem(FuncToken { ident, ref fn_args }) => {
@@ -159,6 +170,7 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                                 member_key: Some(name),
                                 optional,
                                 not,
+                                annots
                             });
                         }
                     }
@@ -168,6 +180,12 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
     }
 }
 impl<'a, 'd> Visitor<'d> for BuildParsers<'a, 'd> {
+    fn visit_ast_single(&mut self, node: &'d AstSingle) {
+        //let mut rule = AstPartsRule::new(node.ident);
+        //rule.ast_type = node.ident;
+        self.add_tokens_to_rule(true, &node.ident, &node.ident, &node.tokens, parse_annots(&node.annots));
+    }
+
     fn visit_ast_many(&mut self, node: &'d AstMany) {
         for item in &node.items {
             use lang_data::rule::AstRule::*;
@@ -176,9 +194,10 @@ impl<'a, 'd> Visitor<'d> for BuildParsers<'a, 'd> {
                 &AstDefItem(AstDef {
                     ref ident,
                     ref tokens,
+                    ref annots
                 }) => {
                     let name = ident.unwrap_or(node.ident);
-                    self.add_tokens_to_rule(true, node.ident, name, tokens);
+                    self.add_tokens_to_rule(true, node.ident, name, tokens, parse_annots(annots));
                 }
                 &AstRefItem(AstRef { ref ident }) => {
                     self.data
@@ -200,9 +219,10 @@ impl<'a, 'd> Visitor<'d> for BuildParsers<'a, 'd> {
                 &AstDefItem(AstDef {
                     ref ident,
                     ref tokens,
+                    ref annots
                 }) => {
                     let name = ident.unwrap_or(node.ident);
-                    self.add_tokens_to_rule(false, node.ident, name, tokens);
+                    self.add_tokens_to_rule(false, node.ident, name, tokens, parse_annots(annots));
                 }
                 &AstRefItem(AstRef { ref ident }) => {
                     self.data
@@ -224,9 +244,4 @@ impl<'a, 'd> Visitor<'d> for BuildParsers<'a, 'd> {
             .push(ListRule::new(None, RefRule(node.reference)));
     }
 
-    fn visit_ast_single(&mut self, node: &'d AstSingle) {
-        //let mut rule = AstPartsRule::new(node.ident);
-        //rule.ast_type = node.ident;
-        self.add_tokens_to_rule(true, &node.ident, &node.ident, &node.tokens);
-    }
 }

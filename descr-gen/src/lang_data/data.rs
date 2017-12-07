@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use lang_data::ast::*;
 use lang_data::rule::*;
 use lang_data::typed_part::*;
+use lang_data::annotations::*;
 
 /// Data for an ast entry
 /// Either single, or multiple rules
@@ -11,13 +12,15 @@ pub struct AstData<'a> {
     pub key: &'a str,
     pub ast_type: &'a str,
     pub rules: Vec<AstRule<'a>>,
+    pub annots: AnnotList<'a>
 }
 impl<'a> AstData<'a> {
-    pub fn new(key: &'a str, ast_type: &'a str) -> AstData<'a> {
+    pub fn new(key: &'a str, ast_type: &'a str, annots: AnnotList<'a>) -> AstData<'a> {
         AstData {
             key,
             ast_type,
             rules: Vec::new(),
+            annots
         }
     }
 }
@@ -28,16 +31,18 @@ pub struct ListData<'a> {
     pub ast_type: Option<&'a str>,
     pub sep: Option<&'a str>,
     pub rules: Vec<ListRule<'a>>,
+    pub annots: AnnotList<'a>
 }
 
 
 impl<'a> ListData<'a> {
-    pub fn new(key: &'a str, ast_type: Option<&'a str>, sep: Option<&'a str>) -> ListData<'a> {
+    pub fn new(key: &'a str, ast_type: Option<&'a str>, sep: Option<&'a str>, annots: AnnotList<'a>) -> ListData<'a> {
         ListData {
             key,
             ast_type,
             sep,
             rules: Vec::new(),
+            annots
         }
     }
 }
@@ -90,13 +95,13 @@ pub enum ResolvedType<'a> {
     ResolvedEnum(&'a str),
 }
 impl<'a> ResolvedType<'a> {
-    pub fn needs_lifetime(&self, data: &LangData<'a>) -> bool {
+    pub fn needs_lifetime(&self, data: &LangData<'a>, visited: &mut HashSet<&'a str>) -> bool {
         match self {
             &ResolvedType::ResolvedEnum(key) => {
-                data.ast_enums.get(key).unwrap().needs_lifetime(data)
+                data.ast_enums.get(key).unwrap().needs_lifetime(data, visited)
             }
             &ResolvedType::ResolvedStruct(key) => {
-                data.ast_structs.get(key).unwrap().needs_lifetime(data)
+                data.ast_structs.get(key).unwrap().needs_lifetime(data, visited)
             }
         }
     }

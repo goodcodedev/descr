@@ -1,6 +1,23 @@
 use super::ast::*;
 
 pub trait Visitor<'a> {
+    fn visit_annot_arg(&mut self, node: &'a AnnotArg) {
+        self.visit_annot_arg_val(&node.annot_arg_val);
+    }
+
+    fn visit_annot_args(&mut self, node: &'a AnnotArgs) {
+        for item in &node.annot_arg_list {
+            self.visit_annot_arg(item);
+        }
+    }
+
+    fn visit_annotation(&mut self, node: &'a Annotation) {
+        match node.annot_args {
+            Some(ref inner) => self.visit_annot_args(inner),
+            None => {}
+        }
+    }
+
     fn visit_ast_def(&mut self, node: &'a AstDef) {
         for item in &node.tokens {
             self.visit_token(item);
@@ -17,6 +34,9 @@ pub trait Visitor<'a> {
     }
 
     fn visit_ast_single(&mut self, node: &'a AstSingle) {
+        for item in &node.annotations {
+            self.visit_annotation(item);
+        }
         for item in &node.tokens {
             self.visit_token(item);
         }
@@ -29,6 +49,12 @@ pub trait Visitor<'a> {
         for item in &node.fn_args {
             self.visit_func_arg(item);
         }
+    }
+
+    fn visit_ident(&mut self, node: &'a Ident) {
+    }
+
+    fn visit_int_const(&mut self, node: &'a IntConst) {
     }
 
     fn visit_key_token(&mut self, node: &'a KeyToken) {
@@ -61,6 +87,14 @@ pub trait Visitor<'a> {
     fn visit_source(&mut self, node: &'a Source) {
         for item in &node.items {
             self.visit_source_item(item);
+        }
+    }
+
+    fn visit_annot_arg_val(&mut self, node: &'a AnnotArgVal) {
+        match node {
+            &AnnotArgVal::QuotedItem(ref inner) => self.visit_quoted(inner),
+            &AnnotArgVal::IdentItem(ref inner) => self.visit_ident(inner),
+            &AnnotArgVal::IntConstItem(ref inner) => self.visit_int_const(inner),
         }
     }
 

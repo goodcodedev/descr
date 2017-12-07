@@ -1,4 +1,5 @@
 use lang_data::data::*;
+use lang_data::annotations::*;
 use descr_lang::gen::ast::*;
 use descr_lang::gen::visitor::Visitor;
 
@@ -21,28 +22,28 @@ impl<'a, 'd> Visitor<'d> for RegisterKeys<'a, 'd> {
         self.check_start(node.ident);
         self.data
             .ast_data
-            .insert(node.ident, AstData::new(node.ident, node.ident));
+            .insert(node.ident, AstData::new(node.ident, node.ident, parse_annots(&node.annots)));
     }
 
     fn visit_ast_many(&mut self, node: &'d AstMany) {
         self.check_start(node.ident);
         self.data
             .ast_data
-            .insert(node.ident, AstData::new(node.ident, node.ident));
+            .insert(node.ident, AstData::new(node.ident, node.ident, parse_annots(&node.annots)));
     }
 
     fn visit_list_single(&mut self, node: &'d ListSingle) {
         self.check_start(node.ident);
         self.data
             .list_data
-            .insert(node.ident, ListData::new(node.ident, None, Some(node.sep)));
+            .insert(node.ident, ListData::new(node.ident, None, Some(node.sep), parse_annots(&node.annots)));
     }
 
     fn visit_list_many(&mut self, node: &'d ListMany) {
         self.check_start(node.ident);
         self.data.list_data.insert(
             node.ident,
-            ListData::new(node.ident, Some(node.ast_type), node.sep),
+            ListData::new(node.ident, Some(node.ast_type), node.sep, parse_annots(&node.annots)),
         );
     }
 }

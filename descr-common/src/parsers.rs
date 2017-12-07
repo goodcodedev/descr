@@ -44,7 +44,7 @@ pub fn ident(input: &[u8]) -> IResult<&[u8], &str> {
     }
 }
 
-pub fn parse_int(input: &[u8]) -> IResult<&[u8], i32> {
+pub fn parse_int(input: &[u8]) -> IResult<&[u8], u32> {
     let len = input.len();
     if len == 0 {
         return IResult::Incomplete(Needed::Size(1));
@@ -64,7 +64,7 @@ pub fn parse_int(input: &[u8]) -> IResult<&[u8], i32> {
         while i < len && is_digit(input[i]) {
             i += 1;
         }
-        let parsed = str::from_utf8(&input[..i]).unwrap().parse::<i32>().unwrap();
+        let parsed = str::from_utf8(&input[..i]).unwrap().parse::<u32>().unwrap();
         return IResult::Done(&input[i..], parsed);
     }
 }

@@ -9,12 +9,38 @@ sourceItems:SourceItem[] WS {
 
 Comment("(*" comment:!"*)" "*)")
 
-AstSingle(ident LPAREN tokens:tokenList RPAREN)
-AstMany(ident LBRACE items:astItems RBRACE)
+Annotation("@" ident AnnotArgs?)
+AnnotArgs(LPAREN annotArgList RPAREN)
+annotArgList:AnnotArg[] COMMA {
+    AnnotArg(key:ident EQUAL AnnotArgVal)
+}
+AnnotArgVal {
+    Quoted(string),
+    Ident(ident),
+    IntConst(int)
+}
+annots[] WS Annotation
+
+AstSingle(
+    annots
+    ident 
+    LPAREN 
+    tokens:tokenList 
+    RPAREN
+)
+AstMany(annots ident LBRACE items:astItems RBRACE)
 
 tokenList:Token[] WS {
-    NamedToken(name:ident COLON not:EXCL? TokenType optional:QUESTION?),
-    SimpleToken(not:EXCL? TokenType optional:QUESTION?)
+    NamedToken(
+        annots
+        name:ident COLON not:EXCL? 
+        TokenType optional:QUESTION?
+    ),
+    SimpleToken(
+        annots
+        not:EXCL? 
+        TokenType optional:QUESTION?
+    )
 }
 
 TokenType {
@@ -28,15 +54,15 @@ fnArgs:FuncArg[] COMMA {
 
 astItems[] COMMA AstItem
 AstItem {
-    AstDef(tokens:tokenList "=>" ident?),
-    AstDef(LPAREN tokens:tokenList RPAREN "=>" ident?),
-    AstDef(ident? LPAREN tokens:tokenList RPAREN),
+    AstDef(annots tokens:tokenList "=>" ident?),
+    AstDef(annots LPAREN tokens:tokenList RPAREN "=>" ident?),
+    AstDef(annots ident? LPAREN tokens:tokenList RPAREN),
     AstRef(ident)
 }
 
 List {
-    ListSingle(ident LBRACKET RBRACKET sep:ident reference:ident),
-    ListMany(ident COLON ast_type:ident LBRACKET RBRACKET sep:ident? LBRACE items:listItems RBRACE)
+    ListSingle(annots ident LBRACKET RBRACKET sep:ident reference:ident),
+    ListMany(annots ident COLON ast_type:ident LBRACKET RBRACKET sep:ident? LBRACE items:listItems RBRACE)
 }
 listItems[] COMMA ListItem
 ListItem(AstItem sep:ident?)

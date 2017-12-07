@@ -1,6 +1,7 @@
 use lang_data::data::*;
 use lang_data::ast::*;
 use lang_data::rule::*;
+use std::collections::HashSet;
 
 #[derive(Debug)]
 pub enum TypedPart<'a> {
@@ -168,20 +169,20 @@ impl<'a> TypedPart<'a> {
         s
     }
 
-    pub fn needs_lifetime(&self, data: &LangData<'a>) -> bool {
+    pub fn needs_lifetime(&self, data: &LangData<'a>, visited: &mut HashSet<&'a str>) -> bool {
         use lang_data::typed_part::TypedPart::*;
         match self {
             &AstPart { key } => {
                 let rule_type = data.rule_types
                     .get(key)
                     .expect(&format!("Coult not get ast {}", key));
-                rule_type.needs_lifetime(data)
+                rule_type.needs_lifetime(data, visited)
             }
             &ListPart { key } => {
                 let rule_type = data.rule_types
                     .get(key)
                     .expect(&format!("Coult not get list {}", key));
-                rule_type.needs_lifetime(data)
+                rule_type.needs_lifetime(data, visited)
             }
             &CharPart { .. } => false,
             &TagPart { .. } => false,
@@ -239,18 +240,28 @@ impl<'a> TypedPart<'a> {
                     }
                 }
             },
-            &TypedPart::IntPart{..}
-            | &TypedPart::IdentPart{..}
+            &TypedPart::IntPart{..} => {
+                if let Some(member_key) = part.member_key {
+                    if part.optional {
+                        append!(s 2, "if let Some(some_val) = node." member_key " {\n    ");
+                        append!(s 3, "s += &some_val.to_string();\n");
+                        s += "        }";
+                    } else {
+                        append!(s 2, "s += &node." member_key ".to_string();\n");
+                    }
+                }
+            },
+            &TypedPart::IdentPart{..}
             | &TypedPart::StringPart{..}
             | &TypedPart::FnPart{..} // Todo: Fn should probably be able to handle own
              => {
                 if let Some(member_key) = part.member_key {
                     if part.optional {
-                        append!(s 2, "if node." member_key ".is_some() {\n    ");
-                    }
-                    append!(s 2, "s += node." member_key ";\n");
-                    if part.optional {
-                        s += "    }";
+                        append!(s 2, "if let Some(some_val) = node." member_key " {\n    ");
+                        append!(s 3, "s += some_val;\n");
+                        s += "        }";
+                    } else {
+                        append!(s 2, "s += node." member_key ";\n");
                     }
                 }
             },
@@ -298,7 +309,7 @@ impl<'a> TypedPart<'a> {
                     .get(key)
                     .expect(&format!("Coult not get ast {}", key))
                     .get_type_name(data);
-                if member.tpe.needs_lifetime(data) {
+                if member.tpe.needs_lifetime(data, &mut HashSet::new()) {
                     s += "<'a>";
                 }
                 s
@@ -309,14 +320,14 @@ impl<'a> TypedPart<'a> {
                     .get(key)
                     .expect(&format!("Coult not get list {}", key))
                     .get_type_name(data);
-                if member.tpe.needs_lifetime(data) {
+                if member.tpe.needs_lifetime(data, &mut HashSet::new()) {
                     s += "<'a>";
                 }
                 s += ">";
                 s
             }
             &IntPart { .. } => {
-                s += "i32";
+                s += "u32";
                 s
             }
             &IdentPart { .. } => {

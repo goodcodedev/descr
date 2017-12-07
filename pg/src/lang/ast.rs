@@ -5,6 +5,11 @@ pub struct Plus<'a> {
 }
 
 #[derive(Debug)]
+pub struct Source<'a> {
+    pub exprs: Vec<Expr<'a>>,
+}
+
+#[derive(Debug)]
 pub struct VarName<'a> {
     pub ident: &'a str,
 }

@@ -6,6 +6,45 @@ use super::ast::*;
 
 named!(pub start<Source>, do_parse!(res: source >> (res)));
 
+named!(pub annot_arg_val<AnnotArgVal>, alt_complete!(
+    do_parse!(
+        sp >> string_k: quoted_str >>
+        (AnnotArgVal::QuotedItem(Quoted {
+            string: string_k,
+        })))
+    | do_parse!(
+        sp >> ident_k: ident >>
+        (AnnotArgVal::IdentItem(Ident {
+            ident: ident_k,
+        })))
+    | do_parse!(
+        sp >> int_k: parse_int >>
+        (AnnotArgVal::IntConstItem(IntConst {
+            int: int_k,
+        })))
+));
+
+named!(pub annot_args<AnnotArgs>,
+    do_parse!(
+        sp >> char!('(') >>
+        sp >> annot_arg_list_k: annot_arg_list >>
+        sp >> char!(')') >>
+        (AnnotArgs {
+            annot_arg_list: annot_arg_list_k,
+        }))
+);
+
+named!(pub annotation<Annotation>,
+    do_parse!(
+        sp >> tag!("@") >>
+        sp >> ident_k: ident >>
+        annot_args_k: opt!(do_parse!(sp >> res: annot_args >> (res))) >>
+        (Annotation {
+            ident: ident_k,
+            annot_args: annot_args_k,
+        }))
+);
+
 named!(pub ast_item<AstItem>, alt_complete!(
     do_parse!(
         sp >> tokens_k: token_list >>
@@ -55,11 +94,13 @@ named!(pub ast_many<AstMany>,
 
 named!(pub ast_single<AstSingle>,
     do_parse!(
+        sp >> annotations_k: annotations >>
         sp >> ident_k: ident >>
         sp >> char!('(') >>
         sp >> tokens_k: token_list >>
         sp >> char!(')') >>
         (AstSingle {
+            annotations: annotations_k,
             ident: ident_k,
             tokens: tokens_k,
         }))
@@ -145,6 +186,21 @@ named!(pub token_type<TokenType>, alt_complete!(
         })))
 ));
 
+named!(pub annot_arg_list<Vec<AnnotArg>>, separated_list!(char!(','), 
+    do_parse!(
+        sp >> key_k: ident >>
+        sp >> char!('=') >>
+        sp >> annot_arg_val_k: annot_arg_val >>
+        (AnnotArg {
+            key: key_k,
+            annot_arg_val: annot_arg_val_k,
+        }))
+));
+
+named!(pub annotations<Vec<Annotation>>, many0!(
+    annotation
+));
+
 named!(pub ast_items<Vec<AstItem>>, separated_list!(char!(','), 
     ast_item
 ));
@@ -161,14 +217,14 @@ named!(pub list_items<Vec<ListItem>>, separated_list!(char!(','),
     list_item
 ));
 
-named!(pub source_items<Vec<SourceItem>>, separated_list!(sp, alt_complete!(
+named!(pub source_items<Vec<SourceItem>>, many0!(alt_complete!(
     map!(ast_single, |node| { SourceItem::AstSingleItem(node) })
     | map!(ast_many, |node| { SourceItem::AstManyItem(node) })
     | map!(list, |node| { SourceItem::ListItem(node) })
     | map!(comment, |node| { SourceItem::CommentItem(node) })
 )));
 
-named!(pub token_list<Vec<Token>>, separated_list!(sp, alt_complete!(
+named!(pub token_list<Vec<Token>>, many0!(alt_complete!(
     do_parse!(
         sp >> name_k: ident >>
         sp >> char!(':') >>

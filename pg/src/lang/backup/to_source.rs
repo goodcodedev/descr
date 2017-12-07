@@ -18,10 +18,18 @@ impl<'a> ToSource {
         s
     }
 
+    pub fn to_source_source(mut s: String, node: &'a Source) -> String {
+        s += " ";
+        for item in &node.exprs {
+            s = Self::to_source_expr(s, item);
+        }
+        s
+    }
+
     pub fn to_source_expr(s: String, node: &'a Expr) -> String {
         match node {
-            &Expr::VarNameItem(ref inner) => Self::to_source_var_name(s, inner),
             &Expr::PlusItem(ref inner) => Self::to_source_plus(s, inner),
+            &Expr::VarNameItem(ref inner) => Self::to_source_var_name(s, inner),
         }
     }
 
