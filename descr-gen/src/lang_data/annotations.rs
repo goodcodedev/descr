@@ -38,6 +38,5 @@ pub fn parse_annots<'a>(annotations: &Vec<Annotation<'a>>) -> AnnotList<'a> {
         }
         l.items.insert(annot.ident, a);
     }
-    println!("Annotlist: {:#?}", l);
     l
 }

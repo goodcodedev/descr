@@ -3,6 +3,7 @@ use lang_data::typed_part::*;
 use lang_data::ast::RuleType;
 use lang_data::annotations::*;
 use std::collections::HashMap;
+use descr_lang::gen::ast::*;
 
 /// Parser "rule"
 /// List of tokens that makes up some ast type
@@ -12,8 +13,6 @@ use std::collections::HashMap;
 pub struct AstPartsRule<'a> {
     pub parts: Vec<AstRulePart<'a>>,
     pub ast_type: &'a str,
-    pub member_idxs: HashMap<&'a str, usize>,
-    pub idx_members: HashMap<usize, &'a str>,
     pub annots: AnnotList<'a>
 }
 impl<'a> AstPartsRule<'a> {
@@ -21,8 +20,6 @@ impl<'a> AstPartsRule<'a> {
         AstPartsRule {
             parts: Vec::new(),
             ast_type,
-            member_idxs: HashMap::new(),
-            idx_members: HashMap::new(),
             annots
         }
     }
@@ -42,6 +39,20 @@ pub enum AstRuleToken<'a> {
     Key(&'a str),
     Tag(&'a str),
     Func(&'a str, Vec<RuleFuncArg<'a>>),
+}
+impl<'a> AstRuleToken<'a> {
+    pub fn parse_func_token(token: &FuncToken<'a>) -> AstRuleToken<'a> {
+        AstRuleToken::Func(
+            token.ident,
+            token.fn_args
+                .iter()
+                .map(|arg| match arg {
+                    &FuncArg::QuotedItem(Quoted { string }) => {
+                        RuleFuncArg::Quoted(string)
+                    }
+                }).collect::<Vec<_>>()
+        )
+    }
 }
 
 #[derive(Debug)]

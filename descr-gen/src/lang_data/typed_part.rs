@@ -36,6 +36,17 @@ pub enum TypedPart<'a> {
     WSPart,
 }
 impl<'a> TypedPart<'a> {
+    pub fn is_auto_member(&self) -> bool {
+        match self {
+            &TypedPart::AstPart { .. }
+            | &TypedPart::ListPart { .. }
+            | &TypedPart::IntPart { .. }
+            | &TypedPart::StringPart { .. }
+            | &TypedPart::IdentPart { .. } => true,
+            _ => false,
+        }
+    }
+
     pub fn gen_parser(&self, mut s: String, data: &LangData) -> String {
         use lang_data::typed_part::TypedPart::*;
         if data.debug {

@@ -28,7 +28,12 @@ AstSingle(
     tokens:tokenList 
     RPAREN
 )
-AstMany(annots ident LBRACE items:astItems RBRACE)
+AstMany(
+    annots
+    ident LBRACE
+    items:astItems 
+    RBRACE
+)
 
 tokenList:Token[] WS {
     NamedToken(
@@ -40,6 +45,14 @@ tokenList:Token[] WS {
         annots
         not:EXCL? 
         TokenType optional:QUESTION?
+    ),
+    BracedTokens(
+        annots
+        not:EXCL? 
+        LBRACE
+        tokenList
+        RBRACE
+        optional:QUESTION?
     )
 }
 
