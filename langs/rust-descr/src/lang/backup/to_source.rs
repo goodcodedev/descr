@@ -2,11 +2,17 @@ use super::ast::*;
 
 pub struct ToSource;
 impl<'a> ToSource {
-    pub fn to_source_source(mut s: String, node: &'a Source) -> String {
+    pub fn to_source_rs_trait(mut s: String, node: &'a RsTrait) -> String {
         s += " ";
-        for item in &node.source_items {
-            s = Self::to_source_source_item(s, item);
-        }
+        if node.public { s += "pub"; }
+        s += " ";
+        s += "trait";
+        s += " ";
+        s += node.ident;
+        s += " ";
+        s.push('{');
+        s += " ";
+        s.push('}');
         s
     }
 
@@ -28,21 +34,23 @@ impl<'a> ToSource {
         s
     }
 
-    pub fn to_source_struct_member(mut s: String, node: &'a StructMember) -> String {
+    pub fn to_source_generic(mut s: String, node: &'a Generic) -> String {
         s += " ";
-        if node.public { s += "pub"; }
+        s += "<";
         s += " ";
-        s += node.ident;
+        for item in &node.generic_items {
+            s = Self::to_source_generic_item(s, item);
+        }
         s += " ";
-        s.push(':');
-        s += " ";
-        s = Self::to_source_tpe_spes(s, &node.tpe_spes);
+        s += ">";
         s
     }
 
-    pub fn to_source_enum_item(mut s: String, node: &'a EnumItem) -> String {
+    pub fn to_source_source(mut s: String, node: &'a Source) -> String {
         s += " ";
-        s += node.ident;
+        for item in &node.source_items {
+            s = Self::to_source_source_item(s, item);
+        }
         s
     }
 
@@ -53,20 +61,6 @@ impl<'a> ToSource {
         if let Some(ref some_val) = node.generic_item {
             s = Self::to_source_generic_item(s, some_val);
         }
-        s
-    }
-
-    pub fn to_source_life_time(mut s: String, node: &'a LifeTime) -> String {
-        s += " ";
-        s += "'";
-        s += " ";
-        s += node.ident;
-        s
-    }
-
-    pub fn to_source_gen_type(mut s: String, node: &'a GenType) -> String {
-        s += " ";
-        s += node.ident;
         s
     }
 
@@ -92,15 +86,35 @@ impl<'a> ToSource {
         s
     }
 
-    pub fn to_source_generic(mut s: String, node: &'a Generic) -> String {
+    pub fn to_source_gen_type(mut s: String, node: &'a GenType) -> String {
         s += " ";
-        s += "<";
+        s += node.ident;
+        s
+    }
+
+    pub fn to_source_enum_item(mut s: String, node: &'a EnumItem) -> String {
         s += " ";
-        for item in &node.generic_items {
-            s = Self::to_source_generic_item(s, item);
-        }
+        s += node.ident;
+        s
+    }
+
+    pub fn to_source_life_time(mut s: String, node: &'a LifeTime) -> String {
         s += " ";
-        s += ">";
+        s += "'";
+        s += " ";
+        s += node.ident;
+        s
+    }
+
+    pub fn to_source_struct_member(mut s: String, node: &'a StructMember) -> String {
+        s += " ";
+        if node.public { s += "pub"; }
+        s += " ";
+        s += node.ident;
+        s += " ";
+        s.push(':');
+        s += " ";
+        s = Self::to_source_tpe_spes(s, &node.tpe_spes);
         s
     }
 
@@ -115,6 +129,7 @@ impl<'a> ToSource {
         match node {
             &SourceItem::RsStructItem(ref inner) => Self::to_source_rs_struct(s, inner),
             &SourceItem::RsEnumItem(ref inner) => Self::to_source_rs_enum(s, inner),
+            &SourceItem::RsTraitItem(ref inner) => Self::to_source_rs_trait(s, inner),
         }
     }
 

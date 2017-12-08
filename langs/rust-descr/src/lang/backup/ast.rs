@@ -34,6 +34,12 @@ pub struct RsStruct<'a> {
 }
 
 #[derive(Debug)]
+pub struct RsTrait<'a> {
+    pub ident: &'a str,
+    pub public: bool,
+}
+
+#[derive(Debug)]
 pub struct Source<'a> {
     pub source_items: Vec<SourceItem<'a>>,
 }
@@ -61,6 +67,7 @@ pub enum GenericItem<'a> {
 pub enum SourceItem<'a> {
     RsStructItem(RsStruct<'a>),
     RsEnumItem(RsEnum<'a>),
+    RsTraitItem(RsTrait<'a>),
 }
 
 #[derive(Debug)]

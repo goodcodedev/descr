@@ -66,6 +66,19 @@ named!(pub rs_struct<RsStruct>,
         }))
 );
 
+named!(pub rs_trait<RsTrait>,
+    do_parse!(
+        public_k: opt!(do_parse!(sp >> res: tag!("pub") >> (res))) >>
+        sp >> tag!("trait") >>
+        sp >> ident_k: ident >>
+        sp >> char!('{') >>
+        sp >> char!('}') >>
+        (RsTrait {
+            public: public_k.is_some(),
+            ident: ident_k,
+        }))
+);
+
 named!(pub source<Source>,
     do_parse!(
         sp >> source_items_k: source_items >>
@@ -117,6 +130,7 @@ named!(pub generic_items<Vec<GenericItem>>, separated_list!(char!(','),
 named!(pub source_items<Vec<SourceItem>>, many0!(alt_complete!(
     map!(rs_struct, |node| { SourceItem::RsStructItem(node) })
     | map!(rs_enum, |node| { SourceItem::RsEnumItem(node) })
+    | map!(rs_trait, |node| { SourceItem::RsTraitItem(node) })
 )));
 
 named!(pub struct_members<Vec<StructMember>>, separated_list!(char!(','), 

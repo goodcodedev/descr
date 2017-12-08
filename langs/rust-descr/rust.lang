@@ -1,7 +1,8 @@
 Source(sourceItems)
 sourceItems:SourceItem[] {
     RsStruct,
-    RsEnum
+    RsEnum,
+    RsTrait
 }
 
 (*** Types ***)
@@ -32,3 +33,6 @@ RsEnum(public:"pub"? "enum" ident LBRACE enumItems RBRACE)
 enumItems:EnumItem[] COMMA {
     EnumItem(ident)
 }
+
+(*** Trait ***)
+RsTrait(public:"pub"? "trait" ident LBRACE RBRACE)

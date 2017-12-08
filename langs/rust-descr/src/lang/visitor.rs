@@ -32,6 +32,9 @@ pub trait Visitor<'a> {
         }
     }
 
+    fn visit_rs_trait(&mut self, node: &'a RsTrait) {
+    }
+
     fn visit_source(&mut self, node: &'a Source) {
         for item in &node.source_items {
             self.visit_source_item(item);
@@ -61,6 +64,7 @@ pub trait Visitor<'a> {
         match node {
             &SourceItem::RsStructItem(ref inner) => self.visit_rs_struct(inner),
             &SourceItem::RsEnumItem(ref inner) => self.visit_rs_enum(inner),
+            &SourceItem::RsTraitItem(ref inner) => self.visit_rs_trait(inner),
         }
     }
 
