@@ -46,12 +46,12 @@ tokenList:Token[] WS {
         not:EXCL? 
         TokenType optional:QUESTION?
     ),
-    BracedTokens(
+    TokenGroup(
         annots
         not:EXCL? 
-        LBRACE
+        LPAREN
         tokenList
-        RBRACE
+        RPAREN
         optional:QUESTION?
     )
 }

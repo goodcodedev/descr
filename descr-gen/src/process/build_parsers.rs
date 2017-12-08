@@ -1,8 +1,10 @@
 use lang_data::data::*;
 use lang_data::rule::*;
+use lang_data::typed_part::*;
 use lang_data::annotations::*;
 use descr_lang::gen::ast::*;
 use descr_lang::gen::visitor::Visitor;
+use std::collections::HashMap;
 
 pub struct BuildParsers<'a, 'd: 'a> {
     data: &'a mut LangData<'d>,
@@ -11,6 +13,76 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
     pub fn new(data: &'a mut LangData<'d>) -> BuildParsers<'a, 'd> {
         BuildParsers { data }
     }
+
+    pub fn process_token(token: &Token<'d>, typed_parts: &'a HashMap<&'d str, TypedPart<'d>>) -> AstRulePart<'d> {
+        use self::Token::*;
+        match token {
+            &SimpleTokenItem(ref simple_token) => {
+                let (token, member_key) = match &simple_token.token_type {
+                    &TokenType::KeyTokenItem(KeyToken { key }) => {
+                        let typed_part = typed_parts.get(key).unwrap();
+                        (
+                            AstRuleToken::Key(key),
+                            if typed_part.is_auto_member() {
+                                Some(key)
+                            } else {
+                                None
+                            }
+                        )
+                    },
+                    &TokenType::QuotedItem(Quoted { string }) => {
+                        (AstRuleToken::Tag(string), None)
+                    },
+                    &TokenType::FuncTokenItem(ref func_token) => {
+                        (AstRuleToken::parse_func_token(func_token), None)
+                    }
+                };
+                AstRulePart {
+                    token,
+                    member_key,
+                    optional: simple_token.optional,
+                    not: simple_token.not,
+                    annots: parse_annots(&simple_token.annots)
+                }
+            },
+            &NamedTokenItem(ref named_token) => {
+                let (token, member_key) = match &named_token.token_type {
+                    &TokenType::KeyTokenItem(KeyToken { key }) => {
+                        (AstRuleToken::Key(key), Some(named_token.name))
+                    },
+                    &TokenType::QuotedItem(Quoted { string }) => {
+                        (AstRuleToken::Tag(string), Some(named_token.name))
+                    },
+                    &TokenType::FuncTokenItem(ref func_token) => {
+                        (AstRuleToken::parse_func_token(func_token), Some(named_token.name))
+                    }
+                };
+                AstRulePart {
+                    token,
+                    member_key,
+                    optional: named_token.optional,
+                    not: named_token.not,
+                    annots: parse_annots(&named_token.annots)
+                }
+            },
+            &TokenGroupItem(ref braced_token) => {
+                AstRulePart {
+                    token: AstRuleToken::Group(
+                        braced_token.token_list
+                            .iter()
+                            .map(|token| {
+                                Self::process_token(token, typed_parts)
+                            }).collect::<Vec<_>>()
+                    ),
+                    member_key: None,
+                    optional: braced_token.optional,
+                    not: braced_token.not,
+                    annots: parse_annots(&braced_token.annots)
+                }
+            }
+        }
+    }
+
     pub fn add_tokens_to_rule(
         &mut self,
         is_ast: bool,
@@ -40,66 +112,8 @@ impl<'a, 'd: 'a> BuildParsers<'a, 'd> {
                 }
             }
         };
-        for (i, token) in token_list.iter().enumerate() {
-            use self::Token::*;
-            if let Some((token, member_key, optional, not, annots)) = match token {
-                &SimpleTokenItem(ref simple_token) => {
-                    let (token_type, member_key) = match &simple_token.token_type {
-                        &TokenType::KeyTokenItem(KeyToken { key }) => {
-                            (
-                                AstRuleToken::Key(key),
-                                if self.data.typed_parts.get(key).unwrap().is_auto_member() {
-                                    Some(key)
-                                } else {
-                                    None
-                                }
-                            )
-                        },
-                        &TokenType::QuotedItem(Quoted { string }) => {
-                            (AstRuleToken::Tag(string), None)
-                        },
-                        &TokenType::FuncTokenItem(ref func_token) => {
-                            (AstRuleToken::parse_func_token(func_token), None)
-                        }
-                    };
-                    Some((
-                        token_type, 
-                        member_key, 
-                        simple_token.optional, 
-                        simple_token.not, 
-                        parse_annots(&simple_token.annots)
-                    ))
-                },
-                &NamedTokenItem(ref named_token) => {
-                    let (token_type, member_key) = match &named_token.token_type {
-                        &TokenType::KeyTokenItem(KeyToken { key }) => {
-                            (AstRuleToken::Key(key), Some(named_token.name))
-                        },
-                        &TokenType::QuotedItem(Quoted { string }) => {
-                            (AstRuleToken::Tag(string), Some(named_token.name))
-                        },
-                        &TokenType::FuncTokenItem(ref func_token) => {
-                            (AstRuleToken::parse_func_token(func_token), Some(named_token.name))
-                        }
-                    };
-                    Some((
-                        token_type, 
-                        member_key, 
-                        named_token.optional, 
-                        named_token.not, 
-                        parse_annots(&named_token.annots)
-                    ))
-                },
-                &BracedTokensItem(..) => None
-            } {
-                rule.parts.push(AstRulePart {
-                    token,
-                    member_key,
-                    optional,
-                    not,
-                    annots
-                });
-            }
+        for token in token_list {
+            rule.parts.push(Self::process_token(token, &self.data.typed_parts));
         }
     }
 }

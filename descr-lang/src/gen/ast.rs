@@ -118,6 +118,14 @@ pub struct Source<'a> {
 }
 
 #[derive(Debug)]
+pub struct TokenGroup<'a> {
+    pub annots: Vec<Annotation<'a>>,
+    pub not: bool,
+    pub optional: bool,
+    pub token_list: Vec<Token<'a>>,
+}
+
+#[derive(Debug)]
 pub enum AnnotArgVal<'a> {
     QuotedItem(Quoted<'a>),
     IdentItem(Ident<'a>),
@@ -153,6 +161,7 @@ pub enum SourceItem<'a> {
 pub enum Token<'a> {
     NamedTokenItem(NamedToken<'a>),
     SimpleTokenItem(SimpleToken<'a>),
+    TokenGroupItem(TokenGroup<'a>),
 }
 
 #[derive(Debug)]

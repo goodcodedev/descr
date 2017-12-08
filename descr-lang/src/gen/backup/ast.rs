@@ -17,12 +17,14 @@ pub struct Annotation<'a> {
 
 #[derive(Debug)]
 pub struct AstDef<'a> {
+    pub annots: Vec<Annotation<'a>>,
     pub ident: Option<&'a str>,
     pub tokens: Vec<Token<'a>>,
 }
 
 #[derive(Debug)]
 pub struct AstMany<'a> {
+    pub annots: Vec<Annotation<'a>>,
     pub ident: &'a str,
     pub items: Vec<AstItem<'a>>,
 }
@@ -34,9 +36,17 @@ pub struct AstRef<'a> {
 
 #[derive(Debug)]
 pub struct AstSingle<'a> {
-    pub annotations: Vec<Annotation<'a>>,
+    pub annots: Vec<Annotation<'a>>,
     pub ident: &'a str,
     pub tokens: Vec<Token<'a>>,
+}
+
+#[derive(Debug)]
+pub struct TokenGroup<'a> {
+    pub annots: Vec<Annotation<'a>>,
+    pub not: bool,
+    pub optional: bool,
+    pub token_list: Vec<Token<'a>>,
 }
 
 #[derive(Debug)]
@@ -73,6 +83,7 @@ pub struct ListItem<'a> {
 
 #[derive(Debug)]
 pub struct ListMany<'a> {
+    pub annots: Vec<Annotation<'a>>,
     pub ast_type: &'a str,
     pub ident: &'a str,
     pub items: Vec<ListItem<'a>>,
@@ -81,6 +92,7 @@ pub struct ListMany<'a> {
 
 #[derive(Debug)]
 pub struct ListSingle<'a> {
+    pub annots: Vec<Annotation<'a>>,
     pub ident: &'a str,
     pub reference: &'a str,
     pub sep: &'a str,
@@ -89,6 +101,7 @@ pub struct ListSingle<'a> {
 #[derive(Debug)]
 pub struct NamedToken<'a> {
     pub token_type: TokenType<'a>,
+    pub annots: Vec<Annotation<'a>>,
     pub name: &'a str,
     pub not: bool,
     pub optional: bool,
@@ -102,6 +115,7 @@ pub struct Quoted<'a> {
 #[derive(Debug)]
 pub struct SimpleToken<'a> {
     pub token_type: TokenType<'a>,
+    pub annots: Vec<Annotation<'a>>,
     pub not: bool,
     pub optional: bool,
 }
@@ -147,6 +161,7 @@ pub enum SourceItem<'a> {
 pub enum Token<'a> {
     NamedTokenItem(NamedToken<'a>),
     SimpleTokenItem(SimpleToken<'a>),
+    TokenGroupItem(TokenGroup<'a>),
 }
 
 #[derive(Debug)]

@@ -73,11 +73,57 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         snake_cased: &mut SnakeCased<'d>,
     ) {
         for part in &rule.parts {
-            match &part.token {
+            if let Some((member_key, part_key, is_tag)) = match &part.token {
                 &AstRuleToken::Key(key) => {
                     let typed_part = typed_parts.get(key).unwrap();
+                    if typed_part.is_auto_member() {
+                        Some((part.member_key.unwrap_or(key), key, false))
+                    } else {
+                        match typed_part {
+                            &TypedPart::CharPart { .. }
+                            | &TypedPart::FnPart { .. }
+                            | &TypedPart::WSPart { .. } => {
+                                // Count as member if
+                                // member key is given
+                                part.member_key.map(|member_key| {
+                                    (member_key, key, false)
+                                })
+                            },
+                            &TypedPart::TagPart { .. } => {
+                                // This might be handled
+                                // in AstRuleToken::Tag now
+                                part.member_key.map(|member_key| {
+                                    (member_key, key, true)
+                                })
+                            }
+                            _ => None
+                        }
+                    }
+                },
+                &AstRuleToken::Tag(string) => {
+                    part.member_key.map(|member_key| { (member_key, string, true) })
+                },
+                &AstRuleToken::Func(..) => {
+                    part.member_key.map(|member_key| { (member_key, "", false) })
+                },
+                &AstRuleToken::Group(..) => None
+            } {
+                Self::reg_struct_member(
+                    struct_data,
+                    rule.ast_type,
+                    member_key,
+                    part_key,
+                    part.optional,
+                    part.not,
+                    is_tag,
+                    snake_cased,
+                );
+            }
+            /*
+            match &part.token {
+                &AstRuleToken::Key(key) => {
                     use lang_data::typed_part::TypedPart::*;
-                    match typed_part {
+                    match typed_parts.get(key).unwrap() {
                         &AstPart { .. }
                         | &ListPart { .. }
                         | &IntPart { .. }
@@ -160,6 +206,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                     }
                 }
             }
+            */
         }
     }
 

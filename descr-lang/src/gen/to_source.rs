@@ -2,46 +2,6 @@ use super::ast::*;
 
 pub struct ToSource;
 impl<'a> ToSource {
-    pub fn to_source_key_token(mut s: String, node: &'a KeyToken) -> String {
-        s += " ";
-        s += node.key;
-        s
-    }
-
-    pub fn to_source_simple_token(mut s: String, node: &'a SimpleToken) -> String {
-        s += " ";
-        for item in &node.annots {
-            s = Self::to_source_annotation(s, item);
-        }
-        s += " ";
-        if node.not {
-                s.push('!');
-    }        s += " ";
-        s = Self::to_source_token_type(s, &node.token_type);
-        s += " ";
-        if node.optional {
-                s.push('?');
-    }        s
-    }
-
-    pub fn to_source_source(mut s: String, node: &'a Source) -> String {
-        s += " ";
-        for item in &node.items {
-            s = Self::to_source_source_item(s, item);
-        }
-        s
-    }
-
-    pub fn to_source_annot_arg(mut s: String, node: &'a AnnotArg) -> String {
-        s += " ";
-        s += node.key;
-        s += " ";
-        s.push('=');
-        s += " ";
-        s = Self::to_source_annot_arg_val(s, &node.annot_arg_val);
-        s
-    }
-
     pub fn to_source_list_single(mut s: String, node: &'a ListSingle) -> String {
         s += " ";
         for item in &node.annots {
@@ -57,77 +17,6 @@ impl<'a> ToSource {
         s += node.sep;
         s += " ";
         s += node.reference;
-        s
-    }
-
-    pub fn to_source_ast_ref(mut s: String, node: &'a AstRef) -> String {
-        s += " ";
-        s += node.ident;
-        s
-    }
-
-    pub fn to_source_ident(mut s: String, node: &'a Ident) -> String {
-        s += " ";
-        s += node.ident;
-        s
-    }
-
-    pub fn to_source_ast_many(mut s: String, node: &'a AstMany) -> String {
-        s += " ";
-        for item in &node.annots {
-            s = Self::to_source_annotation(s, item);
-        }
-        s += " ";
-        s += node.ident;
-        s += " ";
-        s.push('{');
-        s += " ";
-        for item in &node.items {
-            s = Self::to_source_ast_item(s, item);
-        }
-        s += " ";
-        s.push('}');
-        s
-    }
-
-    pub fn to_source_quoted(mut s: String, node: &'a Quoted) -> String {
-        s += " ";
-        s += node.string;
-        s += " ";
-        s += node.string;
-        s += " ";
-        s += node.string;
-        s
-    }
-
-    pub fn to_source_list_item(mut s: String, node: &'a ListItem) -> String {
-        s += " ";
-        s = Self::to_source_ast_item(s, &node.ast_item);
-        s += " ";
-        if let Some(some_val) = node.sep {
-                s += some_val;
-        }        s
-    }
-
-    pub fn to_source_comment(mut s: String, node: &'a Comment) -> String {
-        s += " ";
-        s += "(*";
-        s += " ";
-        s += node.comment;
-        s += " ";
-        s += "*)";
-        s
-    }
-
-    pub fn to_source_annot_args(mut s: String, node: &'a AnnotArgs) -> String {
-        s += " ";
-        s.push('(');
-        s += " ";
-        for item in &node.annot_arg_list {
-            s = Self::to_source_annot_arg(s, item);
-        }
-        s += " ";
-        s.push(')');
         s
     }
 
@@ -180,6 +69,80 @@ impl<'a> ToSource {
         s
     }
 
+    pub fn to_source_ast_many(mut s: String, node: &'a AstMany) -> String {
+        s += " ";
+        for item in &node.annots {
+            s = Self::to_source_annotation(s, item);
+        }
+        s += " ";
+        s += node.ident;
+        s += " ";
+        s.push('{');
+        s += " ";
+        for item in &node.items {
+            s = Self::to_source_ast_item(s, item);
+        }
+        s += " ";
+        s.push('}');
+        s
+    }
+
+    pub fn to_source_simple_token(mut s: String, node: &'a SimpleToken) -> String {
+        s += " ";
+        for item in &node.annots {
+            s = Self::to_source_annotation(s, item);
+        }
+        s += " ";
+        if node.not {
+                s.push('!');
+    }        s += " ";
+        s = Self::to_source_token_type(s, &node.token_type);
+        s += " ";
+        if node.optional {
+                s.push('?');
+    }        s
+    }
+
+    pub fn to_source_ast_ref(mut s: String, node: &'a AstRef) -> String {
+        s += " ";
+        s += node.ident;
+        s
+    }
+
+    pub fn to_source_token_group(mut s: String, node: &'a TokenGroup) -> String {
+        s += " ";
+        for item in &node.annots {
+            s = Self::to_source_annotation(s, item);
+        }
+        s += " ";
+        if node.not {
+                s.push('!');
+    }        s += " ";
+        s.push('(');
+        s += " ";
+        for item in &node.token_list {
+            s = Self::to_source_token(s, item);
+        }
+        s += " ";
+        s.push(')');
+        s += " ";
+        if node.optional {
+                s.push('?');
+    }        s
+    }
+
+    pub fn to_source_annot_args(mut s: String, node: &'a AnnotArgs) -> String {
+        s += " ";
+        s.push('(');
+        s += " ";
+        for item in &node.annot_arg_list {
+            s = Self::to_source_annot_arg(s, item);
+        }
+        s += " ";
+        s.push(')');
+        s
+    }
+
     pub fn to_source_func_token(mut s: String, node: &'a FuncToken) -> String {
         s += " ";
         s += node.ident;
@@ -191,6 +154,16 @@ impl<'a> ToSource {
         }
         s += " ";
         s.push(')');
+        s
+    }
+
+    pub fn to_source_quoted(mut s: String, node: &'a Quoted) -> String {
+        s += " ";
+        s += node.string;
+        s += " ";
+        s += node.string;
+        s += " ";
+        s += node.string;
         s
     }
 
@@ -223,9 +196,41 @@ impl<'a> ToSource {
         s
     }
 
-    pub fn to_source_int_const(mut s: String, node: &'a IntConst) -> String {
+    pub fn to_source_named_token(mut s: String, node: &'a NamedToken) -> String {
         s += " ";
-        s += &node.int.to_string();
+        for item in &node.annots {
+            s = Self::to_source_annotation(s, item);
+        }
+        s += " ";
+        s += node.name;
+        s += " ";
+        s.push(':');
+        s += " ";
+        if node.not {
+                s.push('!');
+    }        s += " ";
+        s = Self::to_source_token_type(s, &node.token_type);
+        s += " ";
+        if node.optional {
+                s.push('?');
+    }        s
+    }
+
+    pub fn to_source_annotation(mut s: String, node: &'a Annotation) -> String {
+        s += " ";
+        s += "@";
+        s += " ";
+        s += node.ident;
+        s += " ";
+        if let Some(ref some_val) = node.annot_args {
+            s = Self::to_source_annot_args(s, some_val);
+        }
+        s
+    }
+
+    pub fn to_source_key_token(mut s: String, node: &'a KeyToken) -> String {
+        s += " ";
+        s += node.key;
         s
     }
 
@@ -247,36 +252,53 @@ impl<'a> ToSource {
         s
     }
 
-    pub fn to_source_annotation(mut s: String, node: &'a Annotation) -> String {
+    pub fn to_source_int_const(mut s: String, node: &'a IntConst) -> String {
         s += " ";
-        s += "@";
+        s += &node.int.to_string();
+        s
+    }
+
+    pub fn to_source_annot_arg(mut s: String, node: &'a AnnotArg) -> String {
         s += " ";
-        s += node.ident;
+        s += node.key;
         s += " ";
-        if let Some(ref some_val) = node.annot_args {
-            s = Self::to_source_annot_args(s, some_val);
+        s.push('=');
+        s += " ";
+        s = Self::to_source_annot_arg_val(s, &node.annot_arg_val);
+        s
+    }
+
+    pub fn to_source_source(mut s: String, node: &'a Source) -> String {
+        s += " ";
+        for item in &node.items {
+            s = Self::to_source_source_item(s, item);
         }
         s
     }
 
-    pub fn to_source_named_token(mut s: String, node: &'a NamedToken) -> String {
+    pub fn to_source_comment(mut s: String, node: &'a Comment) -> String {
         s += " ";
-        for item in &node.annots {
-            s = Self::to_source_annotation(s, item);
-        }
+        s += "(*";
         s += " ";
-        s += node.name;
+        s += node.comment;
         s += " ";
-        s.push(':');
+        s += "*)";
+        s
+    }
+
+    pub fn to_source_list_item(mut s: String, node: &'a ListItem) -> String {
         s += " ";
-        if node.not {
-                s.push('!');
-    }        s += " ";
-        s = Self::to_source_token_type(s, &node.token_type);
+        s = Self::to_source_ast_item(s, &node.ast_item);
         s += " ";
-        if node.optional {
-                s.push('?');
-    }        s
+        if let Some(some_val) = node.sep {
+                s += some_val;
+        }        s
+    }
+
+    pub fn to_source_ident(mut s: String, node: &'a Ident) -> String {
+        s += " ";
+        s += node.ident;
+        s
     }
 
     pub fn to_source_annot_arg_val(s: String, node: &'a AnnotArgVal) -> String {
@@ -320,6 +342,7 @@ impl<'a> ToSource {
         match node {
             &Token::NamedTokenItem(ref inner) => Self::to_source_named_token(s, inner),
             &Token::SimpleTokenItem(ref inner) => Self::to_source_simple_token(s, inner),
+            &Token::TokenGroupItem(ref inner) => Self::to_source_token_group(s, inner),
         }
     }
 

@@ -1,9 +1,5 @@
-@annot
-@annot2(arg=1)
-Source(exprs)
+Source (items:sourceItems)
 
-exprs[] SEMICOLON Expr
-Expr {
-    VarName(ident),
-    Plus(op1:Expr "+" op2:Expr)
+sourceItems:SourceItem[] WS {
+    TestItem(ident ("val1" "val2"))
 }

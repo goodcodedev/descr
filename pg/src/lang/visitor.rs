@@ -1,24 +1,18 @@
 use super::ast::*;
 
 pub trait Visitor<'a> {
-    fn visit_plus(&mut self, node: &'a Plus) {
-        self.visit_expr(&node.op1);
-        self.visit_expr(&node.op2);
-    }
-
     fn visit_source(&mut self, node: &'a Source) {
-        for item in &node.exprs {
-            self.visit_expr(item);
+        for item in &node.items {
+            self.visit_source_item(item);
         }
     }
 
-    fn visit_var_name(&mut self, node: &'a VarName) {
+    fn visit_test_item(&mut self, node: &'a TestItem) {
     }
 
-    fn visit_expr(&mut self, node: &'a Expr) {
+    fn visit_source_item(&mut self, node: &'a SourceItem) {
         match node {
-            &Expr::VarNameItem(ref inner) => self.visit_var_name(inner),
-            &Expr::PlusItem(ref inner) => self.visit_plus(inner),
+            &SourceItem::TestItemItem(ref inner) => self.visit_test_item(inner),
         }
     }
 

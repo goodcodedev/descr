@@ -1,6 +1,7 @@
 use lang_data::data::*;
 use lang_data::typed_part::*;
 use lang_data::ast::RuleType;
+use lang_data::ast::AstStruct;
 use lang_data::annotations::*;
 use std::collections::HashMap;
 use descr_lang::gen::ast::*;
@@ -39,6 +40,7 @@ pub enum AstRuleToken<'a> {
     Key(&'a str),
     Tag(&'a str),
     Func(&'a str, Vec<RuleFuncArg<'a>>),
+    Group(Vec<AstRulePart<'a>>)
 }
 impl<'a> AstRuleToken<'a> {
     pub fn parse_func_token(token: &FuncToken<'a>) -> AstRuleToken<'a> {
@@ -60,19 +62,43 @@ pub enum RuleFuncArg<'a> {
     Quoted(&'a str),
 }
 
-pub enum TypedRulePart<'a> {
-    Keyed(&'a TypedPart<'a>),
-    Quoted(&'a str),
-    Func(&'a str, Vec<TypedRuleFuncArg<'a>>),
-}
-pub enum TypedRuleFuncArg<'a> {
-    Quoted(&'a str),
-}
-impl<'a, 'b> TypedRulePart<'a> {
+impl<'a, 'b> AstRulePart<'a> {
+    pub fn gen_part_parser(&self, mut s: String, data: &'b LangData<'a>) -> String {
+        if let &AstRuleToken::Group(ref parts) = &self.token {
+            // Just forward to parts for now
+            for part in parts {
+                s = part.gen_part_parser(s, data);
+            }
+            s
+        } else {
+            indent!(s 2);
+            if !self.optional && !self.not {
+                append!(s, "sp >> ");
+            }
+            if let Some(member_name) = self.member_key {
+                append!(s, data.sc(member_name) "_k: ");
+            }
+            if self.not {
+                append!(s, "until_done_result!(");
+            }
+            if self.optional {
+                append!(s, "opt!(do_parse!(sp >> res: ");
+                s = self.gen_parser(s, data);
+                s += " >> (res)))";
+            } else {
+                s = self.gen_parser(s, data);
+            }
+            if self.not {
+                s += ")";
+            }
+            s += " >>\n";
+            s
+        }
+    }
     pub fn gen_parser(&self, mut s: String, data: &'b LangData<'a>) -> String {
-        match self {
-            &TypedRulePart::Keyed(part) => part.gen_parser(s, data),
-            &TypedRulePart::Quoted(string) => {
+        match &self.token {
+            &AstRuleToken::Key(key) => data.typed_parts.get(key).unwrap().gen_parser(s, data),
+            &AstRuleToken::Tag(string) => {
                 if data.debug {
                     s += "debug_wrap!(";
                 }
@@ -82,7 +108,7 @@ impl<'a, 'b> TypedRulePart<'a> {
                 }
                 s
             }
-            &TypedRulePart::Func(ident, ref args) => {
+            &AstRuleToken::Func(ident, ref args) => {
                 if data.debug {
                     s += "debug_wrap!(";
                 }
@@ -90,7 +116,7 @@ impl<'a, 'b> TypedRulePart<'a> {
                 let num_args = args.len();
                 for (i, arg) in args.iter().enumerate() {
                     match arg {
-                        &TypedRuleFuncArg::Quoted(string) => {
+                        &RuleFuncArg::Quoted(string) => {
                             append!(s, "\"" string "\"");
                         }
                     }
@@ -103,87 +129,100 @@ impl<'a, 'b> TypedRulePart<'a> {
                     s += ")";
                 }
                 s
+            },
+            &AstRuleToken::Group(ref parts) => {
+                // Just forward to parts for now
+                for part in parts {
+                    s = part.gen_part_parser(s, data);
+                }
+                s
             }
         }
     }
 
-    pub fn gen_parser_val(
-        &self,
-        mut s: String,
-        part: &'b AstRulePart<'a>,
-        data: &'b LangData<'a>,
-    ) -> String {
-        if part.not {
-            // Not is collected as str
-            s += "std::str::from_utf8(";
-            s += part.member_key.unwrap();
-            s += "_k).unwrap()";
-            s
-        } else {
-            match self {
-                &TypedRulePart::Keyed(typed_part) => typed_part.gen_parser_val(s, part, data),
-                &TypedRulePart::Quoted(..) => {
-                    if part.optional {
-                        append!(s, part.member_key.unwrap() "_k.is_some()");
-                    } else {
-                        s += "true";
+    pub fn gen_parser_struct_assign(&self, mut s: String, struct_data: Option<&AstStruct<'a>>, data: &'b LangData<'a>) -> String {
+        if let &AstRuleToken::Group(ref parts) = &self.token {
+            // Just forward to parts for now
+            for part in parts {
+                s = part.gen_parser_struct_assign(s, struct_data, data);
+            }
+        } else if let Some(member_key) = self.member_key {
+            let is_boxed = match struct_data {
+                Some(struct_data) => {
+                    struct_data.members.get(member_key).unwrap().boxed
+                }
+                _ => false,
+            };
+            append!(s 3, data.sc(member_key) ": ");
+            if is_boxed {
+                s += "Box::new(";
+            }
+            if self.not {
+                // Not is collected as str
+                s += "std::str::from_utf8(";
+                s += self.member_key.unwrap();
+                s += "_k).unwrap()";
+            } else {
+                match &self.token {
+                    &AstRuleToken::Key(key) => {
+                        s = data.typed_parts.get(key).unwrap().gen_parser_val(s, self, data)
+                    },
+                    &AstRuleToken::Tag(..) => {
+                        if self.optional {
+                            append!(s, self.member_key.unwrap() "_k.is_some()");
+                        } else {
+                            s += "true";
+                        }
                     }
-                    s
-                }
-                &TypedRulePart::Func(..) => {
-                    s += part.member_key.unwrap();
-                    s += "_k";
-                    s
+                    &AstRuleToken::Func(..) => {
+                        s += self.member_key.unwrap();
+                        s += "_k";
+                    },
+                    &AstRuleToken::Group(ref parts) => {}
                 }
             }
+            if is_boxed {
+                s += ")";
+            }
+            s += ",\n";
         }
+        s
     }
 
-    pub fn add_to_source(&self, mut s: String, part: &AstRulePart<'a>, data: &LangData<'a>) -> String {
-        if part.not {
-            if let Some(member_key) = part.member_key {
-                if part.optional {
+    pub fn add_to_source(&self, mut s: String, data: &LangData<'a>) -> String {
+        if self.not {
+            if let Some(member_key) = self.member_key {
+                if self.optional {
                     append!(s 2, "if let Some(not_part) = node." member_key "{ s += not_part }\n");
                 } else {
                     append!(s 2, "s += node." member_key ";\n");
                 }
             }
         } else {
-            match self {
-                &TypedRulePart::Keyed(typed_part) => s = typed_part.add_to_source(s, part, data),
-                &TypedRulePart::Quoted(quoted) => {
-                    if part.optional {
-                        if let Some(member_key) = part.member_key {
+            match &self.token {
+                &AstRuleToken::Key(key) => s = data.typed_parts.get(key).unwrap().add_to_source(s, self, data),
+                &AstRuleToken::Tag(quoted) => {
+                    if self.optional {
+                        if let Some(member_key) = self.member_key {
                             append!(s 2, "if node." data.sc(member_key) " { s += \"" quoted "\"; }\n");
                         }
                     } else {
                         append!(s 2, "s += \"" quoted "\";\n");
                     }
                 },
-                &TypedRulePart::Func(..) => {
+                &AstRuleToken::Func(..) => {
                     // Todo, make map of functions and let it handle
                     //panic!("func to source todo");
+                },
+                &AstRuleToken::Group(ref parts) => {
+                    // Just forward to parts for now
+                    for part in parts {
+                        s = part.add_to_source(s, data);
+                    }
                 }
             }
         }
         s
-    }
-}
-
-impl<'a> AstRulePart<'a> {
-    pub fn get_typed_part(&self, data: &'a LangData<'a>) -> TypedRulePart<'a> {
-        match &self.token {
-            &AstRuleToken::Key(key) => TypedRulePart::Keyed(data.typed_parts.get(key).unwrap()),
-            &AstRuleToken::Tag(string) => TypedRulePart::Quoted(string),
-            &AstRuleToken::Func(ident, ref args) => TypedRulePart::Func(
-                ident,
-                args.iter()
-                    .map(|arg| match arg {
-                        &RuleFuncArg::Quoted(string) => TypedRuleFuncArg::Quoted(string),
-                    })
-                    .collect::<Vec<_>>(),
-            ),
-        }
     }
 }
 
@@ -233,28 +272,7 @@ impl<'a> AstRule<'a> {
             &AstRule::PartsRule(ref parts_rule) => {
                 s += "do_parse!(\n";
                 for part in &parts_rule.parts {
-                    indent!(s 2);
-                    if !part.optional && !part.not {
-                        append!(s, "sp >> ");
-                    }
-                    let typed_part = part.get_typed_part(data);
-                    if let Some(member_name) = part.member_key {
-                        append!(s, data.sc(member_name) "_k: ");
-                    }
-                    if part.not {
-                        append!(s, "until_done_result!(");
-                    }
-                    if part.optional {
-                        append!(s, "opt!(do_parse!(sp >> res: ");
-                        s = typed_part.gen_parser(s, data);
-                        s += " >> (res)))";
-                    } else {
-                        s = typed_part.gen_parser(s, data);
-                    }
-                    if part.not {
-                        s += ")";
-                    }
-                    s += " >>\n";
+                    s = part.gen_part_parser(s, data);
                 }
                 s += "        (";
                 // There could also be "simple enum" here
@@ -291,24 +309,7 @@ impl<'a> AstRule<'a> {
                     s += "        ))";
                 } else {
                     for part in &parts_rule.parts {
-                        if let Some(member_key) = part.member_key {
-                            let is_boxed = match struct_data {
-                                Some(struct_data) => {
-                                    struct_data.members.get(member_key).unwrap().boxed
-                                }
-                                _ => false,
-                            };
-                            let typed_part = part.get_typed_part(data);
-                            append!(s 3, data.sc(member_key) ": ");
-                            if is_boxed {
-                                s += "Box::new(";
-                            }
-                            s = typed_part.gen_parser_val(s, part, data);
-                            if is_boxed {
-                                s += ")";
-                            }
-                            s += ",\n";
-                        }
+                        s = part.gen_parser_struct_assign(s, struct_data, data);
                     }
                     if is_many {
                         s += "        })))";

@@ -24,7 +24,7 @@ use lang_data::data::*;
 use std::path::Path;
 use descr_lang::gen::visitor::Visitor;
 
-pub fn process<'a, 'b, 'c>(res: &'a ast::Source, data: &'b mut LangData<'a>, path: &'c str) {
+pub fn process<'a : 'd, 'b, 'c, 'd>(res: &'a ast::Source, data: &'d mut LangData<'d>, path: &'c str) {
     let (elapsed, ()) = measure_time(|| {
         {
             measure!("Register keys", {

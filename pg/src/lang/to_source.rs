@@ -4,32 +4,24 @@ pub struct ToSource;
 impl<'a> ToSource {
     pub fn to_source_source(mut s: String, node: &'a Source) -> String {
         s += " ";
-        for item in &node.exprs {
-            s = Self::to_source_expr(s, item);
+        for item in &node.items {
+            s = Self::to_source_source_item(s, item);
         }
         s
     }
 
-    pub fn to_source_plus(mut s: String, node: &'a Plus) -> String {
-        s += " ";
-        s = Self::to_source_expr(s, &node.op1);
-        s += " ";
-        s += "+";
-        s += " ";
-        s = Self::to_source_expr(s, &node.op2);
-        s
-    }
-
-    pub fn to_source_var_name(mut s: String, node: &'a VarName) -> String {
+    pub fn to_source_test_item(mut s: String, node: &'a TestItem) -> String {
         s += " ";
         s += node.ident;
+        s += " ";
+        s += "val1";
+        s += "val2";
         s
     }
 
-    pub fn to_source_expr(s: String, node: &'a Expr) -> String {
+    pub fn to_source_source_item(s: String, node: &'a SourceItem) -> String {
         match node {
-            &Expr::VarNameItem(ref inner) => Self::to_source_var_name(s, inner),
-            &Expr::PlusItem(ref inner) => Self::to_source_plus(s, inner),
+            &SourceItem::TestItemItem(ref inner) => Self::to_source_test_item(s, inner),
         }
     }
 

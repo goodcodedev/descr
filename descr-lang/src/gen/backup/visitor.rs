@@ -19,12 +19,18 @@ pub trait Visitor<'a> {
     }
 
     fn visit_ast_def(&mut self, node: &'a AstDef) {
+        for item in &node.annots {
+            self.visit_annotation(item);
+        }
         for item in &node.tokens {
             self.visit_token(item);
         }
     }
 
     fn visit_ast_many(&mut self, node: &'a AstMany) {
+        for item in &node.annots {
+            self.visit_annotation(item);
+        }
         for item in &node.items {
             self.visit_ast_item(item);
         }
@@ -34,10 +40,19 @@ pub trait Visitor<'a> {
     }
 
     fn visit_ast_single(&mut self, node: &'a AstSingle) {
-        for item in &node.annotations {
+        for item in &node.annots {
             self.visit_annotation(item);
         }
         for item in &node.tokens {
+            self.visit_token(item);
+        }
+    }
+
+    fn visit_braced_tokens(&mut self, node: &'a TokenGroup) {
+        for item in &node.annots {
+            self.visit_annotation(item);
+        }
+        for item in &node.token_list {
             self.visit_token(item);
         }
     }
@@ -65,16 +80,25 @@ pub trait Visitor<'a> {
     }
 
     fn visit_list_many(&mut self, node: &'a ListMany) {
+        for item in &node.annots {
+            self.visit_annotation(item);
+        }
         for item in &node.items {
             self.visit_list_item(item);
         }
     }
 
     fn visit_list_single(&mut self, node: &'a ListSingle) {
+        for item in &node.annots {
+            self.visit_annotation(item);
+        }
     }
 
     fn visit_named_token(&mut self, node: &'a NamedToken) {
         self.visit_token_type(&node.token_type);
+        for item in &node.annots {
+            self.visit_annotation(item);
+        }
     }
 
     fn visit_quoted(&mut self, node: &'a Quoted) {
@@ -82,6 +106,9 @@ pub trait Visitor<'a> {
 
     fn visit_simple_token(&mut self, node: &'a SimpleToken) {
         self.visit_token_type(&node.token_type);
+        for item in &node.annots {
+            self.visit_annotation(item);
+        }
     }
 
     fn visit_source(&mut self, node: &'a Source) {
@@ -131,6 +158,7 @@ pub trait Visitor<'a> {
         match node {
             &Token::NamedTokenItem(ref inner) => self.visit_named_token(inner),
             &Token::SimpleTokenItem(ref inner) => self.visit_simple_token(inner),
+            &Token::TokenGroupItem(ref inner) => self.visit_braced_tokens(inner),
         }
     }
 
