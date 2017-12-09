@@ -87,13 +87,12 @@ impl<'a> AstMemberType<'a> {
     pub fn add_type(
         &self,
         mut s: String,
-        member: &AstStructMember<'a>,
         data: &LangData<'a>,
     ) -> String {
         match self {
             &AstMemberType::KeyedToken(key) => {
                 let part = data.typed_parts.get(key).unwrap();
-                part.add_type(s, member, data)
+                part.add_type(s, data)
             }
             &AstMemberType::NotString => {
                 s += "&'a str";

@@ -300,6 +300,7 @@ impl<'a> LangData<'a> {
                 "EXCL" => self.add_char_token("EXCL", '!'),
                 "DOT" => self.add_char_token("DOT", '.'),
                 "QUESTION" => self.add_char_token("QUESTION", '?'),
+                "QUOTE" => self.add_char_token("QUOTE", '"'),
                 "WS" => {
                     self.typed_parts.insert("WS", TypedPart::WSPart);
                 }

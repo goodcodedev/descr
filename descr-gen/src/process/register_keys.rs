@@ -23,6 +23,8 @@ impl<'a, 'd> Visitor<'d> for RegisterKeys<'a, 'd> {
         self.data
             .ast_data
             .insert(node.ident, AstData::new(node.ident, node.ident, parse_annots(&node.annots)));
+        self.data
+            .resolve_typed_part(node.ident);
     }
 
     fn visit_ast_many(&mut self, node: &'d AstMany) {
@@ -30,6 +32,8 @@ impl<'a, 'd> Visitor<'d> for RegisterKeys<'a, 'd> {
         self.data
             .ast_data
             .insert(node.ident, AstData::new(node.ident, node.ident, parse_annots(&node.annots)));
+        self.data
+            .resolve_typed_part(node.ident);
     }
 
     fn visit_list_single(&mut self, node: &'d ListSingle) {
@@ -37,6 +41,8 @@ impl<'a, 'd> Visitor<'d> for RegisterKeys<'a, 'd> {
         self.data
             .list_data
             .insert(node.ident, ListData::new(node.ident, None, Some(node.sep), parse_annots(&node.annots)));
+        self.data
+            .resolve_typed_part(node.ident);
     }
 
     fn visit_list_many(&mut self, node: &'d ListMany) {
@@ -45,5 +51,7 @@ impl<'a, 'd> Visitor<'d> for RegisterKeys<'a, 'd> {
             node.ident,
             ListData::new(node.ident, Some(node.ast_type), node.sep, parse_annots(&node.annots)),
         );
+        self.data
+            .resolve_typed_part(node.ident);
     }
 }

@@ -218,16 +218,21 @@ impl<'a> TypedPart<'a> {
         }
     }
 
-    pub fn add_to_source(&self, mut s: String, part: &AstRulePart<'a>, data: &LangData<'a>) -> String {
+    pub fn add_to_source(
+        &self, 
+        mut s: String, 
+        member_key: Option<&'a str>,
+        optional: bool,
+        data: &LangData<'a>) -> String {
         match self {
             &TypedPart::AstPart{key} => {
-                if let Some(member_key) = part.member_key {
-                    if part.optional {
+                if let Some(member_key) = member_key {
+                    if optional {
                         append!(s 2, "if let Some(ref some_val) = node." data.sc(member_key) " {\n    ");
                     }
                     let ast_type = data.resolve(key).get_ast_type();
                     append!(s 2, "s = Self::to_source_" data.sc(ast_type) "(s, ");
-                    if part.optional {
+                    if optional {
                         s += "some_val);\n";
                         s += "        }\n";
                     } else {
@@ -236,24 +241,34 @@ impl<'a> TypedPart<'a> {
                 }
             },
             &TypedPart::ListPart{key} => {
-                if let Some(member_key) = part.member_key {
-                    if part.optional {
+                if let Some(member_key) = member_key {
+                    let list_data = data.list_data.get(key).unwrap();
+                    let sep_part = list_data.sep.map(|sep_key| { data.typed_parts.get(sep_key).unwrap() });
+                    if optional {
                         append!(s 2, "if let Some(ref some_val) = node." data.sc(member_key) " {\n    ");
                     }
                     let ast_type = data.resolve(key).get_ast_type();
-                    append!(s 2, "for item in &");
-                    if part.optional { s += "some_val"; } else { append!(s, "node." data.sc(member_key)); }
-                    s += " {\n";
+                    append!(s 2, "let len = ");
+                    if optional { s += "some_val"; } else { append!(s, "node." data.sc(member_key)); }
+                    s += ".len();\n";
+                    append!(s 2, "for (i, item) in ");
+                    if optional { s += "some_val"; } else { append!(s, "node." data.sc(member_key)); }
+                    s += ".iter().enumerate() {\n";
                     append!(s 3, "s = Self::to_source_" data.sc(ast_type) "(s, item);\n");
+                    if let Some(sep_part) = sep_part {
+                        append!(s 3, "if i < len - 1 { ");
+                        s = sep_part.add_to_source(s, None, false, data);
+                        s += " }\n";
+                    }
                     append!(s 2, "}\n");
-                    if part.optional {
+                    if optional {
                         s += "    }\n";
                     }
                 }
             },
             &TypedPart::IntPart{..} => {
-                if let Some(member_key) = part.member_key {
-                    if part.optional {
+                if let Some(member_key) = member_key {
+                    if optional {
                         append!(s 2, "if let Some(some_val) = node." member_key " {\n    ");
                         append!(s 3, "s += &some_val.to_string();\n");
                         s += "        }";
@@ -262,12 +277,26 @@ impl<'a> TypedPart<'a> {
                     }
                 }
             },
+            &TypedPart::StringPart{..} => {
+                if let Some(member_key) = member_key {
+                    if optional {
+                        append!(s 2, "if let Some(some_val) = node." member_key " {\n    ");
+                        append!(s 3, "s += \"\\\"\";\n");
+                        append!(s 3, "s += some_val;\n");
+                        append!(s 3, "s += \"\\\"\";\n");
+                        s += "        }";
+                    } else {
+                        append!(s 2, "s += \"\\\"\";\n");
+                        append!(s 2, "s += node." member_key ";\n");
+                        append!(s 2, "s += \"\\\"\";\n");
+                    }
+                }
+            },
             &TypedPart::IdentPart{..}
-            | &TypedPart::StringPart{..}
             | &TypedPart::FnPart{..} // Todo: Fn should probably be able to handle own
              => {
-                if let Some(member_key) = part.member_key {
-                    if part.optional {
+                if let Some(member_key) = member_key {
+                    if optional {
                         append!(s 2, "if let Some(some_val) = node." member_key " {\n    ");
                         append!(s 3, "s += some_val;\n");
                         s += "        }";
@@ -277,7 +306,7 @@ impl<'a> TypedPart<'a> {
                 }
             },
             &TypedPart::CharPart{chr, ..} => {
-                if let Some(member_key) = part.member_key {
+                if let Some(member_key) = member_key {
                     // Assuming parsed to bool
                     append!(s 2, "if node." member_key " {\n    ");
                     append!(s 3, "s.push('");
@@ -291,7 +320,7 @@ impl<'a> TypedPart<'a> {
                 }
             },
             &TypedPart::TagPart{tag, ..} => {
-                if let Some(member_key) = part.member_key {
+                if let Some(member_key) = member_key {
                     // Assuming parsed to bool
                     append!(s 2, "if node." member_key " {\n    ");
                     append!(s 3, "s += \"" tag "\";\n");
@@ -310,7 +339,6 @@ impl<'a> TypedPart<'a> {
     pub fn add_type(
         &self,
         mut s: String,
-        member: &AstStructMember<'a>,
         data: &LangData<'a>,
     ) -> String {
         use self::TypedPart::*;
@@ -320,7 +348,7 @@ impl<'a> TypedPart<'a> {
                     .get(key)
                     .expect(&format!("Coult not get ast {}", key))
                     .get_type_name(data);
-                if member.tpe.needs_lifetime(data, &mut HashSet::new()) {
+                if self.needs_lifetime(data, &mut HashSet::new()) {
                     s += "<'a>";
                 }
                 s
@@ -331,7 +359,7 @@ impl<'a> TypedPart<'a> {
                     .get(key)
                     .expect(&format!("Coult not get list {}", key))
                     .get_type_name(data);
-                if member.tpe.needs_lifetime(data, &mut HashSet::new()) {
+                if self.needs_lifetime(data, &mut HashSet::new()) {
                     s += "<'a>";
                 }
                 s += ">";

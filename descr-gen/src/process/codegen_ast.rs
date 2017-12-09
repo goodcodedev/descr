@@ -31,7 +31,7 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
                 if member.boxed {
                     s += "Box<";
                 }
-                s = member.tpe.add_type(s, member, self.data);
+                s = member.tpe.add_type(s, self.data);
                 if member.boxed {
                     s += ">";
                 }

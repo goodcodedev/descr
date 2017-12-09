@@ -456,6 +456,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                     item_name,
                 } => {
                     let enum_data = self.data.ast_enums.get_mut(enum_name).unwrap();
+                    println!("Added enum box: {}, {}", enum_name, item_name);
                     enum_data.boxed_items.insert(item_name);
                 }
             }

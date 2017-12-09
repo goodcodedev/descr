@@ -200,7 +200,15 @@ impl<'a, 'b> AstRulePart<'a> {
             }
         } else {
             match &self.token {
-                &AstRuleToken::Key(key) => s = data.typed_parts.get(key).unwrap().add_to_source(s, self, data),
+                &AstRuleToken::Key(key) => s = data.typed_parts
+                                                    .get(key)
+                                                    .unwrap()
+                                                    .add_to_source(
+                                                        s, 
+                                                        self.member_key, 
+                                                        self.optional,
+                                                        data
+                                                    ),
                 &AstRuleToken::Tag(quoted) => {
                     if self.optional {
                         if let Some(member_key) = self.member_key {
@@ -264,7 +272,7 @@ impl<'a> AstRule<'a> {
                         _ => "node",
                     };
                     append!(s, "map!(" data.sc(rule_ref) ", |node| { ");
-                    append!(s, type_name "::" rule_ref "Item(node) })");
+                    append!(s, type_name "::" rule_ref "Item(" node_expr ") })");
                 } else {
                     s += data.sc(rule_ref);
                 }
