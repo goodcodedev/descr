@@ -6,3 +6,4 @@ authors = ["goodcodedev <gudmund@goodcode.no>"]
 [dependencies]
 descr-common = { path = "../descr-common" }
 nom = "^3.2"
+json-descr = { path = "../langs/json-descr" }

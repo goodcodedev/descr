@@ -1,5 +1,6 @@
 /.vscode
-*/target/*
 /target/
+/*/target/
+/*/*/target/
 **/*.rs.bk
 .DS_Store

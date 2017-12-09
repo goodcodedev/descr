@@ -1,3 +1,6 @@
+extern crate descr_common;
+pub mod lang;
+
 #[cfg(test)]
 mod tests {
     #[test]
