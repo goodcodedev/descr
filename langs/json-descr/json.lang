@@ -1,0 +1,11 @@
+JsObject(LBRACE items:objectPairs RBRACE)
+objectPairs:ObjectPair[] COMMA {
+    ObjectPair(QUOTE ident QUOTE COLON JsVal)
+}
+JsVal {
+    Int(int),
+    StringVal(string),
+    ArrayVal(LBRACKET arrayVals RBRACKET),
+    JsObject
+}
+arrayVals[] COMMA JsVal
