@@ -1,6 +1,7 @@
 use descr_common::parsers::*;
 extern crate nom;
 use self::nom::*;
+#[allow(unused_imports)]
 use std;
 use super::ast::*;
 
@@ -45,10 +46,10 @@ named!(pub object_pairs<Vec<ObjectPair>>, separated_list!(char!(','),
     do_parse!(
         sp >> key_k: quoted_str >>
         sp >> char!(':') >>
-        sp >> js_val_k: js_val >>
+        sp >> val_k: js_val >>
         (ObjectPair {
             key: key_k,
-            js_val: js_val_k,
+            val: val_k,
         }))
 ));
 

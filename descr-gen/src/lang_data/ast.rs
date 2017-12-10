@@ -117,6 +117,7 @@ pub struct AstStruct<'a> {
     pub snake_case: String,
     pub num_patterns: u32,
     pub members: HashMap<&'a str, AstStructMember<'a>>,
+    pub members_ordered: Vec<&'a str>
 }
 impl<'a> AstStruct<'a> {
     pub fn new(name: &'a str, snake_case: String) -> AstStruct<'a> {
@@ -125,6 +126,7 @@ impl<'a> AstStruct<'a> {
             snake_case,
             num_patterns: 0,
             members: HashMap::new(),
+            members_ordered: Vec::new()
         }
     }
     pub fn sc(&self) -> &str {

@@ -63,6 +63,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                     },
                 ),
             );
+            ast_struct.members_ordered.push(member_name);
         }
     }
 
