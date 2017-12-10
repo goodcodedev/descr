@@ -12,6 +12,7 @@ impl<'a, 'd> CodegenVisitor<'a, 'd> {
     pub fn gen(&self) -> String {
         let mut s = String::with_capacity(1024);
         s += "use super::ast::*;\n\n";
+        s += "#[allow(unused_variables,dead_code)]\n";
         s += "pub trait Visitor<'a> {\n";
         // Ast structs
         for (key, ast_struct) in self.data.ast_structs.sorted_iter() {

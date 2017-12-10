@@ -25,14 +25,14 @@ impl<'a, 'd> CodegenToSource<'a, 'd> {
     fn collect_rules(&self) -> AstRules<'a, 'd> {
         let mut rules = AstRules { rules: HashMap::new() };
         // Add rules by ast key
-        for (key, ast_data) in &self.data.ast_data {
+        for (_key, ast_data) in &self.data.ast_data {
             for rule in &ast_data.rules {
                 if let &AstRule::PartsRule(ref parts_rule) = rule {
                     rules.insert(parts_rule.ast_type, parts_rule);
                 }
             }
         }
-        for (key, list_data) in &self.data.list_data {
+        for (_key, list_data) in &self.data.list_data {
             for rule in &list_data.rules {
                 if let &AstRule::PartsRule(ref parts_rule) = &rule.ast_rule {
                     rules.insert(parts_rule.ast_type, parts_rule);
@@ -52,6 +52,7 @@ impl<'a, 'd> CodegenToSource<'a, 'd> {
         // function for ast type
         s += "use super::ast::*;\n\n";
         s += "pub struct ToSource;\n";
+        s += "#[allow(unused_variables,dead_code)]\n";
         s += "impl<'a> ToSource {\n";
         for (ast_type, rules) in &ast_rules.rules {
             if self.data.simple_structs.contains(ast_type) {

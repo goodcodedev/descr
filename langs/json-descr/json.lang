@@ -1,7 +1,7 @@
 JsObject(LBRACE items:objectPairs RBRACE)
 objectPairs:ObjectPair[] COMMA {
     @hashmap
-    ObjectPair(key:string COLON JsVal)
+    ObjectPair(key:string COLON val:JsVal)
 }
 JsVal {
     Int(int),

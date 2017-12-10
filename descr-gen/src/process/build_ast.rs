@@ -360,7 +360,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         for (struct_name, struct_data) in &self.data.ast_structs {
             for (member_name, member) in &struct_data.members {
                 match self.data.get_ast_key(member.part_key) {
-                    Some(ast_key) => {
+                    Some(_ast_key) => {
                         // Insert struct/enum members
                         match self.data.resolve(member.part_key) {
                             ResolvedType::ResolvedStruct(key) => {
@@ -423,7 +423,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         let mut visited = HashMap::new();
         use std::collections::HashSet;
         for (struct_name, struct_data) in &self.data.ast_structs {
-            for (member_name, member) in &struct_data.members {
+            for (_member_name, member) in &struct_data.members {
                 match self.data.get_ast_key(member.part_key) {
                     Some(ast_key) => {
                         if !visited.contains_key(ast_key) {

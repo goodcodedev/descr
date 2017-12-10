@@ -15,6 +15,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
         s += "use descr_common::parsers::*;\n";
         s += "extern crate nom;\n";
         s += "use self::nom::*;\n";
+        s += "#[allow(unused_imports)]\n";
         s += "use std;\n";
         s += "use super::ast::*;\n\n";
         // Start key

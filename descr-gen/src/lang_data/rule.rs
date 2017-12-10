@@ -3,8 +3,8 @@ use lang_data::typed_part::*;
 use lang_data::ast::RuleType;
 use lang_data::ast::AstStruct;
 use lang_data::annotations::*;
-use std::collections::HashMap;
 use descr_lang::gen::ast::*;
+use process::codegen_syntax::{SyntaxData, SyntaxEntry};
 
 /// Parser "rule"
 /// List of tokens that makes up some ast type
@@ -16,7 +16,7 @@ pub struct AstPartsRule<'a> {
     pub ast_type: &'a str,
     pub annots: AnnotList<'a>
 }
-impl<'a> AstPartsRule<'a> {
+impl<'a: 's, 's> AstPartsRule<'a> {
     pub fn new(ast_type: &'a str, annots: AnnotList<'a>) -> AstPartsRule<'a> {
         AstPartsRule {
             parts: Vec::new(),
@@ -24,6 +24,212 @@ impl<'a> AstPartsRule<'a> {
             annots
         }
     }
+
+    pub fn add_regex(&self, mut acc: String, part: &'a AstRulePart,
+                     regex: &str, default_name: Option<&str>, captures: &mut Vec<String>)
+                    -> String
+    {
+        let (capture, capture_name) = match default_name {
+            Some(capture_name) => (true, Some(capture_name)),
+            None => (false, None)
+        };
+        if !part.not {
+            acc.push_str("\\s*");
+        }
+        if capture {
+            acc.push('(');
+        }
+        if part.optional {
+            acc.push_str("(?:");
+        }
+        if part.not {
+            acc.push_str("^(?:(?!");
+        }
+        acc.push_str(regex);
+        if part.not {
+            acc.push_str(").)*");
+        }
+        if part.optional {
+            acc.push_str(")?");
+        }
+        if capture {
+            acc.push(')');
+        }
+        if let Some(capture_name) = capture_name {
+            captures.push(capture_name.to_string());
+        }
+        acc
+    }
+
+    pub fn add_syntax_entries(&self, syntax_data: &mut SyntaxData<'s>, data: &LangData<'a>) {
+        let mut regex = String::new();
+        let mut regex_begin = String::new();
+        let mut collecting_end = false;
+        let mut patterns = Vec::new();
+        let mut captures = Vec::new();
+        let mut captures_begin = Vec::new();
+        let mut is_first = true;
+        for (i, part) in self.parts.iter().enumerate() {
+            if i > 0 {
+                is_first = false;
+            }
+            match &part.token {
+                &AstRuleToken::Key(key) => {
+                    let typed_part = data.typed_parts.get(key).expect("Could not find part");
+                    match typed_part {
+                        &TypedPart::AstPart{key} => {
+                            // If we are at first position,
+                            // add to parent level, else
+                            // use current acc as begin,
+                            // and collect end
+                            // If already at end, transform
+                            // to <Key>2 by setting end to [^\s]
+                            // and using accum as begin
+                            match data.resolve(key) {
+                                ResolvedType::ResolvedEnum(key) => {
+                                    let enum_data = data.ast_enums.get(key).unwrap();
+                                    for item in &enum_data.items {
+                                        if is_first {
+                                            syntax_data.add_parent_entry(self.ast_type, item);
+                                        } else {
+                                            patterns.push(item.to_string());
+                                        }
+                                    }
+                                },
+                                ResolvedType::ResolvedStruct(key) => {
+                                    if is_first {
+                                        syntax_data.add_parent_entry(self.ast_type, key);
+                                    } else {
+                                        patterns.push(key.to_string());
+                                    }
+                                }
+                            }
+                            if !is_first {
+                                if collecting_end {
+                                    panic!("todo");
+                                }
+                                regex_begin = regex;
+                                regex = String::new();
+                                captures_begin = captures;
+                                captures = Vec::new();
+                                collecting_end = true;
+                            }
+                        },
+                        &TypedPart::ListPart{key} => {
+                            // Add references to list items
+                            match data.resolve(key) {
+                                ResolvedType::ResolvedEnum(key) => {
+                                    let enum_data = data.ast_enums.get(key).unwrap();
+                                    for item in &enum_data.items {
+                                        if is_first {
+                                            syntax_data.add_parent_entry(self.ast_type, item);
+                                        } else {
+                                            patterns.push(item.to_string());
+                                        }
+                                    }
+                                },
+                                ResolvedType::ResolvedStruct(key) => {
+                                    if is_first {
+                                        syntax_data.add_parent_entry(self.ast_type, key);
+                                    } else {
+                                        patterns.push(key.to_string());
+                                    }
+                                }
+                            }
+                            if !is_first {
+                                if collecting_end {
+                                    panic!("todo");
+                                }
+                                regex_begin = regex;
+                                regex = String::new();
+                                captures_begin = captures;
+                                captures = Vec::new();
+                                collecting_end = true;
+                            }
+                        },
+                        &TypedPart::CharPart{chr, ..} => {
+                            regex = self.add_regex(regex, part, &to_regex(&chr.to_string()), None, &mut captures);
+                        },
+                        &TypedPart::TagPart{tag, ..} => {
+                            regex = self.add_regex(regex, part, &to_regex(tag), Some("keyword.other"), &mut captures);
+                        },
+                        &TypedPart::IntPart{key} => {
+                            regex = self.add_regex(regex, part, "[-\\+]?[1-9]+", Some("constant.numeric"), &mut captures);
+                        },
+                        &TypedPart::IdentPart{key} => {
+                            regex = self.add_regex(regex, part, "[_]*[a-zA-Z][a-zA-Z0-9_]*", Some("variable.other"), &mut captures);
+                        },
+                        &TypedPart::FnPart{key, ..} => {
+                            panic!("Fn not implemented: {}", key);
+                        },
+                        &TypedPart::StringPart{key} => {
+                            regex = self.add_regex(regex, part, "\"(?:[^\"\\]|\\.)*\"", Some("string.quoted"), &mut captures);
+                        },
+                        &TypedPart::WSPart => {
+                            regex.push_str("\\s+");
+                        },
+                    }
+                },
+                &AstRuleToken::Tag(tag) => {
+                    regex = self.add_regex(regex, part, &to_regex(tag), Some("keyword.other"), &mut captures);
+                },
+                &AstRuleToken::Func(ident, ref args) => {
+                    panic!("Fn not implemented: {}", ident);
+                },
+                &AstRuleToken::Group(ref parts) => {
+
+                }
+            }
+        }
+        if patterns.len() > 0 {
+            if regex.len() == 0 {
+                regex.push_str("[^\\s]");
+            }
+            let (begin, end, begin_captures, end_captures) = if collecting_end {
+                (regex_begin, regex, captures_begin, captures)
+            } else {
+                (regex, "[^\\s]".to_string(), captures, Vec::new())
+            };
+            syntax_data.entries.insert(
+                self.ast_type,
+                SyntaxEntry::BeginEnd {
+                    begin,
+                    end,
+                    begin_captures,
+                    end_captures,
+                    patterns
+                }
+            );
+        } else {
+            syntax_data.entries.insert(
+                self.ast_type,
+                SyntaxEntry::Match {
+                    regex,
+                    captures
+                }
+            );
+        }
+    }
+}
+
+pub fn to_regex(string: &str) -> String {
+    let mut s = String::with_capacity(string.len() + 1);
+    for chr in string.chars() {
+        match chr {
+            '(' => s.push_str("\\("),
+            ')' => s.push_str("\\)"),
+            '{' => s.push_str("\\{"),
+            '}' => s.push_str("\\}"),
+            '[' => s.push_str("\\["),
+            ']' => s.push_str("\\]"),
+            '?' => s.push_str("\\?"),
+            '.' => s.push_str("\\."),
+            '+' => s.push_str("\\+"),
+            '\\' => s.push_str("\\\\"),
+            other => s.push(other)
+        }
+    }
+    s
 }
 
 #[derive(Debug)]

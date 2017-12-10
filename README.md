@@ -202,11 +202,11 @@ pg-example.pg otherwise.
 
 Things
 ------
-- [x] Recursive data structures (boxed somewhere)
-- [ ] Groups of tokens: Data(token1 (token2 token3)?)
+- [x] Recursive data structures
+- [x] Groups of tokens
 - [x] (Back) to source generator
 - [ ] Include language files, maybe into context
-- [ ] Annotations for things like serde integration
+- [x] Annotations for things like serde integration
 - [ ] "Standard library" with tokens +(?)
 - [ ] Try some languages, subset of javascript, glsl
 - [ ] Look for patterns to generalize

@@ -266,10 +266,12 @@ impl<'a> LangData<'a> {
             .insert(key, TypedPart::CharPart { key, chr });
     }
 
+    /*
     fn add_fn_token(&mut self, key: &'a str, fnc: &'a str, tpe: &'a str) {
         self.typed_parts
             .insert(key, TypedPart::FnPart { key, fnc, tpe });
     }
+    */
 
     /// Resolve typed part assuming keys
     /// are registered
