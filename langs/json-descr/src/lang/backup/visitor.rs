@@ -1,8 +1,9 @@
 use super::ast::*;
 
+#[allow(unused_variables,dead_code)]
 pub trait Visitor<'a> {
     fn visit_array_val(&mut self, node: &'a ArrayVal) {
-        for item in &node.array_vals {
+        for item in &node.items {
             self.visit_js_val(item);
         }
     }
@@ -17,7 +18,7 @@ pub trait Visitor<'a> {
     }
 
     fn visit_object_pair(&mut self, node: &'a ObjectPair) {
-        self.visit_js_val(&node.js_val);
+        self.visit_js_val(&node.val);
     }
 
     fn visit_string_val(&mut self, node: &'a StringVal) {

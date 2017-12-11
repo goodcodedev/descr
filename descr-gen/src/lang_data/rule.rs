@@ -163,7 +163,10 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                             panic!("Fn not implemented: {}", key);
                         },
                         &TypedPart::StringPart{key} => {
-                            regex = self.add_regex(regex, part, "\"(?:[^\"\\]|\\.)*\"", Some("string.quoted"), &mut captures);
+                            regex = self.add_regex(regex, part, "\"(?:[^\"\\\\]|\\.)*\"", Some("string.quoted"), &mut captures);
+                        },
+                        &TypedPart::StrPart{key} => {
+                            regex = self.add_regex(regex, part, "\"(?:[^\"\\\\]|\\.)*\"", Some("string.quoted"), &mut captures);
                         },
                         &TypedPart::WSPart => {
                             regex.push_str("\\s+");

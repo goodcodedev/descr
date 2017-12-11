@@ -23,6 +23,7 @@ dependencies = [
  "descr-common 0.1.0",
  "descr-lang 0.1.0",
  "elapsed 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "json-descr 0.1.0",
  "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -38,6 +39,14 @@ dependencies = [
 name = "elapsed"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "json-descr"
+version = "0.1.0"
+dependencies = [
+ "descr-common 0.1.0",
+ "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "libc"

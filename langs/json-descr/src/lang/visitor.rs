@@ -3,7 +3,7 @@ use super::ast::*;
 #[allow(unused_variables,dead_code)]
 pub trait Visitor<'a> {
     fn visit_array_val(&mut self, node: &'a ArrayVal) {
-        for item in &node.array_vals {
+        for item in &node.items {
             self.visit_js_val(item);
         }
     }

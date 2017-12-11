@@ -2,13 +2,12 @@ Descr
 =====
 
 Descr is a small language for describing other languages.
-Given a description, currently it will create ast datatypes,
-parser (currently through [nom](https://github.com/Geal/nom))
-and a visitor trait to traverse parsed source.
-
-"To source" generator, transform to other datastructures,
-syntax highlighting definitions, some [serde](https://github.com/serde-rs/serde) integration etc
-is planned.
+Given a description, currently it will create:
+* Ast datatypes
+* Parser (through [nom](https://github.com/Geal/nom))
+* A visitor trait to traverse parsed source
+* Ast to source functions
+* Syntax highlighting that can be used in vscode extension
 
 Structs
 -------
@@ -66,25 +65,24 @@ Comparison {
 ```
 The variations could also have data, which generates structs for each:
 ```
-Expr {
+Alternatives {
     IntConst(int),
-    Plus(op1:Expr "+" op2: Expr)
+    StringVal(string)
 }
 ```
 Generates:
 ```rust
-pub enum Expr<'a> {
+pub enum Alternatives<'a> {
     IntConstItem(IntConst),
-    PlusItem(Box<Plus<'a>>)
+    StringValItem(StringVal)
 }
 
 pub struct IntConst {
     pub int: i32
 }
 
-pub struct Plus<'a> {
-    pub op1: Expr<'a>,
-    pub op2: Expr<'a>
+pub struct StringVal<'a> {
+    pub string: &'a str
 }
 ...
 ```
@@ -212,7 +210,7 @@ Things
 - [ ] Look for patterns to generalize
 - [ ] Try to organize languages beside each other
 - [ ] Transform support
-- [ ] Syntax highlight generation
+- [x] Syntax highlight generation
 - [ ] Analyze rules to order by longest rule first when conflict
 - [ ] Parse error messages
 - [ ] Provide some language elements and type system?

@@ -58,7 +58,7 @@ impl<'a, 'd> CodegenToSource<'a, 'd> {
             if self.data.simple_structs.contains(ast_type) {
                 continue;
             }
-            append!(s, "    pub fn to_source_" self.data.sc(ast_type) "(mut s: String, node: &'a " ast_type ") -> String {\n");
+            append!(s, "    pub fn " self.data.sc(ast_type) "(mut s: String, node: &'a " ast_type ") -> String {\n");
             for rule in rules {
                 // Todo: Possibly create if statement
                 // if there are several rules for the
@@ -75,7 +75,7 @@ impl<'a, 'd> CodegenToSource<'a, 'd> {
         // Ast enums
         for (key, ast_enum) in self.data.ast_enums.sorted_iter() {
             let is_simple = self.data.simple_enums.contains(key);
-            append!(s 1, "pub fn to_source_" ast_enum.sc() "(");
+            append!(s 1, "pub fn " ast_enum.sc() "(");
             if is_simple {
                 s += "mut ";
             }
@@ -101,7 +101,7 @@ impl<'a, 'd> CodegenToSource<'a, 'd> {
             }
             append!(s 2, "match node {\n");
             for enum_item in &ast_enum.items {
-                append!(s 3, "&" ast_enum.name "::" enum_item "Item(ref inner) => Self::to_source_" self.data.sc(enum_item) "(s, inner),\n");
+                append!(s 3, "&" ast_enum.name "::" enum_item "Item(ref inner) => Self::" self.data.sc(enum_item) "(s, inner),\n");
             }
             s += "        }\n    }\n\n";
         }

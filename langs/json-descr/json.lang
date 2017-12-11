@@ -1,12 +1,12 @@
 JsObject(LBRACE items:objectPairs RBRACE)
 objectPairs:ObjectPair[] COMMA {
     @hashmap
-    ObjectPair(key:string COLON val:JsVal)
+    ObjectPair(key:String COLON val:JsVal)
 }
 JsVal {
     Int(int),
-    StringVal(string),
-    ArrayVal(LBRACKET arrayVals RBRACKET),
+    StringVal(String),
+    ArrayVal(LBRACKET items:arrayVals RBRACKET),
     JsObject
 }
 arrayVals[] COMMA JsVal

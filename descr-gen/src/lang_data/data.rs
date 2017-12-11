@@ -147,6 +147,7 @@ pub struct LangData<'a> {
     // in the tree, where the member or item should be
     // boxed to avoid infinite structures
     pub parent_refs: ParentRefs<'a>,
+    pub name: String
 }
 #[derive(Debug)]
 pub struct ParentRefs<'a> {
@@ -173,7 +174,7 @@ pub enum ParentRef<'a> {
 }
 
 impl<'a> LangData<'a> {
-    pub fn new(debug: bool) -> LangData<'a> {
+    pub fn new(debug: bool, name: String) -> LangData<'a> {
         LangData {
             typed_parts: HashMap::new(),
             ast_data: HashMap::new(),
@@ -191,6 +192,7 @@ impl<'a> LangData<'a> {
             parent_refs: ParentRefs {
                 refs: HashMap::new(),
             },
+            name
         }
     }
 
@@ -305,18 +307,27 @@ impl<'a> LangData<'a> {
                 "QUOTE" => self.add_char_token("QUOTE", '"'),
                 "WS" => {
                     self.typed_parts.insert("WS", TypedPart::WSPart);
-                }
+                },
                 //"WS" => self.add_fn_token("WS", "sp", "&'a str"),
                 "string" => {
                     self.typed_parts
-                        .insert("string", TypedPart::StringPart { key });
+                        .insert("string", TypedPart::StrPart { key });
+                },
+                "str" => {
+                    self.typed_parts
+                        .insert("str", TypedPart::StrPart { key });
+                },
+                // Uppercased first for non borrowed
+                "String" => {
+                    self.typed_parts
+                        .insert("String", TypedPart::StringPart { key });
                 }
                 "ident" => {
                     self.typed_parts.insert(key, TypedPart::IdentPart { key });
-                }
+                },
                 "int" => {
                     self.typed_parts.insert(key, TypedPart::IntPart { key });
-                }
+                },
                 _ => {
                     println!("Could not find token: {}", key);
                     println!("Structs: {:#?}", self.ast_structs.keys());

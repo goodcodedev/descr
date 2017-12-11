@@ -1,6 +1,7 @@
 use descr_common::parsers::*;
 extern crate nom;
 use self::nom::*;
+#[allow(unused_imports)]
 use std;
 use super::ast::*;
 
@@ -25,14 +26,14 @@ named!(pub js_val<JsVal>, alt_complete!(
     | do_parse!(
         sp >> string_k: quoted_str >>
         (JsVal::StringValItem(StringVal {
-            string: string_k,
+            string: String::from(string_k),
         })))
     | do_parse!(
         sp >> char!('[') >>
-        sp >> array_vals_k: array_vals >>
+        sp >> items_k: array_vals >>
         sp >> char!(']') >>
         (JsVal::ArrayValItem(Box::new(ArrayVal {
-            array_vals: array_vals_k,
+            items: items_k,
         }))))
     | map!(js_object, |node| { JsVal::JsObjectItem(Box::new(node)) })
 ));
@@ -45,10 +46,10 @@ named!(pub object_pairs<Vec<ObjectPair>>, separated_list!(char!(','),
     do_parse!(
         sp >> key_k: quoted_str >>
         sp >> char!(':') >>
-        sp >> js_val_k: js_val >>
+        sp >> val_k: js_val >>
         (ObjectPair {
-            key: key_k,
-            js_val: js_val_k,
+            key: String::from(key_k),
+            val: val_k,
         }))
 ));
 

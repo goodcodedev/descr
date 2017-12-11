@@ -106,7 +106,23 @@ fn main() {
         let (elapsed, res) = measure_time(|| descr_lang::gen::parsers::source(&buf[..]));
         println!("Parse: {}", elapsed);
         //println!("{:#?}", res);
-        let mut data = LangData::new(false);
+        let lang_name = match file_path.file_name() {
+            Some(filename) => {
+                let filename = filename.to_str().unwrap();
+                match filename.find('.') {
+                    Some(pos) => {
+                        let mut chars = filename[0..pos].chars();
+                        match chars.next() {
+                            Some(c) => c.to_uppercase().chain(chars).collect(),
+                            _ => "No-name".to_string()
+                        }
+                    },
+                    _ => "No-name".to_string()
+                }
+            },
+            _ => "No-name".to_string()
+        }; 
+        let mut data = LangData::new(false, lang_name);
         {
             match res {
                 nom::IResult::Done(_, ref source) => {

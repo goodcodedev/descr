@@ -1,13 +1,17 @@
 #[derive(Debug)]
-pub struct ArrayVal<'a> {
-    pub array_vals: Vec<JsVal<'a>>,
+pub struct ArrayVal {
+    pub items: Vec<JsVal>,
 }
 
-impl<'a> ArrayVal<'a> {
-    pub fn new(array_vals: Vec<JsVal<'a>>) -> ArrayVal<'a> {
+impl ArrayVal {
+    pub fn new(items: Vec<JsVal>) -> ArrayVal {
         ArrayVal {
-            array_vals
+            items
         }
+    }
+
+    pub fn as_js_val(self) -> JsVal {
+        JsVal::ArrayValItem(Box::new(self))
     }
 }
 
@@ -22,29 +26,37 @@ impl Int {
             int
         }
     }
-}
 
-#[derive(Debug)]
-pub struct JsObject<'a> {
-    pub items: Vec<ObjectPair<'a>>,
-}
-
-impl<'a> JsObject<'a> {
-    pub fn new(items: Vec<ObjectPair<'a>>) -> JsObject<'a> {
-        JsObject {
-            items
-        }
+    pub fn as_js_val(self) -> JsVal {
+        JsVal::IntItem(self)
     }
 }
 
 #[derive(Debug)]
-pub struct ObjectPair<'a> {
-    pub key: &'a str,
-    pub val: JsVal<'a>,
+pub struct JsObject {
+    pub items: Vec<ObjectPair>,
 }
 
-impl<'a> ObjectPair<'a> {
-    pub fn new(key: &'a str, val: JsVal<'a>) -> ObjectPair<'a> {
+impl JsObject {
+    pub fn new(items: Vec<ObjectPair>) -> JsObject {
+        JsObject {
+            items
+        }
+    }
+
+    pub fn as_js_val(self) -> JsVal {
+        JsVal::JsObjectItem(Box::new(self))
+    }
+}
+
+#[derive(Debug)]
+pub struct ObjectPair {
+    pub key: String,
+    pub val: JsVal,
+}
+
+impl ObjectPair {
+    pub fn new(key: String, val: JsVal) -> ObjectPair {
         ObjectPair {
             key,
             val
@@ -53,40 +65,44 @@ impl<'a> ObjectPair<'a> {
 }
 
 #[derive(Debug)]
-pub struct StringVal<'a> {
-    pub string: &'a str,
+pub struct StringVal {
+    pub string: String,
 }
 
-impl<'a> StringVal<'a> {
-    pub fn new(string: &'a str) -> StringVal<'a> {
+impl StringVal {
+    pub fn new(string: String) -> StringVal {
         StringVal {
             string
         }
     }
+
+    pub fn as_js_val(self) -> JsVal {
+        JsVal::StringValItem(self)
+    }
 }
 
 #[derive(Debug)]
-pub enum JsVal<'a> {
+pub enum JsVal {
     IntItem(Int),
-    StringValItem(StringVal<'a>),
-    ArrayValItem(Box<ArrayVal<'a>>),
-    JsObjectItem(Box<JsObject<'a>>),
+    StringValItem(StringVal),
+    ArrayValItem(Box<ArrayVal>),
+    JsObjectItem(Box<JsObject>),
 }
 
-impl<'a> JsVal<'a> {
-    pub fn int(int: u32) -> JsVal<'a> {
+impl JsVal {
+    pub fn int(int: u32) -> JsVal {
         JsVal::IntItem(Int::new(int))
     }
 
-    pub fn string_val(string: &'a str) -> JsVal<'a> {
+    pub fn string_val(string: String) -> JsVal {
         JsVal::StringValItem(StringVal::new(string))
     }
 
-    pub fn array_val(array_vals: Vec<JsVal<'a>>) -> JsVal<'a> {
-        JsVal::ArrayValItem(Box::new(ArrayVal::new(array_vals)))
+    pub fn array_val(items: Vec<JsVal>) -> JsVal {
+        JsVal::ArrayValItem(Box::new(ArrayVal::new(items)))
     }
 
-    pub fn js_object(items: Vec<ObjectPair<'a>>) -> JsVal<'a> {
+    pub fn js_object(items: Vec<ObjectPair>) -> JsVal {
         JsVal::JsObjectItem(Box::new(JsObject::new(items)))
     }
 }

@@ -33,6 +33,9 @@ pub enum TypedPart<'a> {
     StringPart {
         key: &'a str,
     },
+    StrPart {
+        key: &'a str,
+    },
     WSPart,
 }
 impl<'a> TypedPart<'a> {
@@ -42,6 +45,7 @@ impl<'a> TypedPart<'a> {
             | &TypedPart::ListPart { .. }
             | &TypedPart::IntPart { .. }
             | &TypedPart::StringPart { .. }
+            | &TypedPart::StrPart { .. }
             | &TypedPart::IdentPart { .. } => true,
             _ => false,
         }
@@ -77,6 +81,9 @@ impl<'a> TypedPart<'a> {
                 s += fnc;
             }
             &StringPart { .. } => {
+                s += "quoted_str";
+            }
+            &StrPart { .. } => {
                 s += "quoted_str";
             }
             &WSPart => s += "sp",
@@ -120,6 +127,9 @@ impl<'a> TypedPart<'a> {
                 append!(s, member_key "_k");
             }
             &StringPart { .. } => {
+                append!(s, "String::from(" member_key "_k)");
+            }
+            &StrPart { .. } => {
                 append!(s, member_key "_k");
             }
             &WSPart => {
@@ -201,7 +211,8 @@ impl<'a> TypedPart<'a> {
             &IdentPart { .. } => true,
             // Depends on function todo
             &FnPart { .. } => true,
-            &StringPart { .. } => true,
+            &StringPart { .. } => false,
+            &StrPart { .. } => true,
             &WSPart => true,
         }
     }
@@ -231,7 +242,7 @@ impl<'a> TypedPart<'a> {
                         append!(s 2, "if let Some(ref some_val) = node." data.sc(member_key) " {\n    ");
                     }
                     let ast_type = data.resolve(key).get_ast_type();
-                    append!(s 2, "s = Self::to_source_" data.sc(ast_type) "(s, ");
+                    append!(s 2, "s = Self::" data.sc(ast_type) "(s, ");
                     if optional {
                         s += "some_val);\n";
                         s += "        }\n";
@@ -254,7 +265,7 @@ impl<'a> TypedPart<'a> {
                     append!(s 2, "for (i, item) in ");
                     if optional { s += "some_val"; } else { append!(s, "node." data.sc(member_key)); }
                     s += ".iter().enumerate() {\n";
-                    append!(s 3, "s = Self::to_source_" data.sc(ast_type) "(s, item);\n");
+                    append!(s 3, "s = Self::" data.sc(ast_type) "(s, item);\n");
                     if let Some(sep_part) = sep_part {
                         append!(s 3, "if i < len - 1 { ");
                         s = sep_part.add_to_source(s, None, false, data);
@@ -278,6 +289,21 @@ impl<'a> TypedPart<'a> {
                 }
             },
             &TypedPart::StringPart{..} => {
+                if let Some(member_key) = member_key {
+                    if optional {
+                        append!(s 2, "if let Some(some_val) = node." data.sc(member_key) " {\n    ");
+                        append!(s 3, "s += \"\\\"\";\n");
+                        append!(s 3, "s += some_val.as_str();\n");
+                        append!(s 3, "s += \"\\\"\";\n");
+                        s += "        }";
+                    } else {
+                        append!(s 2, "s += \"\\\"\";\n");
+                        append!(s 2, "s += node." data.sc(member_key) ".as_str();\n");
+                        append!(s 2, "s += \"\\\"\";\n");
+                    }
+                }
+            },
+            &TypedPart::StrPart{..} => {
                 if let Some(member_key) = member_key {
                     if optional {
                         append!(s 2, "if let Some(some_val) = node." member_key " {\n    ");
@@ -382,6 +408,10 @@ impl<'a> TypedPart<'a> {
                 s
             }
             &StringPart { .. } => {
+                s += "String";
+                s
+            }
+            &StrPart { .. } => {
                 s += "&'a str";
                 s
             }
