@@ -3,11 +3,21 @@ Descr
 
 Descr is a small language for describing other languages.
 Given a description, currently it will create:
-* Ast datatypes
+* Ast datatypes with constructors and "as_enum" functions
 * Parser (through [nom](https://github.com/Geal/nom))
 * A visitor trait to traverse parsed source
 * Ast to source functions
 * Syntax highlighting that can be used in vscode extension
+
+Status
+------
+It is very much exploratory/work in progress and will remain so for a handful of months.
+Ast datatypes, parser and visitor seems usable, but parse errors for example are missing.
+To source transformation contains some extra whitespace, I am planning some construct
+like + between tokens to signify no whitespace, and formatting annotations to aid formatting.
+Syntax highlighting might work, but is exploratory and has some todos.
+
+However I hope for a good future for this project as I find it quite interesting.
 
 Structs
 -------
@@ -198,14 +208,23 @@ Running ```cargo run pg``` in the root will generate language
 code when pg.lang is changed, and show the result of parsing
 pg-example.pg otherwise.
 
+Syntax highlighting
+-------------------
+To create a language extension, and add syntax highlighting:
+* Go to ~/.vscode/extensions
+* Run ```yo code```, and configure your language extension
+* Copy syntax json into <language-name>.tmLanguage.json
+* Ensure ```scopeName``` is set to ```source.``` and your chosen language code
+* Reload vscode
+
 Things
 ------
 - [x] Recursive data structures
 - [x] Groups of tokens
-- [x] (Back) to source generator
-- [ ] Include language files, maybe into context
+- [x] To source generator
 - [x] Annotations for things like serde integration
-- [ ] "Standard library" with tokens +(?)
+- [ ] Include language files, maybe into context
+- [ ] "Standard library" with tokens etc
 - [ ] Try some languages, subset of javascript, glsl
 - [ ] Look for patterns to generalize
 - [ ] Try to organize languages beside each other
