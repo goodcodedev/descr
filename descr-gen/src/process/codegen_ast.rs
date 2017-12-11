@@ -54,7 +54,8 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             s += "    pub fn new(";
             let num_members = ast_struct.members.len();
             for (i, m_ordered) in ast_struct.members_ordered.iter().enumerate() {
-                let member = ast_struct.members.get(m_ordered).unwrap();
+                let member = ast_struct.members.get(m_ordered)
+                    .expect("Could not find struct member");
                 append!(s, member.sc() ": ");
                 s = member.tpe.add_type(s, self.data);
                 if i < num_members - 1 {
@@ -66,7 +67,8 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
             s += " {\n";
             append!(s 2, ast_struct.name " {\n");
             for (i, m_ordered) in ast_struct.members_ordered.iter().enumerate() {
-                let member = ast_struct.members.get(m_ordered).unwrap();
+                let member = ast_struct.members.get(m_ordered)
+                    .expect("Could not find struct member");
                 if member.boxed {
                     append!(s 3, member.sc() ": Box::new(" member.sc() ")\n");
                 } else {
@@ -85,7 +87,8 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
                     for parent_ref in parent_refs.iter() {
                         match parent_ref {
                             &ParentRef::EnumItem{enum_name, item_name} => {
-                                let ast_enum = self.data.ast_enums.get(enum_name).unwrap();
+                                let ast_enum = self.data.ast_enums.get(enum_name)
+                                    .expect("Could not find parent enum");
                                 s += "\n";
                                 let enum_needs_lifetime = ast_enum.needs_lifetime(self.data, &mut HashSet::new());
                                 append!(s 1, "pub fn as_" ast_enum.sc());
@@ -149,40 +152,48 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
                 s = enum_data.add_type(s, self.data);
                 s += " {";
                 for item in &enum_data.items {
-                    s += "\n";
-                    let ast_struct = self.data.ast_structs.get(item).unwrap();
-                    let num_members = ast_struct.members.len();
-                    append!(s 1, "pub fn " self.data.sc(item) "(");
-                    for (i, m_ordered) in ast_struct.members_ordered.iter().enumerate() {
-                        let member = ast_struct.members.get(m_ordered).unwrap();
-                        append!(s, member.sc() ": ");
-                        s = member.tpe.add_type(s, self.data);
-                        if i < num_members - 1 {
-                            s += ", ";
-                        }
+                    match self.data.resolve(item) {
+                        ResolvedType::ResolvedStruct(key) => {
+                            s += "\n";
+                            let ast_struct = self.data.ast_structs.get(key)
+                                .expect("Could not find ast struct");
+                            let num_members = ast_struct.members.len();
+                            append!(s 1, "pub fn " self.data.sc(item) "(");
+                            for (i, m_ordered) in ast_struct.members_ordered.iter().enumerate() {
+                                let member = ast_struct.members.get(m_ordered)
+                                    .expect("Could not find ast struct");
+                                append!(s, member.sc() ": ");
+                                s = member.tpe.add_type(s, self.data);
+                                if i < num_members - 1 {
+                                    s += ", ";
+                                }
+                            }
+                            s += ") -> ";
+                            s = enum_data.add_type(s, self.data);
+                            s += " {\n";
+                            append!(s 2, enum_data.name "::" item "Item(");
+                            let is_boxed = enum_data.boxed_items.contains(item);
+                            if is_boxed {
+                                s += "Box::new(";
+                            }
+                            // Ast constructor created above
+                            append!(s, item "::new(");
+                            for (i, m_ordered) in ast_struct.members_ordered.iter().enumerate() {
+                                let member = ast_struct.members.get(m_ordered)
+                                    .expect("Could not find struct member");
+                                s += member.sc();
+                                if i < num_members - 1 {
+                                    s += ", ";
+                                }
+                            }
+                            s += "))";
+                            if is_boxed {
+                                s += ")";
+                            }
+                            s += "\n    }\n";
+                        },
+                        ResolvedType::ResolvedEnum(key) => {}
                     }
-                    s += ") -> ";
-                    s = enum_data.add_type(s, self.data);
-                    s += " {\n";
-                    append!(s 2, enum_data.name "::" item "Item(");
-                    let is_boxed = enum_data.boxed_items.contains(item);
-                    if is_boxed {
-                        s += "Box::new(";
-                    }
-                    // Ast constructor created above
-                    append!(s, item "::new(");
-                    for (i, m_ordered) in ast_struct.members_ordered.iter().enumerate() {
-                        let member = ast_struct.members.get(m_ordered).unwrap();
-                        s += member.sc();
-                        if i < num_members - 1 {
-                            s += ", ";
-                        }
-                    }
-                    s += "))";
-                    if is_boxed {
-                        s += ")";
-                    }
-                    s += "\n    }\n";
                 }
                 s += "}\n\n";
             }

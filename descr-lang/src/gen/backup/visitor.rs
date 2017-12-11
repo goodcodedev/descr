@@ -48,15 +48,6 @@ pub trait Visitor<'a> {
         }
     }
 
-    fn visit_braced_tokens(&mut self, node: &'a TokenGroup) {
-        for item in &node.annots {
-            self.visit_annotation(item);
-        }
-        for item in &node.token_list {
-            self.visit_token(item);
-        }
-    }
-
     fn visit_comment(&mut self, node: &'a Comment) {
     }
 
@@ -117,6 +108,15 @@ pub trait Visitor<'a> {
         }
     }
 
+    fn visit_token_group(&mut self, node: &'a TokenGroup) {
+        for item in &node.annots {
+            self.visit_annotation(item);
+        }
+        for item in &node.token_list {
+            self.visit_token(item);
+        }
+    }
+
     fn visit_annot_arg_val(&mut self, node: &'a AnnotArgVal) {
         match node {
             &AnnotArgVal::QuotedItem(ref inner) => self.visit_quoted(inner),
@@ -158,7 +158,7 @@ pub trait Visitor<'a> {
         match node {
             &Token::NamedTokenItem(ref inner) => self.visit_named_token(inner),
             &Token::SimpleTokenItem(ref inner) => self.visit_simple_token(inner),
-            &Token::TokenGroupItem(ref inner) => self.visit_braced_tokens(inner),
+            &Token::TokenGroupItem(ref inner) => self.visit_token_group(inner),
         }
     }
 

@@ -1,6 +1,7 @@
 use descr_common::parsers::*;
 extern crate nom;
 use self::nom::*;
+#[allow(unused_imports)]
 use std;
 use super::ast::*;
 

@@ -42,14 +42,6 @@ pub struct AstSingle<'a> {
 }
 
 #[derive(Debug)]
-pub struct TokenGroup<'a> {
-    pub annots: Vec<Annotation<'a>>,
-    pub not: bool,
-    pub optional: bool,
-    pub token_list: Vec<Token<'a>>,
-}
-
-#[derive(Debug)]
 pub struct Comment<'a> {
     pub comment: &'a str,
 }
@@ -123,6 +115,14 @@ pub struct SimpleToken<'a> {
 #[derive(Debug)]
 pub struct Source<'a> {
     pub items: Vec<SourceItem<'a>>,
+}
+
+#[derive(Debug)]
+pub struct TokenGroup<'a> {
+    pub annots: Vec<Annotation<'a>>,
+    pub not: bool,
+    pub optional: bool,
+    pub token_list: Vec<Token<'a>>,
 }
 
 #[derive(Debug)]
