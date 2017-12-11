@@ -1,5 +1,6 @@
 use super::ast::*;
 
+#[allow(unused_variables,dead_code)]
 pub trait Visitor<'a> {
     fn visit_annot_arg(&mut self, node: &'a AnnotArg) {
         self.visit_annot_arg_val(&node.annot_arg_val);

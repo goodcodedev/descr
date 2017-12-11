@@ -9,3 +9,4 @@ elapsed = "0.1"
 descr-common = { path = "../descr-common" }
 descr-lang = { path = "../descr-lang" }
 json-descr = { path = "../langs/json-descr" }
+itertools = "0.7.3"

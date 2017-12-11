@@ -1,65 +1,20 @@
 #[derive(Debug)]
-pub struct AnnotArg<'a> {
-    pub annot_arg_val: AnnotArgVal<'a>,
-    pub key: &'a str,
-}
-
-#[derive(Debug)]
-pub struct AnnotArgs<'a> {
-    pub annot_arg_list: Vec<AnnotArg<'a>>,
-}
-
-#[derive(Debug)]
-pub struct Annotation<'a> {
-    pub annot_args: Option<AnnotArgs<'a>>,
-    pub ident: &'a str,
-}
-
-#[derive(Debug)]
-pub struct AstDef<'a> {
-    pub annots: Vec<Annotation<'a>>,
-    pub ident: Option<&'a str>,
-    pub tokens: Vec<Token<'a>>,
-}
-
-#[derive(Debug)]
-pub struct AstMany<'a> {
-    pub annots: Vec<Annotation<'a>>,
-    pub ident: &'a str,
-    pub items: Vec<AstItem<'a>>,
-}
-
-#[derive(Debug)]
-pub struct AstRef<'a> {
-    pub ident: &'a str,
-}
-
-#[derive(Debug)]
 pub struct AstSingle<'a> {
-    pub annots: Vec<Annotation<'a>>,
     pub ident: &'a str,
     pub tokens: Vec<Token<'a>>,
 }
 
-#[derive(Debug)]
-pub struct Comment<'a> {
-    pub comment: &'a str,
-}
+impl<'a> AstSingle<'a> {
+    pub fn new(ident: &'a str, tokens: Vec<Token<'a>>) -> AstSingle<'a> {
+        AstSingle {
+            ident,
+            tokens
+        }
+    }
 
-#[derive(Debug)]
-pub struct FuncToken<'a> {
-    pub fn_args: Vec<FuncArg<'a>>,
-    pub ident: &'a str,
-}
-
-#[derive(Debug)]
-pub struct Ident<'a> {
-    pub ident: &'a str,
-}
-
-#[derive(Debug)]
-pub struct IntConst {
-    pub int: u32,
+    pub fn as_source_item(self) -> SourceItem<'a> {
+        SourceItem::AstSingleItem(self)
+    }
 }
 
 #[derive(Debug)]
@@ -67,36 +22,39 @@ pub struct KeyToken<'a> {
     pub key: &'a str,
 }
 
-#[derive(Debug)]
-pub struct ListItem<'a> {
-    pub ast_item: AstItem<'a>,
-    pub sep: Option<&'a str>,
-}
+impl<'a> KeyToken<'a> {
+    pub fn new(key: &'a str) -> KeyToken<'a> {
+        KeyToken {
+            key
+        }
+    }
 
-#[derive(Debug)]
-pub struct ListMany<'a> {
-    pub annots: Vec<Annotation<'a>>,
-    pub ast_type: &'a str,
-    pub ident: &'a str,
-    pub items: Vec<ListItem<'a>>,
-    pub sep: Option<&'a str>,
-}
-
-#[derive(Debug)]
-pub struct ListSingle<'a> {
-    pub annots: Vec<Annotation<'a>>,
-    pub ident: &'a str,
-    pub reference: &'a str,
-    pub sep: &'a str,
+    pub fn as_token_type(self) -> TokenType<'a> {
+        TokenType::KeyTokenItem(self)
+    }
 }
 
 #[derive(Debug)]
 pub struct NamedToken<'a> {
     pub token_type: TokenType<'a>,
-    pub annots: Vec<Annotation<'a>>,
     pub name: &'a str,
     pub not: bool,
     pub optional: bool,
+}
+
+impl<'a> NamedToken<'a> {
+    pub fn new(name: &'a str, not: bool, token_type: TokenType<'a>, optional: bool) -> NamedToken<'a> {
+        NamedToken {
+            name,
+            not,
+            token_type,
+            optional
+        }
+    }
+
+    pub fn as_token(self) -> Token<'a> {
+        Token::NamedTokenItem(self)
+    }
 }
 
 #[derive(Debug)]
@@ -104,12 +62,37 @@ pub struct Quoted<'a> {
     pub string: &'a str,
 }
 
+impl<'a> Quoted<'a> {
+    pub fn new(string: &'a str) -> Quoted<'a> {
+        Quoted {
+            string
+        }
+    }
+
+    pub fn as_token_type(self) -> TokenType<'a> {
+        TokenType::QuotedItem(self)
+    }
+}
+
 #[derive(Debug)]
 pub struct SimpleToken<'a> {
     pub token_type: TokenType<'a>,
-    pub annots: Vec<Annotation<'a>>,
     pub not: bool,
     pub optional: bool,
+}
+
+impl<'a> SimpleToken<'a> {
+    pub fn new(not: bool, token_type: TokenType<'a>, optional: bool) -> SimpleToken<'a> {
+        SimpleToken {
+            not,
+            token_type,
+            optional
+        }
+    }
+
+    pub fn as_token(self) -> Token<'a> {
+        Token::SimpleTokenItem(self)
+    }
 }
 
 #[derive(Debug)]
@@ -117,44 +100,44 @@ pub struct Source<'a> {
     pub items: Vec<SourceItem<'a>>,
 }
 
+impl<'a> Source<'a> {
+    pub fn new(items: Vec<SourceItem<'a>>) -> Source<'a> {
+        Source {
+            items
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct TokenGroup<'a> {
-    pub annots: Vec<Annotation<'a>>,
     pub not: bool,
     pub optional: bool,
     pub token_list: Vec<Token<'a>>,
 }
 
-#[derive(Debug)]
-pub enum AnnotArgVal<'a> {
-    QuotedItem(Quoted<'a>),
-    IdentItem(Ident<'a>),
-    IntConstItem(IntConst),
-}
+impl<'a> TokenGroup<'a> {
+    pub fn new(not: bool, token_list: Vec<Token<'a>>, optional: bool) -> TokenGroup<'a> {
+        TokenGroup {
+            not,
+            token_list,
+            optional
+        }
+    }
 
-#[derive(Debug)]
-pub enum AstItem<'a> {
-    AstDefItem(AstDef<'a>),
-    AstRefItem(AstRef<'a>),
-}
-
-#[derive(Debug)]
-pub enum FuncArg<'a> {
-    QuotedItem(Quoted<'a>),
-}
-
-#[derive(Debug)]
-pub enum List<'a> {
-    ListSingleItem(ListSingle<'a>),
-    ListManyItem(ListMany<'a>),
+    pub fn as_token(self) -> Token<'a> {
+        Token::TokenGroupItem(self)
+    }
 }
 
 #[derive(Debug)]
 pub enum SourceItem<'a> {
     AstSingleItem(AstSingle<'a>),
-    AstManyItem(AstMany<'a>),
-    ListItem(List<'a>),
-    CommentItem(Comment<'a>),
+}
+
+impl<'a> SourceItem<'a> {
+    pub fn ast_single(ident: &'a str, tokens: Vec<Token<'a>>) -> SourceItem<'a> {
+        SourceItem::AstSingleItem(AstSingle::new(ident, tokens))
+    }
 }
 
 #[derive(Debug)]
@@ -164,10 +147,33 @@ pub enum Token<'a> {
     TokenGroupItem(TokenGroup<'a>),
 }
 
+impl<'a> Token<'a> {
+    pub fn named_token(name: &'a str, not: bool, token_type: TokenType<'a>, optional: bool) -> Token<'a> {
+        Token::NamedTokenItem(NamedToken::new(name, not, token_type, optional))
+    }
+
+    pub fn simple_token(not: bool, token_type: TokenType<'a>, optional: bool) -> Token<'a> {
+        Token::SimpleTokenItem(SimpleToken::new(not, token_type, optional))
+    }
+
+    pub fn token_group(not: bool, token_list: Vec<Token<'a>>, optional: bool) -> Token<'a> {
+        Token::TokenGroupItem(TokenGroup::new(not, token_list, optional))
+    }
+}
+
 #[derive(Debug)]
 pub enum TokenType<'a> {
-    FuncTokenItem(FuncToken<'a>),
     KeyTokenItem(KeyToken<'a>),
     QuotedItem(Quoted<'a>),
+}
+
+impl<'a> TokenType<'a> {
+    pub fn key_token(key: &'a str) -> TokenType<'a> {
+        TokenType::KeyTokenItem(KeyToken::new(key))
+    }
+
+    pub fn quoted(string: &'a str) -> TokenType<'a> {
+        TokenType::QuotedItem(Quoted::new(string))
+    }
 }
 

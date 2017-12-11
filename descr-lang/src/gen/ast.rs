@@ -33,7 +33,7 @@ pub struct Annotation<'a> {
 }
 
 impl<'a> Annotation<'a> {
-    pub fn new(ident: &'a str, annot_args: AnnotArgs<'a>) -> Annotation<'a> {
+    pub fn new(ident: &'a str, annot_args: Option<AnnotArgs<'a>>) -> Annotation<'a> {
         Annotation {
             ident,
             annot_args
@@ -49,7 +49,7 @@ pub struct AstDef<'a> {
 }
 
 impl<'a> AstDef<'a> {
-    pub fn new(annots: Vec<Annotation<'a>>, tokens: Vec<Token<'a>>, ident: &'a str) -> AstDef<'a> {
+    pub fn new(annots: Vec<Annotation<'a>>, tokens: Vec<Token<'a>>, ident: Option<&'a str>) -> AstDef<'a> {
         AstDef {
             annots,
             tokens,
@@ -215,7 +215,7 @@ pub struct ListItem<'a> {
 }
 
 impl<'a> ListItem<'a> {
-    pub fn new(ast_item: AstItem<'a>, sep: &'a str) -> ListItem<'a> {
+    pub fn new(ast_item: AstItem<'a>, sep: Option<&'a str>) -> ListItem<'a> {
         ListItem {
             ast_item,
             sep
@@ -233,7 +233,7 @@ pub struct ListMany<'a> {
 }
 
 impl<'a> ListMany<'a> {
-    pub fn new(annots: Vec<Annotation<'a>>, ident: &'a str, ast_type: &'a str, sep: &'a str, items: Vec<ListItem<'a>>) -> ListMany<'a> {
+    pub fn new(annots: Vec<Annotation<'a>>, ident: &'a str, ast_type: &'a str, sep: Option<&'a str>, items: Vec<ListItem<'a>>) -> ListMany<'a> {
         ListMany {
             annots,
             ident,
@@ -408,7 +408,7 @@ pub enum AstItem<'a> {
 }
 
 impl<'a> AstItem<'a> {
-    pub fn ast_def(annots: Vec<Annotation<'a>>, tokens: Vec<Token<'a>>, ident: &'a str) -> AstItem<'a> {
+    pub fn ast_def(annots: Vec<Annotation<'a>>, tokens: Vec<Token<'a>>, ident: Option<&'a str>) -> AstItem<'a> {
         AstItem::AstDefItem(AstDef::new(annots, tokens, ident))
     }
 
@@ -439,7 +439,7 @@ impl<'a> List<'a> {
         List::ListSingleItem(ListSingle::new(annots, ident, sep, reference))
     }
 
-    pub fn list_many(annots: Vec<Annotation<'a>>, ident: &'a str, ast_type: &'a str, sep: &'a str, items: Vec<ListItem<'a>>) -> List<'a> {
+    pub fn list_many(annots: Vec<Annotation<'a>>, ident: &'a str, ast_type: &'a str, sep: Option<&'a str>, items: Vec<ListItem<'a>>) -> List<'a> {
         List::ListManyItem(ListMany::new(annots, ident, ast_type, sep, items))
     }
 }

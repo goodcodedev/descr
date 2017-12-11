@@ -92,7 +92,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                                         if is_first {
                                             syntax_data.add_parent_entry(self.ast_type, item);
                                         } else {
-                                            patterns.push(item.to_string());
+                                            patterns.push(*item);
                                         }
                                     }
                                 },
@@ -100,7 +100,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                                     if is_first {
                                         syntax_data.add_parent_entry(self.ast_type, key);
                                     } else {
-                                        patterns.push(key.to_string());
+                                        patterns.push(key);
                                     }
                                 }
                             }
@@ -124,7 +124,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                                         if is_first {
                                             syntax_data.add_parent_entry(self.ast_type, item);
                                         } else {
-                                            patterns.push(item.to_string());
+                                            patterns.push(item);
                                         }
                                     }
                                 },
@@ -132,7 +132,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                                     if is_first {
                                         syntax_data.add_parent_entry(self.ast_type, key);
                                     } else {
-                                        patterns.push(key.to_string());
+                                        patterns.push(key);
                                     }
                                 }
                             }

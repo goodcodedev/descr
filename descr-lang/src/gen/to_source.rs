@@ -3,6 +3,50 @@ use super::ast::*;
 pub struct ToSource;
 #[allow(unused_variables,dead_code)]
 impl<'a> ToSource {
+    pub fn ast_single(mut s: String, node: &'a AstSingle) -> String {
+        s += " ";
+        let len = node.annots.len();
+        for (i, item) in node.annots.iter().enumerate() {
+            s = Self::annotation(s, item);
+            if i < len - 1 {         s += " " }
+        }
+        s += " ";
+        s += node.ident;
+        s += " ";
+        s.push('(');
+        s += " ";
+        let len = node.tokens.len();
+        for (i, item) in node.tokens.iter().enumerate() {
+            s = Self::token(s, item);
+            if i < len - 1 {         s += " " }
+        }
+        s += " ";
+        s.push(')');
+        s
+    }
+
+    pub fn key_token(mut s: String, node: &'a KeyToken) -> String {
+        s += " ";
+        s += node.key;
+        s
+    }
+
+    pub fn comment(mut s: String, node: &'a Comment) -> String {
+        s += " ";
+        s += "(*";
+        s += " ";
+        s += node.comment;
+        s += " ";
+        s += "*)";
+        s
+    }
+
+    pub fn ast_ref(mut s: String, node: &'a AstRef) -> String {
+        s += " ";
+        s += node.ident;
+        s
+    }
+
     pub fn list_single(mut s: String, node: &'a ListSingle) -> String {
         s += " ";
         let len = node.annots.len();
@@ -23,20 +67,15 @@ impl<'a> ToSource {
         s
     }
 
-    pub fn func_token(mut s: String, node: &'a FuncToken) -> String {
+    pub fn annotation(mut s: String, node: &'a Annotation) -> String {
+        s += " ";
+        s += "@";
         s += " ";
         s += node.ident;
         s += " ";
-        s.push('(');
-        s += " ";
-        let len = node.fn_args.len();
-        for (i, item) in node.fn_args.iter().enumerate() {
-            s = Self::func_arg(s, item);
-            if i < len - 1 {         s.push(',');
- }
+        if let Some(ref some_val) = node.annot_args {
+            s = Self::annot_args(s, some_val);
         }
-        s += " ";
-        s.push(')');
         s
     }
 
@@ -101,35 +140,6 @@ impl<'a> ToSource {
         s
     }
 
-    pub fn ast_many(mut s: String, node: &'a AstMany) -> String {
-        s += " ";
-        let len = node.annots.len();
-        for (i, item) in node.annots.iter().enumerate() {
-            s = Self::annotation(s, item);
-            if i < len - 1 {         s += " " }
-        }
-        s += " ";
-        s += node.ident;
-        s += " ";
-        s.push('{');
-        s += " ";
-        let len = node.items.len();
-        for (i, item) in node.items.iter().enumerate() {
-            s = Self::ast_item(s, item);
-            if i < len - 1 {         s.push(',');
- }
-        }
-        s += " ";
-        s.push('}');
-        s
-    }
-
-    pub fn key_token(mut s: String, node: &'a KeyToken) -> String {
-        s += " ";
-        s += node.key;
-        s
-    }
-
     pub fn token_group(mut s: String, node: &'a TokenGroup) -> String {
         s += " ";
         let len = node.annots.len();
@@ -156,40 +166,7 @@ impl<'a> ToSource {
     }        s
     }
 
-    pub fn list_item(mut s: String, node: &'a ListItem) -> String {
-        s += " ";
-        s = Self::ast_item(s, &node.ast_item);
-        s += " ";
-        if let Some(some_val) = node.sep {
-                s += some_val;
-        }        s
-    }
-
-    pub fn ident(mut s: String, node: &'a Ident) -> String {
-        s += " ";
-        s += node.ident;
-        s
-    }
-
-    pub fn int_const(mut s: String, node: &'a IntConst) -> String {
-        s += " ";
-        s += &node.int.to_string();
-        s
-    }
-
-    pub fn annotation(mut s: String, node: &'a Annotation) -> String {
-        s += " ";
-        s += "@";
-        s += " ";
-        s += node.ident;
-        s += " ";
-        if let Some(ref some_val) = node.annot_args {
-            s = Self::annot_args(s, some_val);
-        }
-        s
-    }
-
-    pub fn ast_single(mut s: String, node: &'a AstSingle) -> String {
+    pub fn named_token(mut s: String, node: &'a NamedToken) -> String {
         s += " ";
         let len = node.annots.len();
         for (i, item) in node.annots.iter().enumerate() {
@@ -197,18 +174,61 @@ impl<'a> ToSource {
             if i < len - 1 {         s += " " }
         }
         s += " ";
-        s += node.ident;
+        s += node.name;
+        s += " ";
+        s.push(':');
+        s += " ";
+        if node.not {
+                s.push('!');
+    }        s += " ";
+        s = Self::token_type(s, &node.token_type);
+        s += " ";
+        if node.optional {
+                s.push('?');
+    }        s
+    }
+
+    pub fn annot_arg(mut s: String, node: &'a AnnotArg) -> String {
+        s += " ";
+        s += node.key;
+        s += " ";
+        s.push('=');
+        s += " ";
+        s = Self::annot_arg_val(s, &node.annot_arg_val);
+        s
+    }
+
+    pub fn annot_args(mut s: String, node: &'a AnnotArgs) -> String {
         s += " ";
         s.push('(');
         s += " ";
-        let len = node.tokens.len();
-        for (i, item) in node.tokens.iter().enumerate() {
-            s = Self::token(s, item);
-            if i < len - 1 {         s += " " }
+        let len = node.annot_arg_list.len();
+        for (i, item) in node.annot_arg_list.iter().enumerate() {
+            s = Self::annot_arg(s, item);
+            if i < len - 1 {         s.push(',');
+ }
         }
         s += " ";
         s.push(')');
         s
+    }
+
+    pub fn simple_token(mut s: String, node: &'a SimpleToken) -> String {
+        s += " ";
+        let len = node.annots.len();
+        for (i, item) in node.annots.iter().enumerate() {
+            s = Self::annotation(s, item);
+            if i < len - 1 {         s += " " }
+        }
+        s += " ";
+        if node.not {
+                s.push('!');
+    }        s += " ";
+        s = Self::token_type(s, &node.token_type);
+        s += " ";
+        if node.optional {
+                s.push('?');
+    }        s
     }
 
     pub fn list_many(mut s: String, node: &'a ListMany) -> String {
@@ -245,42 +265,6 @@ impl<'a> ToSource {
         s
     }
 
-    pub fn source(mut s: String, node: &'a Source) -> String {
-        s += " ";
-        let len = node.items.len();
-        for (i, item) in node.items.iter().enumerate() {
-            s = Self::source_item(s, item);
-            if i < len - 1 {         s += " " }
-        }
-        s
-    }
-
-    pub fn annot_arg(mut s: String, node: &'a AnnotArg) -> String {
-        s += " ";
-        s += node.key;
-        s += " ";
-        s.push('=');
-        s += " ";
-        s = Self::annot_arg_val(s, &node.annot_arg_val);
-        s
-    }
-
-    pub fn ast_ref(mut s: String, node: &'a AstRef) -> String {
-        s += " ";
-        s += node.ident;
-        s
-    }
-
-    pub fn comment(mut s: String, node: &'a Comment) -> String {
-        s += " ";
-        s += "(*";
-        s += " ";
-        s += node.comment;
-        s += " ";
-        s += "*)";
-        s
-    }
-
     pub fn quoted(mut s: String, node: &'a Quoted) -> String {
         s += " ";
         s += "\"";
@@ -297,13 +281,15 @@ impl<'a> ToSource {
         s
     }
 
-    pub fn annot_args(mut s: String, node: &'a AnnotArgs) -> String {
+    pub fn func_token(mut s: String, node: &'a FuncToken) -> String {
+        s += " ";
+        s += node.ident;
         s += " ";
         s.push('(');
         s += " ";
-        let len = node.annot_arg_list.len();
-        for (i, item) in node.annot_arg_list.iter().enumerate() {
-            s = Self::annot_arg(s, item);
+        let len = node.fn_args.len();
+        for (i, item) in node.fn_args.iter().enumerate() {
+            s = Self::func_arg(s, item);
             if i < len - 1 {         s.push(',');
  }
         }
@@ -312,29 +298,23 @@ impl<'a> ToSource {
         s
     }
 
-    pub fn named_token(mut s: String, node: &'a NamedToken) -> String {
+    pub fn ident(mut s: String, node: &'a Ident) -> String {
         s += " ";
-        let len = node.annots.len();
-        for (i, item) in node.annots.iter().enumerate() {
-            s = Self::annotation(s, item);
-            if i < len - 1 {         s += " " }
-        }
-        s += " ";
-        s += node.name;
-        s += " ";
-        s.push(':');
-        s += " ";
-        if node.not {
-                s.push('!');
-    }        s += " ";
-        s = Self::token_type(s, &node.token_type);
-        s += " ";
-        if node.optional {
-                s.push('?');
-    }        s
+        s += node.ident;
+        s
     }
 
-    pub fn simple_token(mut s: String, node: &'a SimpleToken) -> String {
+    pub fn source(mut s: String, node: &'a Source) -> String {
+        s += " ";
+        let len = node.items.len();
+        for (i, item) in node.items.iter().enumerate() {
+            s = Self::source_item(s, item);
+            if i < len - 1 {         s += " " }
+        }
+        s
+    }
+
+    pub fn ast_many(mut s: String, node: &'a AstMany) -> String {
         s += " ";
         let len = node.annots.len();
         for (i, item) in node.annots.iter().enumerate() {
@@ -342,14 +322,34 @@ impl<'a> ToSource {
             if i < len - 1 {         s += " " }
         }
         s += " ";
-        if node.not {
-                s.push('!');
-    }        s += " ";
-        s = Self::token_type(s, &node.token_type);
+        s += node.ident;
         s += " ";
-        if node.optional {
-                s.push('?');
-    }        s
+        s.push('{');
+        s += " ";
+        let len = node.items.len();
+        for (i, item) in node.items.iter().enumerate() {
+            s = Self::ast_item(s, item);
+            if i < len - 1 {         s.push(',');
+ }
+        }
+        s += " ";
+        s.push('}');
+        s
+    }
+
+    pub fn list_item(mut s: String, node: &'a ListItem) -> String {
+        s += " ";
+        s = Self::ast_item(s, &node.ast_item);
+        s += " ";
+        if let Some(some_val) = node.sep {
+                s += some_val;
+        }        s
+    }
+
+    pub fn int_const(mut s: String, node: &'a IntConst) -> String {
+        s += " ";
+        s += &node.int.to_string();
+        s
     }
 
     pub fn annot_arg_val(s: String, node: &'a AnnotArgVal) -> String {

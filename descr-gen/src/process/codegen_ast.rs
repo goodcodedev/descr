@@ -57,7 +57,14 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
                 let member = ast_struct.members.get(m_ordered)
                     .expect("Could not find struct member");
                 append!(s, member.sc() ": ");
+                let is_option = member.tpe.is_option(member, self.data);
+                if is_option {
+                    s += "Option<";
+                }
                 s = member.tpe.add_type(s, self.data);
+                if is_option {
+                    s += ">";
+                }
                 if i < num_members - 1 {
                     s += ", ";
                 }
@@ -163,7 +170,14 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
                                 let member = ast_struct.members.get(m_ordered)
                                     .expect("Could not find ast struct");
                                 append!(s, member.sc() ": ");
+                                let is_option = member.tpe.is_option(member, self.data);
+                                if is_option {
+                                    s += "Option<";
+                                }
                                 s = member.tpe.add_type(s, self.data);
+                                if is_option {
+                                    s += ">";
+                                }
                                 if i < num_members - 1 {
                                     s += ", ";
                                 }
