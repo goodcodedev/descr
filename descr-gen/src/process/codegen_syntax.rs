@@ -2,24 +2,26 @@ extern crate json_descr;
 use lang_data::data::*;
 use lang_data::rule::*;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry::{Vacant, Occupied};
 use self::json_descr::lang::ast::*;
 use itertools::Itertools;
 
 #[derive(Debug)]
-pub struct SyntaxData<'a> {
-    pub entries: HashMap<&'a str, SyntaxEntry>,
+pub struct SyntaxData {
+    pub entries: HashMap<String, SyntaxEntry>,
     pub root_entries: Vec<String>,
-    pub parent_entries: HashMap<&'a str, Vec<&'a str>>
+    pub parent_entries: HashMap<String, Vec<String>>
 }
-impl<'a> SyntaxData<'a> {
-    pub fn add_parent_entry(&mut self, parent: &'a str, entry: &'a str) {
-        if !self.parent_entries.contains_key(parent) {
-            self.parent_entries.insert(parent, Vec::new());
+impl SyntaxData {
+    pub fn add_parent_entry<S: Into<String>>(&mut self, parent: S, entry: S) {
+        let parent = parent.into();
+        if !self.parent_entries.contains_key(&parent) {
+            self.parent_entries.insert(parent.clone(), Vec::new());
         }
         self.parent_entries
-            .get_mut(parent)
+            .get_mut(&parent)
             .unwrap()
-            .push(entry);
+            .push(entry.into());
     }
 }
 
@@ -53,16 +55,18 @@ impl SyntaxEntry {
         JsVal::array_val(items
             .iter()
             .map(|item| {
-                syntax_data.parent_entries.get(item)
+                syntax_data.parent_entries.get(&item.to_string())
             })
             .filter(|e| { e.is_some() })
             .flat_map(|e| { e.unwrap() })
-            .chain(items.iter())
+            .map(|e| { String::from(e.as_str()) })
+            .chain(items.iter().map(|e| { e.to_string() }))
+            //.chain(items.iter().map(|i| { String::from(*i) }).collect::<Vec<_>>())
             .unique()
             .map(|item| {
                 let mut key_ref = String::with_capacity(item.len() + 1);
                 key_ref.push('#');
-                key_ref.push_str(item);
+                key_ref.push_str(&item);
                 JsVal::js_object(vec![
                     ObjectPair::new(
                         "include".to_string(),
@@ -196,50 +200,158 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
         // Expand patterns that only have
         // optional parts to include it's
         // patterns matches
-        for (key, entry) in &syntax_data.entries {
-            match entry {
-                &SyntaxEntry::Match{ref collect} => {
-                    // We have no subpatterns to combine
-                    // with, so can't expand.
-                    // Possibly mark only_optional
-                    // as invalid
-                },
-                &SyntaxEntry::BeginEnd{ref begin, ref end} => {
-                    if begin.only_optional {
-                        for pattern in &begin.patterns {
-                            let expanded = begin.clone();
-                            let sub_entry = syntax_data.entries.get(&**pattern).unwrap();
-                            match sub_entry {
-                                &SyntaxEntry::Match{ref collect} => {
-                                    // Combine start + match + end into new match
-                                    let mut new_collect = begin.clone();
-                                    new_collect.append(collect);
-                                    new_collect.append(end);
-                                    let entry = SyntaxEntry::Match {
-                                        collect: new_collect
-                                    };
-                                },
-                                &SyntaxEntry::BeginEnd{
-                                    begin: ref inner_begin,
-                                    end: ref inner_end
-                                } => {
-                                    // Combine start + beginEnd.start (patterns) beginEnd.end + end
-                                    let mut new_begin = begin.clone();
-                                    new_begin.append(inner_begin);
-                                    let mut new_end = inner_end.clone();
-                                    new_end.append(end);
-                                    let entry = SyntaxEntry::BeginEnd {
-                                        begin: new_begin,
-                                        end: new_end
-                                    };
+        {
+            let replacements = Self::get_replacements(&syntax_data);
+            println!("{:#?}", replacements);
+            // Replace parent_refs
+            syntax_data.parent_entries = syntax_data.parent_entries
+                .into_iter()
+                .map(|(key, parent_entries)| {
+                    (
+                        key,
+                        parent_entries
+                            .into_iter()
+                            .flat_map(|entry| {
+                                match replacements.get(&entry) {
+                                    None => vec!(entry),
+                                    Some(rtuples) => {
+                                        rtuples
+                                            .iter()
+                                            .map(|&(ref new_key, ref _new_entry)| {
+                                                new_key.clone()
+                                            })
+                                            .collect::<Vec<String>>()
+                                    }
                                 }
-                            }
-                        }
+                            })
+                            .collect()
+                    )
+                })
+                .collect();
+            // Replace patterns
+            // Only replacing begins, don't think end's
+            // will have patterns.
+            for (_key, entry) in syntax_data.entries.iter_mut() {
+                match entry {
+                    &mut SyntaxEntry::Match{..} => {},
+                    &mut SyntaxEntry::BeginEnd{ref mut begin, ref mut end} => {
+                        begin.patterns = begin.patterns
+                            .iter()
+                            .flat_map(|p| {
+                                match replacements.get(p) {
+                                    None => vec!(p.clone()),
+                                    Some(rtuples) => {
+                                        rtuples
+                                            .iter()
+                                            .map(|&(ref new_key, ref _new_entry)| {
+                                                new_key.clone()
+                                            })
+                                            .collect::<Vec<String>>()
+                                    }
+                                }
+                            })
+                            .collect::<Vec<String>>();
                     }
                 }
             }
+            // Replace entries
+            replacements
+                .into_iter()
+                .for_each(|(key, rtuples)| {
+                    syntax_data.entries.remove(&key);
+                    rtuples
+                        .into_iter()
+                        .for_each(|(new_key, new_entry)| {
+                            syntax_data.entries.insert(new_key, new_entry);
+                        });
+                });
+            /*
+            syntax_data.entries = syntax_data.entries
+                .into_iter()
+                .fold(HashMap::new(), |mut entries, (key, entry)| {
+                    match replacements.get(&key) {
+                        None => {
+                            // Keep
+                            entries.insert(key, entry);
+                            entries
+                        },
+                        Some(rtuples) => {
+                            // Replace
+                            for &(ref new_key, ref new_entry) in rtuples {
+                                entries.insert(new_key.clone(), new_entry);
+                            }
+                            entries
+                        }
+                    }
+                });
+            */
         }
         syntax_data
+    }
+
+    pub fn get_replacements(syntax_data: &SyntaxData) -> HashMap<String, Vec<(String, SyntaxEntry)>> {
+        syntax_data.entries
+            .iter()
+            .fold(HashMap::new(), |mut replacements, (key, entry)| {
+                match entry {
+                    &SyntaxEntry::Match{ref collect} => {
+                        // We have no subpatterns to combine
+                        // with, so can't expand.
+                        // Possibly mark only_optional
+                        // as invalid
+                        replacements
+                    },
+                    &SyntaxEntry::BeginEnd{ref begin, ref end} => {
+                        if begin.only_optional {
+                            // Expand this match to include each of
+                            // it's patterns.
+                            // This turns out a little weird for
+                            // ex Source(items) items:Item[] { Item1, Item2 } 
+                            let rtuples = match replacements.entry(key.clone()) {
+                                Vacant(p) => p.insert(Vec::with_capacity(begin.patterns.len())),
+                                Occupied(p) => p.into_mut()
+                            };
+                            for pattern in &begin.patterns {
+                                let expanded = begin.clone();
+                                let sub_entry = syntax_data.entries.get(&**pattern).unwrap();
+                                let mut new_key = key.clone();
+                                new_key.push('_');
+                                new_key.push_str(&pattern);
+                                let new_entry = match sub_entry {
+                                    &SyntaxEntry::Match{ref collect} => {
+                                        // Combine start + match + end into new match
+                                        let mut new_collect = begin.clone();
+                                        new_collect.patterns = Vec::new();
+                                        new_collect.append(collect);
+                                        new_collect.append(end);
+                                        SyntaxEntry::Match {
+                                            collect: new_collect
+                                        }
+                                    },
+                                    &SyntaxEntry::BeginEnd{
+                                        begin: ref inner_begin,
+                                        end: ref inner_end
+                                    } => {
+                                        // Combine start + beginEnd.start (patterns) beginEnd.end + end
+                                        let mut new_begin = begin.clone();
+                                        new_begin.patterns = Vec::new();
+                                        new_begin.append(inner_begin);
+                                        let mut new_end = inner_end.clone();
+                                        new_end.append(end);
+                                        SyntaxEntry::BeginEnd {
+                                            begin: new_begin,
+                                            end: new_end
+                                        }
+                                    }
+                                };
+                                // Push tuple
+                                rtuples.push((new_key, new_entry));
+                            }
+                        }
+                        replacements
+                    }
+                }
+            })
     }
 
     pub fn gen_js_object(&self, syntax_data: SyntaxData) -> JsObject {

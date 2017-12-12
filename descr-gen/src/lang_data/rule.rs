@@ -63,6 +63,9 @@ pub struct CollectState {
     pub regexes: Vec<PartRegex>,
     pub is_first: bool,
     pub is_end: bool,
+    // Perhaps better described as
+    // non determinant among
+    // it's branches
     pub only_optional: bool
 }
 impl CollectState {
@@ -130,7 +133,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
 
     pub fn collect_part_syntax(&self, part: &AstRulePart,
                                state: &mut CollectState, 
-                               syntax_data: &mut SyntaxData<'a>,
+                               syntax_data: &mut SyntaxData,
                                data: &LangData<'a>) -> CollectPartReturn
     {
         match &part.token {
@@ -244,7 +247,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
         CollectPartReturn::Continue
     }
 
-    pub fn add_syntax_entries(&self, mut syntax_data: &mut SyntaxData<'s>, data: &LangData<'a>) {
+    pub fn add_syntax_entries(&self, mut syntax_data: &mut SyntaxData, data: &LangData<'a>) {
         let mut collect_state = CollectState::new(false);
         let mut collect_state_begin = None;
         for part in &self.parts {
@@ -268,7 +271,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
         if let Some(collect_begin) = collect_state_begin {
             // Begin end entry
             syntax_data.entries.insert(
-                self.ast_type,
+                self.ast_type.to_string(),
                 SyntaxEntry::BeginEnd {
                     begin: collect_begin,
                     end: collect_state
@@ -277,7 +280,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
         } else {
             // Match entry
             syntax_data.entries.insert(
-                self.ast_type,
+                self.ast_type.to_string(),
                 SyntaxEntry::Match {
                     collect: collect_state
                 }
