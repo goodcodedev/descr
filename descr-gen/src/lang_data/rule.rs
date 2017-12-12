@@ -17,7 +17,7 @@ pub struct AstPartsRule<'a> {
     pub annots: AnnotList<'a>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PartRegex {
     pub regex: String,
     pub not: bool,
@@ -49,29 +49,45 @@ impl PartRegex {
         if add_captures && self.capture {
             state.regex.push(')');
         }
+        if !self.optional && state.only_optional {
+            state.only_optional = false;
+        }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CollectState {
     pub regex: String,
     pub patterns: Vec<String>,
     pub captures: Vec<String>,
     pub regexes: Vec<PartRegex>,
     pub is_first: bool,
-    pub collecting_end: bool,
+    pub is_end: bool,
     pub only_optional: bool
 }
 impl CollectState {
-    pub fn new(collecting_end: bool) -> CollectState {
+    pub fn new(is_end: bool) -> CollectState {
         CollectState {
             regex: String::with_capacity(20),
             patterns: Vec::new(),
             captures: Vec::new(),
             regexes: Vec::with_capacity(4),
-            is_first: !collecting_end,
-            collecting_end,
+            is_first: !is_end,
+            is_end,
             only_optional: true
+        }
+    }
+
+    pub fn append(&mut self, state: &CollectState) {
+        self.regex.push_str(&state.regex);
+        self.patterns.extend(state.patterns.iter().cloned());
+        self.captures.extend(state.captures.iter().cloned());
+        self.regexes.extend(state.regexes.iter().cloned());
+        if self.is_first && !state.is_first {
+            self.is_first = false;
+        }
+        if self.only_optional && !state.only_optional {
+            self.only_optional = false;
         }
     }
 
@@ -148,7 +164,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                                 }
                             }
                         }
-                        if !state.is_first && state.collecting_end {
+                        if !state.is_first && state.is_end {
                             // Todo, branch to "next level" entry,
                             // name_2.., which continues collecting
                             // regexes, and is included at this level
@@ -179,7 +195,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                                 }
                             }
                         }
-                        if !state.is_first && state.collecting_end {
+                        if !state.is_first && state.is_end {
                             // Todo, branch to "next level" entry,
                             // name_2.., which continues collecting
                             // regexes, and is included at this level

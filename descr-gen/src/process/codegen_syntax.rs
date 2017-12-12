@@ -167,6 +167,80 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
         println!("Js source: {}", ToSource::js_object(s, &root));
     }
 
+    pub fn gen_syntax_data(&self) -> SyntaxData {
+        let mut syntax_data = SyntaxData {
+            entries: HashMap::new(),
+            root_entries: Vec::new(),
+            parent_entries: HashMap::new()
+        };
+        for (key, ast_data) in &self.data.ast_data {
+            for rule in &ast_data.rules {
+                match rule {
+                    &AstRule::RefRule(ref_key) => {},
+                    &AstRule::PartsRule(ref parts_rule) => {
+                        parts_rule.add_syntax_entries(&mut syntax_data, self.data);
+                    }
+                }
+            }
+        }
+        for (key, list_data) in &self.data.list_data {
+            for rule in &list_data.rules {
+                match &rule.ast_rule {
+                    &AstRule::RefRule(ref_key) => {},
+                    &AstRule::PartsRule(ref parts_rule) => {
+                        parts_rule.add_syntax_entries(&mut syntax_data, self.data);
+                    }
+                }
+            }
+        }
+        // Expand patterns that only have
+        // optional parts to include it's
+        // patterns matches
+        for (key, entry) in &syntax_data.entries {
+            match entry {
+                &SyntaxEntry::Match{ref collect} => {
+                    // We have no subpatterns to combine
+                    // with, so can't expand.
+                    // Possibly mark only_optional
+                    // as invalid
+                },
+                &SyntaxEntry::BeginEnd{ref begin, ref end} => {
+                    if begin.only_optional {
+                        for pattern in &begin.patterns {
+                            let expanded = begin.clone();
+                            let sub_entry = syntax_data.entries.get(&**pattern).unwrap();
+                            match sub_entry {
+                                &SyntaxEntry::Match{ref collect} => {
+                                    // Combine start + match + end into new match
+                                    let mut new_collect = begin.clone();
+                                    new_collect.append(collect);
+                                    new_collect.append(end);
+                                    let entry = SyntaxEntry::Match {
+                                        collect: new_collect
+                                    };
+                                },
+                                &SyntaxEntry::BeginEnd{
+                                    begin: ref inner_begin,
+                                    end: ref inner_end
+                                } => {
+                                    // Combine start + beginEnd.start (patterns) beginEnd.end + end
+                                    let mut new_begin = begin.clone();
+                                    new_begin.append(inner_begin);
+                                    let mut new_end = inner_end.clone();
+                                    new_end.append(end);
+                                    let entry = SyntaxEntry::BeginEnd {
+                                        begin: new_begin,
+                                        end: new_end
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        syntax_data
+    }
 
     pub fn gen_js_object(&self, syntax_data: SyntaxData) -> JsObject {
         let mut s = String::with_capacity(
@@ -217,32 +291,4 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
         root
     }
     
-    pub fn gen_syntax_data(&self) -> SyntaxData {
-        let mut syntax_data = SyntaxData {
-            entries: HashMap::new(),
-            root_entries: Vec::new(),
-            parent_entries: HashMap::new()
-        };
-        for (key, ast_data) in &self.data.ast_data {
-            for rule in &ast_data.rules {
-                match rule {
-                    &AstRule::RefRule(ref_key) => {},
-                    &AstRule::PartsRule(ref parts_rule) => {
-                        parts_rule.add_syntax_entries(&mut syntax_data, self.data);
-                    }
-                }
-            }
-        }
-        for (key, list_data) in &self.data.list_data {
-            for rule in &list_data.rules {
-                match &rule.ast_rule {
-                    &AstRule::RefRule(ref_key) => {},
-                    &AstRule::PartsRule(ref parts_rule) => {
-                        parts_rule.add_syntax_entries(&mut syntax_data, self.data);
-                    }
-                }
-            }
-        }
-        syntax_data
-    }
 }
