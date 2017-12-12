@@ -7,7 +7,7 @@ use itertools::Itertools;
 
 #[derive(Debug)]
 pub struct SyntaxData<'a> {
-    pub entries: HashMap<&'a str, SyntaxEntry<'a>>,
+    pub entries: HashMap<&'a str, SyntaxEntry>,
     pub root_entries: Vec<String>,
     pub parent_entries: HashMap<&'a str, Vec<&'a str>>
 }
@@ -24,20 +24,16 @@ impl<'a> SyntaxData<'a> {
 }
 
 #[derive(Debug)]
-pub enum SyntaxEntry<'a> {
+pub enum SyntaxEntry {
     Match {
-        regex: String,
-        captures: Vec<String>
+        collect: CollectState
     },
     BeginEnd {
-        begin: String,
-        end: String,
-        begin_captures: Vec<String>,
-        end_captures: Vec<String>,
-        patterns: Vec<&'a str>
+        begin: CollectState,
+        end: CollectState
     }
 }
-impl<'a> SyntaxEntry<'a> {
+impl SyntaxEntry {
     
     fn escape(string: &String) -> String {
         let mut s = String::with_capacity(string.len() + 10);
@@ -98,7 +94,7 @@ impl<'a> SyntaxEntry<'a> {
 
     pub fn collect_repository_item(&self, key: &str, syntax_data: &SyntaxData) -> ObjectPair {
         match self {
-            &SyntaxEntry::Match{ref regex, ref captures} => {
+            &SyntaxEntry::Match{ref collect} => {
                 ObjectPair::new(
                     String::from(key),
                     JsVal::js_object(vec![
@@ -108,22 +104,16 @@ impl<'a> SyntaxEntry<'a> {
                         ),
                         ObjectPair::new(
                             "match".to_string(),
-                            JsVal::string_val(SyntaxEntry::escape(regex))
+                            JsVal::string_val(SyntaxEntry::escape(&collect.regex))
                         ),
                         ObjectPair::new(
                             "captures".to_string(),
-                            SyntaxEntry::collect_captures(captures)
+                            SyntaxEntry::collect_captures(&collect.captures)
                         )
                     ])
                 )
             },
-            &SyntaxEntry::BeginEnd{
-                ref begin,
-                ref end,
-                ref begin_captures,
-                ref end_captures,
-                ref patterns
-            } => {
+            &SyntaxEntry::BeginEnd{ref begin, ref end} => {
                 ObjectPair::new(
                     String::from(key),
                     JsVal::js_object(vec![
@@ -133,23 +123,26 @@ impl<'a> SyntaxEntry<'a> {
                         ),
                         ObjectPair::new(
                             "begin".to_string(),
-                            JsVal::string_val(SyntaxEntry::escape(begin))
+                            JsVal::string_val(SyntaxEntry::escape(&begin.regex))
                         ),
                         ObjectPair::new(
                             "end".to_string(),
-                            JsVal::string_val(SyntaxEntry::escape(end))
+                            JsVal::string_val(SyntaxEntry::escape(&end.regex))
                         ),
                         ObjectPair::new(
                             "beginCaptures".to_string(),
-                            SyntaxEntry::collect_captures(begin_captures)
+                            SyntaxEntry::collect_captures(&begin.captures)
                         ),
                         ObjectPair::new(
                             "endCaptures".to_string(),
-                            SyntaxEntry::collect_captures(end_captures)
+                            SyntaxEntry::collect_captures(&end.captures)
                         ),
                         ObjectPair::new(
                             "patterns".to_string(),
-                            SyntaxEntry::collect_pattern_includes(patterns, &syntax_data)
+                            SyntaxEntry::collect_pattern_includes(
+                                &begin.patterns.iter().map(|p| { &**p }).collect(), 
+                                &syntax_data
+                            )
                         )
                     ])
                 )

@@ -16,6 +16,93 @@ pub struct AstPartsRule<'a> {
     pub ast_type: &'a str,
     pub annots: AnnotList<'a>
 }
+
+#[derive(Debug)]
+pub struct PartRegex {
+    pub regex: String,
+    pub not: bool,
+    pub optional: bool,
+    pub capture: bool,
+    pub capture_name: Option<String>
+}
+impl PartRegex {
+    pub fn add_to_string(&self, state: &mut CollectState, add_captures: bool) {
+        if !self.not {
+            state.regex.push_str("\\s*");
+        }
+        if add_captures && self.capture {
+            state.regex.push('(');
+        }
+        if self.optional {
+            state.regex.push_str("(?:");
+        }
+        if self.not {
+            state.regex.push_str("^(?:(?!");
+        }
+        state.regex.push_str(&self.regex);
+        if self.not {
+            state.regex.push_str(").)*");
+        }
+        if self.optional {
+            state.regex.push_str(")?");
+        }
+        if add_captures && self.capture {
+            state.regex.push(')');
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct CollectState {
+    pub regex: String,
+    pub patterns: Vec<String>,
+    pub captures: Vec<String>,
+    pub regexes: Vec<PartRegex>,
+    pub is_first: bool,
+    pub collecting_end: bool,
+    pub only_optional: bool
+}
+impl CollectState {
+    pub fn new(collecting_end: bool) -> CollectState {
+        CollectState {
+            regex: String::with_capacity(20),
+            patterns: Vec::new(),
+            captures: Vec::new(),
+            regexes: Vec::with_capacity(4),
+            is_first: !collecting_end,
+            collecting_end,
+            only_optional: true
+        }
+    }
+
+    pub fn add_regex(&mut self, not: bool, optional: bool,
+                     regex: &str, default_name: Option<&str>)
+    {
+        let (capture, capture_name) = match default_name {
+            Some(capture_name) => (true, Some(capture_name)),
+            None => (false, None)
+        };
+        let p = PartRegex {
+            regex: regex.to_string(),
+            not: not,
+            optional: optional,
+            capture,
+            capture_name: capture_name.map(|n| { String::from(n) })
+        };
+        // Add regex to state'a regex
+        p.add_to_string(self, true);
+        if let Some(capture_name) = capture_name {
+            self.captures.push(capture_name.to_string());
+        }
+        self.regexes.push(p);
+    }
+}
+
+pub enum CollectPartReturn {
+    Continue,
+    CollectEnd
+}
+
 impl<'a: 's, 's> AstPartsRule<'a> {
     pub fn new(ast_type: &'a str, annots: AnnotList<'a>) -> AstPartsRule<'a> {
         AstPartsRule {
@@ -25,190 +112,158 @@ impl<'a: 's, 's> AstPartsRule<'a> {
         }
     }
 
-    pub fn add_regex(&self, mut acc: String, part: &'a AstRulePart,
-                     regex: &str, default_name: Option<&str>, captures: &mut Vec<String>)
-                    -> String
+    pub fn collect_part_syntax(&self, part: &AstRulePart,
+                               state: &mut CollectState, 
+                               syntax_data: &mut SyntaxData<'a>,
+                               data: &LangData<'a>) -> CollectPartReturn
     {
-        let (capture, capture_name) = match default_name {
-            Some(capture_name) => (true, Some(capture_name)),
-            None => (false, None)
-        };
-        if !part.not {
-            acc.push_str("\\s*");
-        }
-        if capture {
-            acc.push('(');
-        }
-        if part.optional {
-            acc.push_str("(?:");
-        }
-        if part.not {
-            acc.push_str("^(?:(?!");
-        }
-        acc.push_str(regex);
-        if part.not {
-            acc.push_str(").)*");
-        }
-        if part.optional {
-            acc.push_str(")?");
-        }
-        if capture {
-            acc.push(')');
-        }
-        if let Some(capture_name) = capture_name {
-            captures.push(capture_name.to_string());
-        }
-        acc
+        match &part.token {
+            &AstRuleToken::Key(key) => {
+                let typed_part = data.typed_parts.get(key).expect("Could not find part");
+                match typed_part {
+                    &TypedPart::AstPart{key} => {
+                        // If we are at first position,
+                        // add to parent level, else
+                        // use current acc as begin,
+                        // and collect end
+                        // If already at end, transform
+                        // to <Key>2 by setting end to [^\s]
+                        // and using accum as begin
+                        match data.resolve(key) {
+                            ResolvedType::ResolvedEnum(key) => {
+                                let enum_data = data.ast_enums.get(key).unwrap();
+                                for item in &enum_data.items {
+                                    if state.is_first {
+                                        syntax_data.add_parent_entry(self.ast_type, item);
+                                    } else {
+                                        state.patterns.push(String::from(*item));
+                                    }
+                                }
+                            },
+                            ResolvedType::ResolvedStruct(key) => {
+                                if state.is_first {
+                                    syntax_data.add_parent_entry(self.ast_type, key);
+                                } else {
+                                    state.patterns.push(String::from(key));
+                                }
+                            }
+                        }
+                        if !state.is_first && state.collecting_end {
+                            // Todo, branch to "next level" entry,
+                            // name_2.., which continues collecting
+                            // regexes, and is included at this level
+                            panic!("second level regex todo");
+                        } else {
+                            // Switch to end "mode"
+                            return CollectPartReturn::CollectEnd;
+                        }
+                    },
+                    &TypedPart::ListPart{key} => {
+                        // Add references to list items
+                        match data.resolve(key) {
+                            ResolvedType::ResolvedEnum(key) => {
+                                let enum_data = data.ast_enums.get(key).unwrap();
+                                for item in &enum_data.items {
+                                    if state.is_first {
+                                        syntax_data.add_parent_entry(self.ast_type, item);
+                                    } else {
+                                        state.patterns.push(String::from(*item));
+                                    }
+                                }
+                            },
+                            ResolvedType::ResolvedStruct(key) => {
+                                if state.is_first {
+                                    syntax_data.add_parent_entry(self.ast_type, key);
+                                } else {
+                                    state.patterns.push(String::from(key));
+                                }
+                            }
+                        }
+                        if !state.is_first && state.collecting_end {
+                            // Todo, branch to "next level" entry,
+                            // name_2.., which continues collecting
+                            // regexes, and is included at this level
+                            panic!("second level regex todo");
+                        } else {
+                            // Switch to end "mode"
+                            return CollectPartReturn::CollectEnd;
+                        }
+                    },
+                    &TypedPart::CharPart{chr, ..} => {
+                        state.add_regex(part.not, part.optional, &to_regex(&chr.to_string()), None);
+                    },
+                    &TypedPart::TagPart{tag, ..} => {
+                        state.add_regex(part.not, part.optional, &to_regex(tag), Some("keyword.other"));
+                    },
+                    &TypedPart::IntPart{key} => {
+                        state.add_regex(part.not, part.optional, "[-\\+]?[1-9]+", Some("constant.numeric"));
+                    },
+                    &TypedPart::IdentPart{key} => {
+                        state.add_regex(part.not, part.optional, "[_]*[a-zA-Z][a-zA-Z0-9_]*", Some("variable.other"));
+                    },
+                    &TypedPart::FnPart{key, ..} => {
+                        panic!("Fn not implemented: {}", key);
+                    },
+                    &TypedPart::StringPart{key} => {
+                        state.add_regex(part.not, part.optional, "\"(?:[^\"\\\\]|\\.)*\"", Some("string.quoted"));
+                    },
+                    &TypedPart::StrPart{key} => {
+                        state.add_regex(part.not, part.optional, "\"(?:[^\"\\\\]|\\.)*\"", Some("string.quoted"));
+                    },
+                    &TypedPart::WSPart => {
+                        state.add_regex(false, false, "\\s+", None);
+                    },
+                }
+            },
+            &AstRuleToken::Tag(tag) => {
+                state.add_regex(part.not, part.optional, &to_regex(tag), Some("keyword.other"));
+            },
+            &AstRuleToken::Func(ident, ref args) => {
+                panic!("Fn not implemented: {}", ident);
+            },
+            &AstRuleToken::Group(ref parts) => {
+
+            }
+        } 
+        CollectPartReturn::Continue
     }
 
-    pub fn add_syntax_entries(&self, syntax_data: &mut SyntaxData<'s>, data: &LangData<'a>) {
-        let mut regex = String::new();
-        let mut regex_begin = String::new();
-        let mut collecting_end = false;
-        let mut patterns = Vec::new();
-        let mut captures = Vec::new();
-        let mut captures_begin = Vec::new();
-        let mut is_first = true;
-        for (i, part) in self.parts.iter().enumerate() {
-            if i > 0 {
-                is_first = false;
-            }
-            match &part.token {
-                &AstRuleToken::Key(key) => {
-                    let typed_part = data.typed_parts.get(key).expect("Could not find part");
-                    match typed_part {
-                        &TypedPart::AstPart{key} => {
-                            // If we are at first position,
-                            // add to parent level, else
-                            // use current acc as begin,
-                            // and collect end
-                            // If already at end, transform
-                            // to <Key>2 by setting end to [^\s]
-                            // and using accum as begin
-                            match data.resolve(key) {
-                                ResolvedType::ResolvedEnum(key) => {
-                                    let enum_data = data.ast_enums.get(key).unwrap();
-                                    for item in &enum_data.items {
-                                        if is_first {
-                                            syntax_data.add_parent_entry(self.ast_type, item);
-                                        } else {
-                                            patterns.push(*item);
-                                        }
-                                    }
-                                },
-                                ResolvedType::ResolvedStruct(key) => {
-                                    if is_first {
-                                        syntax_data.add_parent_entry(self.ast_type, key);
-                                    } else {
-                                        patterns.push(key);
-                                    }
-                                }
-                            }
-                            if !is_first {
-                                if collecting_end {
-                                    panic!("todo");
-                                }
-                                regex_begin = regex;
-                                regex = String::new();
-                                captures_begin = captures;
-                                captures = Vec::new();
-                                collecting_end = true;
-                            }
-                        },
-                        &TypedPart::ListPart{key} => {
-                            // Add references to list items
-                            match data.resolve(key) {
-                                ResolvedType::ResolvedEnum(key) => {
-                                    let enum_data = data.ast_enums.get(key).unwrap();
-                                    for item in &enum_data.items {
-                                        if is_first {
-                                            syntax_data.add_parent_entry(self.ast_type, item);
-                                        } else {
-                                            patterns.push(item);
-                                        }
-                                    }
-                                },
-                                ResolvedType::ResolvedStruct(key) => {
-                                    if is_first {
-                                        syntax_data.add_parent_entry(self.ast_type, key);
-                                    } else {
-                                        patterns.push(key);
-                                    }
-                                }
-                            }
-                            if !is_first {
-                                if collecting_end {
-                                    panic!("todo");
-                                }
-                                regex_begin = regex;
-                                regex = String::new();
-                                captures_begin = captures;
-                                captures = Vec::new();
-                                collecting_end = true;
-                            }
-                        },
-                        &TypedPart::CharPart{chr, ..} => {
-                            regex = self.add_regex(regex, part, &to_regex(&chr.to_string()), None, &mut captures);
-                        },
-                        &TypedPart::TagPart{tag, ..} => {
-                            regex = self.add_regex(regex, part, &to_regex(tag), Some("keyword.other"), &mut captures);
-                        },
-                        &TypedPart::IntPart{key} => {
-                            regex = self.add_regex(regex, part, "[-\\+]?[1-9]+", Some("constant.numeric"), &mut captures);
-                        },
-                        &TypedPart::IdentPart{key} => {
-                            regex = self.add_regex(regex, part, "[_]*[a-zA-Z][a-zA-Z0-9_]*", Some("variable.other"), &mut captures);
-                        },
-                        &TypedPart::FnPart{key, ..} => {
-                            panic!("Fn not implemented: {}", key);
-                        },
-                        &TypedPart::StringPart{key} => {
-                            regex = self.add_regex(regex, part, "\"(?:[^\"\\\\]|\\.)*\"", Some("string.quoted"), &mut captures);
-                        },
-                        &TypedPart::StrPart{key} => {
-                            regex = self.add_regex(regex, part, "\"(?:[^\"\\\\]|\\.)*\"", Some("string.quoted"), &mut captures);
-                        },
-                        &TypedPart::WSPart => {
-                            regex.push_str("\\s+");
-                        },
+    pub fn add_syntax_entries(&self, mut syntax_data: &mut SyntaxData<'s>, data: &LangData<'a>) {
+        let mut collect_state = CollectState::new(false);
+        let mut collect_state_begin = None;
+        for part in &self.parts {
+            match self.collect_part_syntax(part, &mut collect_state, &mut syntax_data, data) {
+                CollectPartReturn::CollectEnd => {
+                    if collect_state.is_first {
+                        collect_state.is_first = false;
                     }
+                    // Put collect_state in begin,
+                    // and create new collect_state for end
+                    collect_state_begin = Some(collect_state);
+                    collect_state = CollectState::new(true);
                 },
-                &AstRuleToken::Tag(tag) => {
-                    regex = self.add_regex(regex, part, &to_regex(tag), Some("keyword.other"), &mut captures);
-                },
-                &AstRuleToken::Func(ident, ref args) => {
-                    panic!("Fn not implemented: {}", ident);
-                },
-                &AstRuleToken::Group(ref parts) => {
-
+                CollectPartReturn::Continue => {
+                    if collect_state.is_first {
+                        collect_state.is_first = false;
+                    }
                 }
             }
         }
-        if patterns.len() > 0 {
-            if regex.len() == 0 {
-                regex.push_str("[^\\s]");
-            }
-            let (begin, end, begin_captures, end_captures) = if collecting_end {
-                (regex_begin, regex, captures_begin, captures)
-            } else {
-                (regex, "[^\\s]".to_string(), captures, Vec::new())
-            };
+        if let Some(collect_begin) = collect_state_begin {
+            // Begin end entry
             syntax_data.entries.insert(
                 self.ast_type,
                 SyntaxEntry::BeginEnd {
-                    begin,
-                    end,
-                    begin_captures,
-                    end_captures,
-                    patterns
+                    begin: collect_begin,
+                    end: collect_state
                 }
             );
         } else {
+            // Match entry
             syntax_data.entries.insert(
                 self.ast_type,
                 SyntaxEntry::Match {
-                    regex,
-                    captures
+                    collect: collect_state
                 }
             );
         }

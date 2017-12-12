@@ -220,7 +220,7 @@ To create a language extension, and add syntax highlighting:
 Things
 ------
 - [x] Recursive data structures
-- [x] Groups of tokens
+- [x] Groups of tokens
 - [x] To source generator
 - [x] Annotations for things like serde integration
 - [ ] Include language files, maybe into context
