@@ -10,6 +10,9 @@ use itertools::Itertools;
 pub struct SyntaxData {
     pub entries: HashMap<String, SyntaxEntry>,
     pub root_entries: Vec<String>,
+    // Parents named by key, will have
+    // Vec<String> items merged at it's
+    // level in includes
     pub parent_entries: HashMap<String, Vec<String>>
 }
 impl SyntaxData {
@@ -22,6 +25,21 @@ impl SyntaxData {
             .get_mut(&parent)
             .unwrap()
             .push(entry.into());
+    }
+
+    // Recursively get merged parent entries
+    pub fn get_parent_entries<S: Into<String>>(&self, parent: S, mut v: Vec<String>) -> Vec<String> {
+        let parent = parent.into();
+        match self.parent_entries.get(&parent) {
+            None => {},
+            Some(entries) => {
+                for entry in entries {
+                    v.push(entry.clone());
+                    v = self.get_parent_entries(entry.clone(), v);
+                }
+            }
+        }
+        v
     }
 }
 
@@ -54,12 +72,9 @@ impl SyntaxEntry {
     fn collect_pattern_includes(items: &Vec<&str>, syntax_data: &SyntaxData) -> JsVal {
         JsVal::array_val(items
             .iter()
-            .map(|item| {
-                syntax_data.parent_entries.get(&item.to_string())
+            .flat_map(|item| {
+                syntax_data.get_parent_entries(item.to_string(), Vec::new())
             })
-            .filter(|e| { e.is_some() })
-            .flat_map(|e| { e.unwrap() })
-            .map(|e| { String::from(e.as_str()) })
             .chain(items.iter().map(|e| { e.to_string() }))
             //.chain(items.iter().map(|i| { String::from(*i) }).collect::<Vec<_>>())
             .unique()
@@ -180,8 +195,17 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
         for (key, ast_data) in &self.data.ast_data {
             for rule in &ast_data.rules {
                 match rule {
-                    &AstRule::RefRule(ref_key) => {},
+                    &AstRule::RefRule(ref_key) => {
+                        // Add as parent to base type if different
+                        if ref_key != ast_data.ast_type {
+                            syntax_data.add_parent_entry(ast_data.ast_type, ref_key);
+                        }
+                    },
                     &AstRule::PartsRule(ref parts_rule) => {
+                        // Add as parent to base type if different
+                        if parts_rule.ast_type != ast_data.ast_type {
+                            syntax_data.add_parent_entry(ast_data.ast_type, parts_rule.ast_type);
+                        }
                         parts_rule.add_syntax_entries(&mut syntax_data, self.data);
                     }
                 }
@@ -190,8 +214,21 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
         for (key, list_data) in &self.data.list_data {
             for rule in &list_data.rules {
                 match &rule.ast_rule {
-                    &AstRule::RefRule(ref_key) => {},
+                    &AstRule::RefRule(ref_key) => {
+                        // Add as parent to list type if specified
+                        if let Some(ast_key) = list_data.ast_type {
+                            if ref_key != ast_key {
+                                syntax_data.add_parent_entry(ast_key, ref_key);
+                            }
+                        }
+                    },
                     &AstRule::PartsRule(ref parts_rule) => {
+                        // Add as parent to list type if specified
+                        if let Some(ast_key) = list_data.ast_type {
+                            if parts_rule.ast_type != ast_key {
+                                syntax_data.add_parent_entry(ast_key, parts_rule.ast_type);
+                            }
+                        }
                         parts_rule.add_syntax_entries(&mut syntax_data, self.data);
                     }
                 }

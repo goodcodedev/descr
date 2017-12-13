@@ -1,14 +1,22 @@
 Source (items:sourceItems)
 
 sourceItems:SourceItem[] WS {
-    AstSingle
+    AstSingle,
+    AstMany,
+    List
 }
+
 
 AstSingle(
     ident 
     LPAREN 
     tokens:tokenList 
     RPAREN
+)
+AstMany(
+    ident LBRACE
+    items:astItems 
+    RBRACE
 )
 
 tokenList:Token[] WS {
@@ -30,7 +38,23 @@ tokenList:Token[] WS {
 }
 
 TokenType {
+    ident LPAREN fnArgs RPAREN => FuncToken,
     key:ident => KeyToken,
     string => Quoted
 }
+fnArgs:FuncArg[] COMMA {
+    string => Quoted
+}
 
+astItems[] COMMA AstItem
+AstItem {
+    AstDef(ident? LPAREN tokens:tokenList RPAREN),
+    AstRef(ident)
+}
+
+List {
+    ListSingle(ident LBRACKET RBRACKET sep:ident reference:ident),
+    ListMany(ident COLON ast_type:ident LBRACKET RBRACKET sep:ident? LBRACE items:listItems RBRACE)
+}
+listItems[] COMMA ListItem
+ListItem(AstItem sep:ident?)

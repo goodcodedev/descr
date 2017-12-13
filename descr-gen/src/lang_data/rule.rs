@@ -172,7 +172,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                             // name_2.., which continues collecting
                             // regexes, and is included at this level
                             panic!("second level regex todo");
-                        } else {
+                        } else if !state.is_first {
                             // Switch to end "mode"
                             return CollectPartReturn::CollectEnd;
                         }
@@ -203,7 +203,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                             // name_2.., which continues collecting
                             // regexes, and is included at this level
                             panic!("second level regex todo");
-                        } else {
+                        } else if !state.is_first {
                             // Switch to end "mode"
                             return CollectPartReturn::CollectEnd;
                         }
