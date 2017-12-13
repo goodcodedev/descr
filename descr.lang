@@ -9,8 +9,16 @@ sourceItems:SourceItem[] WS {
 
 Comment("(*" comment:!"*)" "*)")
 
-Annotation("@" ident AnnotArgs?)
+Annotation(
+    @syntax(name="keyword.control")
+    "@"
+    @syntax(name="entity.name.function")
+    ident
+    AnnotArgs?
+)
+
 AnnotArgs(LPAREN annotArgList RPAREN)
+
 annotArgList:AnnotArg[] COMMA {
     AnnotArg(key:ident EQUAL AnnotArgVal)
 }
@@ -23,6 +31,7 @@ annots[] WS Annotation
 
 AstSingle(
     annots
+    @syntax(name="entity.name.type")
     ident 
     LPAREN 
     tokens:tokenList 
@@ -30,7 +39,9 @@ AstSingle(
 )
 AstMany(
     annots
-    ident LBRACE
+    @syntax(name="entity.name.type")
+    ident
+    LBRACE
     items:astItems 
     RBRACE
 )
@@ -38,27 +49,40 @@ AstMany(
 tokenList:Token[] WS {
     NamedToken(
         annots
-        name:ident COLON not:EXCL? 
-        TokenType optional:QUESTION?
+        @syntax(name="variable.name")
+        name:ident COLON
+        @syntax(name="keyword.control")
+        not:EXCL? 
+        TokenType
+        @syntax(name="keyword.control")
+        optional:QUESTION?
     ),
     SimpleToken(
         annots
+        @syntax(name="keyword.control")
         not:EXCL? 
-        TokenType optional:QUESTION?
+        TokenType
+        @syntax(name="keyword.control")
+        optional:QUESTION?
     ),
     TokenGroup(
         annots
+        @syntax(name="keyword.control")
         not:EXCL? 
         LPAREN
         tokenList
         RPAREN
+        @syntax(name="keyword.control")
         optional:QUESTION?
     )
 }
 
 TokenType {
-    ident LPAREN fnArgs RPAREN => FuncToken,
-    key:ident => KeyToken,
+    FuncToken(ident LPAREN fnArgs RPAREN),
+    KeyToken(
+        @syntax(name="storage.type")
+        key:ident
+    ),
     string => Quoted
 }
 fnArgs:FuncArg[] COMMA {
@@ -69,13 +93,23 @@ astItems[] COMMA AstItem
 AstItem {
     AstDef(annots tokens:tokenList "=>" ident?),
     AstDef(annots LPAREN tokens:tokenList RPAREN "=>" ident?),
-    AstDef(annots ident? LPAREN tokens:tokenList RPAREN),
+    AstDef(
+        annots
+        @syntax(name="entity.name.type")
+        ident?
+        LPAREN tokens:tokenList RPAREN),
     AstRef(ident)
 }
 
 List {
-    ListSingle(annots ident LBRACKET RBRACKET sep:ident reference:ident),
-    ListMany(annots ident COLON ast_type:ident LBRACKET RBRACKET sep:ident? LBRACE items:listItems RBRACE)
+    ListSingle(annots
+        @syntax(name="entity.name.type")
+        ident LBRACKET RBRACKET sep:ident reference:ident),
+    ListMany(annots 
+        @syntax(name="entity.name.function")
+        ident COLON
+        @syntax(name="entity.name.type")
+        ast_type:ident LBRACKET RBRACKET sep:ident? LBRACE items:listItems RBRACE)
 }
 listItems[] COMMA ListItem
 ListItem(AstItem sep:ident?)

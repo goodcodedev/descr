@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry::{Vacant, Occupied};
 use self::json_descr::lang::ast::*;
 use itertools::Itertools;
+use descr_common::util::SortedHashMap;
 
 #[derive(Debug)]
 pub struct SyntaxData {
@@ -194,7 +195,7 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
         use self::json_descr::lang::to_source::ToSource;
         let syntax_data = self.gen_syntax_data();
         let root = self.gen_js_object(syntax_data);
-        let mut s = String::new();
+        let s = String::new();
         println!("Js source: {}", ToSource::js_object(s, &root));
     }
 
@@ -204,7 +205,7 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
             root_entries: Vec::new(),
             parent_entries: HashMap::new()
         };
-        for (key, ast_data) in &self.data.ast_data {
+        for (_key, ast_data) in &self.data.ast_data {
             for rule in &ast_data.rules {
                 match rule {
                     &AstRule::RefRule(ref_key) => {
@@ -223,7 +224,7 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
                 }
             }
         }
-        for (key, list_data) in &self.data.list_data {
+        for (_key, list_data) in &self.data.list_data {
             for rule in &list_data.rules {
                 match &rule.ast_rule {
                     &AstRule::RefRule(ref_key) => {
@@ -300,7 +301,7 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
             for (_key, entry) in syntax_data.entries.iter_mut() {
                 match entry {
                     &mut SyntaxEntry::Match{..} => {},
-                    &mut SyntaxEntry::BeginEnd{ref mut begin, ref mut end} => {
+                    &mut SyntaxEntry::BeginEnd{ref mut begin, ..} => {
                         begin.patterns = begin.patterns
                             .iter()
                             .flat_map(|p| {
@@ -411,7 +412,6 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
                                 Occupied(p) => p.into_mut()
                             };
                             for pattern in &begin.patterns {
-                                let expanded = begin.clone();
                                 let sub_entry = syntax_data.entries.get(&**pattern).unwrap();
                                 let mut new_key = key.clone();
                                 new_key.push('_');
@@ -454,10 +454,6 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
     }
 
     pub fn gen_js_object(&self, syntax_data: SyntaxData) -> JsObject {
-        let mut s = String::with_capacity(
-            self.data.ast_data.len() * 80
-            + self.data.list_data.len() * 80
-        );
         let mut root = JsObject::new(Vec::new());
         root.items.push(ObjectPair::new(
             "$schema".to_string(),
@@ -491,7 +487,7 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
             root_patterns
         ));
         let mut repository = JsObject::new(Vec::new());
-        for (key, entry) in &syntax_data.entries {
+        for (key, entry) in syntax_data.entries.sorted_iter() {
             repository.items.push(entry.collect_repository_item(key, &syntax_data))
         }
         root.items.push(ObjectPair::new(

@@ -12,6 +12,7 @@ impl<'a, 'd> CodegenParsers<'a, 'd> {
     pub fn gen(&self) -> String {
         let mut s =
             String::with_capacity(self.data.ast_data.len() * 100 + self.data.list_data.len() * 100);
+        s += "#[allow(unused_imports)]\n";
         s += "use descr_common::parsers::*;\n";
         s += "extern crate nom;\n";
         s += "use self::nom::*;\n";

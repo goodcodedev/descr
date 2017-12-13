@@ -3,7 +3,8 @@ extern crate descr_common;
 extern crate descr_lang;
 extern crate elapsed;
 extern crate nom;
-#[macro_use] extern crate itertools;
+//#[macro_use]
+extern crate itertools;
 pub mod lang_data;
 pub mod process;
 

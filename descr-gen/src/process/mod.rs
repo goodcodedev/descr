@@ -89,8 +89,8 @@ pub fn process<'a : 'd, 'b, 'c, 'd>(res: &'a ast::Source, data: &'d mut LangData
     println!("Process: {}", elapsed);
 }
 
-pub fn gen_mod<'a, 'd>(path: &str, data: &'a LangData<'d>) {
-    let mut s = "pub mod ast;\npub mod parsers;\npub mod visitor;\npub mod to_source;\n\n".to_string();
+pub fn gen_mod<'a, 'd>(path: &str, _data: &'a LangData<'d>) {
+    let s = "pub mod ast;\npub mod parsers;\npub mod visitor;\npub mod to_source;\n\n".to_string();
     /*
     use std::collections::HashSet;
     let start_key = data.start_key.expect("Start key not found");

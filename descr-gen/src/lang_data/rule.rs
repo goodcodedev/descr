@@ -112,7 +112,7 @@ impl CollectState {
                         &SyntaxEntry::Match{ref collect} => {
                             collect
                         },
-                        &SyntaxEntry::BeginEnd{ref begin, ref end} => {
+                        &SyntaxEntry::BeginEnd{ref begin, ..} => {
                             begin
                         }
                     };
@@ -188,6 +188,18 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                                syntax_data: &mut SyntaxData,
                                data: &LangData<'a>) -> CollectPartReturn
     {
+        let annot_name = match part.annots.items.get("syntax") {
+            Some(ref annot) => {
+                match annot.args.get("name") {
+                    Some(name) => match name {
+                        &AnArgVal::Quoted(name) => Some(name),
+                        _ => None
+                    }
+                    None => None
+                }
+            },
+            None => None
+        };
         match &part.token {
             &AstRuleToken::Key(key) => {
                 let typed_part = data.typed_parts.get(key).expect("Could not find part");
@@ -265,25 +277,25 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                         }
                     },
                     &TypedPart::CharPart{chr, ..} => {
-                        state.add_regex(part.not, part.optional, &to_regex(&chr.to_string()), None);
+                        state.add_regex(part.not, part.optional, &to_regex(&chr.to_string()), annot_name.or(None));
                     },
                     &TypedPart::TagPart{tag, ..} => {
-                        state.add_regex(part.not, part.optional, &to_regex(tag), Some("keyword.other"));
+                        state.add_regex(part.not, part.optional, &to_regex(tag), annot_name.or(Some("keyword.other")));
                     },
-                    &TypedPart::IntPart{key} => {
-                        state.add_regex(part.not, part.optional, "[-\\+]?[1-9]+", Some("constant.numeric"));
+                    &TypedPart::IntPart{..} => {
+                        state.add_regex(part.not, part.optional, "[-\\+]?[1-9]+", annot_name.or(Some("constant.numeric")));
                     },
-                    &TypedPart::IdentPart{key} => {
-                        state.add_regex(part.not, part.optional, "[_]*[a-zA-Z][a-zA-Z0-9_]*", Some("variable.other"));
+                    &TypedPart::IdentPart{..} => {
+                        state.add_regex(part.not, part.optional, "[_]*[a-zA-Z][a-zA-Z0-9_]*", annot_name.or(Some("variable.other")));
                     },
                     &TypedPart::FnPart{key, ..} => {
                         panic!("Fn not implemented: {}", key);
                     },
-                    &TypedPart::StringPart{key} => {
-                        state.add_regex(part.not, part.optional, "\"(?:[^\"\\\\]|\\.)*\"", Some("string.quoted"));
+                    &TypedPart::StringPart{..} => {
+                        state.add_regex(part.not, part.optional, "\"(?:[^\"\\\\]|\\.)*\"", annot_name.or(Some("string.quoted")));
                     },
-                    &TypedPart::StrPart{key} => {
-                        state.add_regex(part.not, part.optional, "\"(?:[^\"\\\\]|\\.)*\"", Some("string.quoted"));
+                    &TypedPart::StrPart{..} => {
+                        state.add_regex(part.not, part.optional, "\"(?:[^\"\\\\]|\\.)*\"", annot_name.or(Some("string.quoted")));
                     },
                     &TypedPart::WSPart => {
                         state.add_regex(false, false, "\\s+", None);
@@ -291,12 +303,12 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                 }
             },
             &AstRuleToken::Tag(tag) => {
-                state.add_regex(part.not, part.optional, &to_regex(tag), Some("keyword.other"));
+                state.add_regex(part.not, part.optional, &to_regex(tag), annot_name.or(Some("keyword.other")));
             },
-            &AstRuleToken::Func(ident, ref args) => {
+            &AstRuleToken::Func(ident, ..) => {
                 panic!("Fn not implemented: {}", ident);
             },
-            &AstRuleToken::Group(ref parts) => {
+            &AstRuleToken::Group(..) => {
 
             }
         } 
@@ -518,7 +530,7 @@ impl<'a, 'b> AstRulePart<'a> {
                         s += self.member_key.unwrap();
                         s += "_k";
                     },
-                    &AstRuleToken::Group(ref parts) => {}
+                    &AstRuleToken::Group(..) => {}
                 }
             }
             if is_boxed {

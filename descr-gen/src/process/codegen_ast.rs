@@ -42,6 +42,7 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
                 s += ",\n";
             }
             s += "}\n\n";
+            s += "#[allow(dead_code)]\n";
             s += "impl";
             let needs_lifetime = ast_struct.needs_lifetime(self.data, &mut HashSet::new());
             if needs_lifetime {
@@ -128,6 +129,7 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
         for (key, enum_data) in self.data.ast_enums.sorted_iter() {
             let is_simple = self.data.simple_enums.contains(key);
             append!(s, "#[derive(Debug)]\n");
+            s += "#[allow(dead_code)]\n";
             append!(s, "pub enum ");
             s = enum_data.add_type(s, self.data);
             s += " {\n";
@@ -206,7 +208,7 @@ impl<'a, 'd> CodegenAst<'a, 'd> {
                             }
                             s += "\n    }\n";
                         },
-                        ResolvedType::ResolvedEnum(key) => {}
+                        ResolvedType::ResolvedEnum(_key) => {}
                     }
                 }
                 s += "}\n\n";
