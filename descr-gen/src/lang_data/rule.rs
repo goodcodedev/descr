@@ -65,7 +65,8 @@ pub struct CollectState {
     // Perhaps better described as
     // non determinant among
     // it's branches
-    pub only_optional: bool
+    pub only_optional: bool,
+    pub parent_refs: Vec<String>
 }
 impl CollectState {
     pub fn new(is_end: bool) -> CollectState {
@@ -75,7 +76,8 @@ impl CollectState {
             regexes: Vec::with_capacity(4),
             is_first: !is_end,
             is_end,
-            only_optional: true
+            only_optional: true,
+            parent_refs: Vec::new()
         }
     }
 
@@ -89,6 +91,7 @@ impl CollectState {
         if self.only_optional && !state.only_optional {
             self.only_optional = false;
         }
+        // Not sure about relevance of parent_refs
     }
 
     // If it is end part and no regexes,
@@ -203,6 +206,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                                 for item in &enum_data.items {
                                     if state.is_first {
                                         syntax_data.add_parent_entry(self.ast_type, item);
+                                        state.parent_refs.push(String::from(*item));
                                     } else {
                                         state.patterns.push(String::from(*item));
                                     }
@@ -211,6 +215,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                             ResolvedType::ResolvedStruct(key) => {
                                 if state.is_first {
                                     syntax_data.add_parent_entry(self.ast_type, key);
+                                    state.parent_refs.push(String::from(key.to_string()));
                                 } else {
                                     state.patterns.push(String::from(key));
                                 }
@@ -234,6 +239,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                                 for item in &enum_data.items {
                                     if state.is_first {
                                         syntax_data.add_parent_entry(self.ast_type, item);
+                                        state.parent_refs.push(String::from(*item));
                                     } else {
                                         state.patterns.push(String::from(*item));
                                     }
@@ -242,6 +248,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                             ResolvedType::ResolvedStruct(key) => {
                                 if state.is_first {
                                     syntax_data.add_parent_entry(self.ast_type, key);
+                                    state.parent_refs.push(String::from(key.to_string()));
                                 } else {
                                     state.patterns.push(String::from(key));
                                 }

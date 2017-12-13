@@ -251,7 +251,6 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
         // patterns matches
         {
             let replacements = Self::get_replacements(&syntax_data);
-            println!("{:#?}", replacements);
             // Replace parent_refs
             syntax_data.parent_entries = syntax_data.parent_entries
                 .into_iter()
@@ -277,6 +276,24 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
                     )
                 })
                 .collect();
+            // Replace entries and collect keys
+            // to replace patterns
+            let mut replace_keys = HashMap::new();
+            replacements
+                .into_iter()
+                .for_each(|(key, rtuples)| {
+                    syntax_data.entries.remove(&key);
+                    let rkeys = match replace_keys.entry(key.clone()) {
+                        Vacant(p) => p.insert(Vec::with_capacity(rtuples.len())),
+                        Occupied(p) => p.into_mut()
+                    };
+                    rtuples
+                        .into_iter()
+                        .for_each(|(new_key, new_entry)| {
+                            rkeys.push(new_key.clone());
+                            syntax_data.entries.insert(new_key, new_entry);
+                        });
+                });
             // Replace patterns
             // Only replacing begins, don't think end's
             // will have patterns.
@@ -287,14 +304,12 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
                         begin.patterns = begin.patterns
                             .iter()
                             .flat_map(|p| {
-                                match replacements.get(p) {
+                                match replace_keys.get(p) {
                                     None => vec!(p.clone()),
-                                    Some(rtuples) => {
-                                        rtuples
+                                    Some(rkeys) => {
+                                        rkeys
                                             .iter()
-                                            .map(|&(ref new_key, ref _new_entry)| {
-                                                new_key.clone()
-                                            })
+                                            .cloned()
                                             .collect::<Vec<String>>()
                                     }
                                 }
@@ -303,17 +318,6 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
                     }
                 }
             }
-            // Replace entries
-            replacements
-                .into_iter()
-                .for_each(|(key, rtuples)| {
-                    syntax_data.entries.remove(&key);
-                    rtuples
-                        .into_iter()
-                        .for_each(|(new_key, new_entry)| {
-                            syntax_data.entries.insert(new_key, new_entry);
-                        });
-                });
             /*
             syntax_data.entries = syntax_data.entries
                 .into_iter()
@@ -338,16 +342,62 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
         syntax_data
     }
 
+    // TODO: Make more granular so elements
+    // that depend on replacements can get the
+    // dependencies processed first
     pub fn get_replacements(syntax_data: &SyntaxData) -> HashMap<String, Vec<(String, SyntaxEntry)>> {
         syntax_data.entries
             .iter()
             .fold(HashMap::new(), |mut replacements, (key, entry)| {
                 match entry {
                     &SyntaxEntry::Match{ref collect} => {
-                        // We have no subpatterns to combine
-                        // with, so can't expand.
-                        // Possibly mark only_optional
-                        // as invalid
+                        // If this is only_optional, it
+                        // may be the case that the first
+                        // part is added as parent ref
+                        // If so, expand with prependd parent refs.
+                        // Also check for regexes.len() > 0,
+                        // don't think those without will make
+                        // a difference.
+                        if collect.only_optional && collect.regexes.len() > 0 && collect.parent_refs.len() > 0 {
+                            let rtuples = match replacements.entry(key.clone()) {
+                                Vacant(p) => p.insert(Vec::with_capacity(collect.parent_refs.len())),
+                                Occupied(p) => p.into_mut()
+                            };
+                            for pref in &collect.parent_refs {
+                                let front_entry = syntax_data.entries.get(pref).unwrap();
+                                // Key might make more sense other way around,
+                                // but try to make sensible namespacing
+                                let mut new_key = key.clone();
+                                new_key.push('_');
+                                new_key.push_str(&pref);
+                                let new_entry = match front_entry {
+                                    &SyntaxEntry::Match{collect: ref inner_collect} => {
+                                        // Combine match + entry into new match
+                                        let mut new_collect = inner_collect.clone();
+                                        new_collect.append(collect);
+                                        SyntaxEntry::Match {
+                                            collect: new_collect
+                                        }
+                                    },
+                                    &SyntaxEntry::BeginEnd{
+                                        begin: ref inner_begin,
+                                        end: ref inner_end
+                                    } => {
+                                        // Combine start (patterns) end + entry
+                                        let mut new_begin = inner_begin.clone();
+                                        let mut new_end = inner_end.clone();
+                                        new_end.append(collect);
+                                        SyntaxEntry::BeginEnd {
+                                            begin: new_begin,
+                                            end: new_end
+                                        }
+                                    }
+                                };
+                                // Push tuple
+                                rtuples.push((new_key, new_entry));
+                                //println!("Found parent refs, key: {}, p: {}, {:#?}", key, pref, syntax_data.get_parent_entries(pref.to_string(), Vec::new()));
+                            }
+                        }
                         replacements
                     },
                     &SyntaxEntry::BeginEnd{ref begin, ref end} => {
@@ -408,7 +458,6 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
             self.data.ast_data.len() * 80
             + self.data.list_data.len() * 80
         );
-        println!("Syntax data: {:#?}", syntax_data);
         let mut root = JsObject::new(Vec::new());
         root.items.push(ObjectPair::new(
             "$schema".to_string(),
