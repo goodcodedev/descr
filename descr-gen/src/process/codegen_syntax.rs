@@ -27,6 +27,18 @@ impl SyntaxData {
             .push(entry.into());
     }
 
+    pub fn expand_pattern_list(&self, list: &Vec<String>) -> Vec<String> {
+        list
+            .iter()
+            .flat_map(|item| {
+                self.get_parent_entries(item.clone(), Vec::new())
+            })
+            .chain(list.iter().map(|item| { item.clone() }))
+            //.chain(items.iter().map(|i| { String::from(*i) }).collect::<Vec<_>>())
+            .unique()
+            .collect::<Vec<_>>()
+    }
+
     // Recursively get merged parent entries
     pub fn get_parent_entries<S: Into<String>>(&self, parent: S, mut v: Vec<String>) -> Vec<String> {
         let parent = parent.into();
@@ -55,7 +67,7 @@ pub enum SyntaxEntry {
 }
 impl SyntaxEntry {
     
-    fn escape(string: &String) -> String {
+    fn escape(string: String) -> String {
         let mut s = String::with_capacity(string.len() + 10);
         for chr in string.chars() {
             match chr {
@@ -123,7 +135,7 @@ impl SyntaxEntry {
                         ),
                         ObjectPair::new(
                             "match".to_string(),
-                            JsVal::string_val(SyntaxEntry::escape(&collect.regex))
+                            JsVal::string_val(SyntaxEntry::escape(collect.get_regex()))
                         ),
                         ObjectPair::new(
                             "captures".to_string(),
@@ -142,11 +154,11 @@ impl SyntaxEntry {
                         ),
                         ObjectPair::new(
                             "begin".to_string(),
-                            JsVal::string_val(SyntaxEntry::escape(&begin.regex))
+                            JsVal::string_val(SyntaxEntry::escape(begin.get_regex()))
                         ),
                         ObjectPair::new(
                             "end".to_string(),
-                            JsVal::string_val(SyntaxEntry::escape(&end.regex))
+                            JsVal::string_val(SyntaxEntry::escape(end.get_end_regex(syntax_data, begin)))
                         ),
                         ObjectPair::new(
                             "beginCaptures".to_string(),

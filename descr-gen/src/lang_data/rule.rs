@@ -26,38 +26,37 @@ pub struct PartRegex {
     pub capture_name: Option<String>
 }
 impl PartRegex {
-    pub fn add_to_string(&self, state: &mut CollectState, add_captures: bool) {
+    pub fn add_to_string(&self, mut s: String, add_captures: bool) -> String {
         if !self.not {
-            state.regex.push_str("\\s*");
+            s.push_str("\\s*");
         }
         if add_captures && self.capture {
-            state.regex.push('(');
+            s.push('(');
         }
         if self.optional {
-            state.regex.push_str("(?:");
+            s.push_str("(?:");
         }
         if self.not {
-            state.regex.push_str("^(?:(?!");
+            // Non capture "(?:", negative lookahead "(?!"
+            s.push_str("(?:(?!");
         }
-        state.regex.push_str(&self.regex);
+        s.push_str(&self.regex);
         if self.not {
-            state.regex.push_str(").)*");
+            // Any char, zero or more times
+            s.push_str(").)*");
         }
         if self.optional {
-            state.regex.push_str(")?");
+            s.push_str(")?");
         }
         if add_captures && self.capture {
-            state.regex.push(')');
+            s.push(')');
         }
-        if !self.optional && state.only_optional {
-            state.only_optional = false;
-        }
+        s
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct CollectState {
-    pub regex: String,
     pub patterns: Vec<String>,
     pub captures: Vec<String>,
     pub regexes: Vec<PartRegex>,
@@ -71,7 +70,6 @@ pub struct CollectState {
 impl CollectState {
     pub fn new(is_end: bool) -> CollectState {
         CollectState {
-            regex: String::with_capacity(20),
             patterns: Vec::new(),
             captures: Vec::new(),
             regexes: Vec::with_capacity(4),
@@ -82,7 +80,6 @@ impl CollectState {
     }
 
     pub fn append(&mut self, state: &CollectState) {
-        self.regex.push_str(&state.regex);
         self.patterns.extend(state.patterns.iter().cloned());
         self.captures.extend(state.captures.iter().cloned());
         self.regexes.extend(state.regexes.iter().cloned());
@@ -94,6 +91,57 @@ impl CollectState {
         }
     }
 
+    // If it is end part and no regexes,
+    // creates negative lookahead for patterns.
+    // Patterns therefore needs to be expanded
+    // for it to work correctly
+    pub fn get_end_regex(&self, syntax_data: &SyntaxData, begin: &CollectState) -> String {
+        if self.regexes.len() == 0 {
+            // Collect until first non-optional token
+            // of patterns
+            let expanded_patterns = syntax_data.expand_pattern_list(&begin.patterns);
+            let mut is_first = true;
+            let mut s = String::with_capacity(10);
+            s.push_str("(?!(?:");
+            for p in &expanded_patterns {
+                if let Some(pattern_entry) = syntax_data.entries.get(p) {
+                    let collect = match pattern_entry {
+                        &SyntaxEntry::Match{ref collect} => {
+                            collect
+                        },
+                        &SyntaxEntry::BeginEnd{ref begin, ref end} => {
+                            begin
+                        }
+                    };
+                    if !is_first {
+                        s.push('|');
+                    } else {
+                        is_first = false;
+                    }
+                    for r in &collect.regexes {
+                        s = r.add_to_string(s, false);
+                        if !r.optional {
+                            break;
+                        }
+                    }
+                }
+            }
+            s.push_str("))");
+            s
+        } else {
+            self.get_regex()
+        }
+    }
+
+    // Collects regexes and creates a string
+    pub fn get_regex(&self) -> String {
+        let mut s = String::with_capacity(self.regexes.len() * 4);
+        for regex in &self.regexes {
+            s = regex.add_to_string(s, true);
+        }
+        s
+    }
+
     pub fn add_regex(&mut self, not: bool, optional: bool,
                      regex: &str, default_name: Option<&str>)
     {
@@ -103,15 +151,16 @@ impl CollectState {
         };
         let p = PartRegex {
             regex: regex.to_string(),
-            not: not,
-            optional: optional,
+            not,
+            optional,
             capture,
             capture_name: capture_name.map(|n| { String::from(n) })
         };
-        // Add regex to state'a regex
-        p.add_to_string(self, true);
         if let Some(capture_name) = capture_name {
             self.captures.push(capture_name.to_string());
+        }
+        if !p.optional && self.only_optional {
+            self.only_optional = false;
         }
         self.regexes.push(p);
     }
@@ -302,6 +351,7 @@ pub fn to_regex(string: &str) -> String {
             '?' => s.push_str("\\?"),
             '.' => s.push_str("\\."),
             '+' => s.push_str("\\+"),
+            '*' => s.push_str("\\*"),
             '\\' => s.push_str("\\\\"),
             other => s.push(other)
         }
