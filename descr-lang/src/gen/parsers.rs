@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 use descr_common::parsers::*;
 extern crate nom;
 use self::nom::*;

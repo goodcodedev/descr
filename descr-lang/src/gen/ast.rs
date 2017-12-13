@@ -4,6 +4,7 @@ pub struct AnnotArg<'a> {
     pub key: &'a str,
 }
 
+#[allow(dead_code)]
 impl<'a> AnnotArg<'a> {
     pub fn new(key: &'a str, annot_arg_val: AnnotArgVal<'a>) -> AnnotArg<'a> {
         AnnotArg {
@@ -18,6 +19,7 @@ pub struct AnnotArgs<'a> {
     pub annot_arg_list: Vec<AnnotArg<'a>>,
 }
 
+#[allow(dead_code)]
 impl<'a> AnnotArgs<'a> {
     pub fn new(annot_arg_list: Vec<AnnotArg<'a>>) -> AnnotArgs<'a> {
         AnnotArgs {
@@ -32,6 +34,7 @@ pub struct Annotation<'a> {
     pub ident: &'a str,
 }
 
+#[allow(dead_code)]
 impl<'a> Annotation<'a> {
     pub fn new(ident: &'a str, annot_args: Option<AnnotArgs<'a>>) -> Annotation<'a> {
         Annotation {
@@ -48,6 +51,7 @@ pub struct AstDef<'a> {
     pub tokens: Vec<Token<'a>>,
 }
 
+#[allow(dead_code)]
 impl<'a> AstDef<'a> {
     pub fn new(annots: Vec<Annotation<'a>>, tokens: Vec<Token<'a>>, ident: Option<&'a str>) -> AstDef<'a> {
         AstDef {
@@ -69,6 +73,7 @@ pub struct AstMany<'a> {
     pub items: Vec<AstItem<'a>>,
 }
 
+#[allow(dead_code)]
 impl<'a> AstMany<'a> {
     pub fn new(annots: Vec<Annotation<'a>>, ident: &'a str, items: Vec<AstItem<'a>>) -> AstMany<'a> {
         AstMany {
@@ -88,6 +93,7 @@ pub struct AstRef<'a> {
     pub ident: &'a str,
 }
 
+#[allow(dead_code)]
 impl<'a> AstRef<'a> {
     pub fn new(ident: &'a str) -> AstRef<'a> {
         AstRef {
@@ -107,6 +113,7 @@ pub struct AstSingle<'a> {
     pub tokens: Vec<Token<'a>>,
 }
 
+#[allow(dead_code)]
 impl<'a> AstSingle<'a> {
     pub fn new(annots: Vec<Annotation<'a>>, ident: &'a str, tokens: Vec<Token<'a>>) -> AstSingle<'a> {
         AstSingle {
@@ -126,6 +133,7 @@ pub struct Comment<'a> {
     pub comment: &'a str,
 }
 
+#[allow(dead_code)]
 impl<'a> Comment<'a> {
     pub fn new(comment: &'a str) -> Comment<'a> {
         Comment {
@@ -144,6 +152,7 @@ pub struct FuncToken<'a> {
     pub ident: &'a str,
 }
 
+#[allow(dead_code)]
 impl<'a> FuncToken<'a> {
     pub fn new(ident: &'a str, fn_args: Vec<FuncArg<'a>>) -> FuncToken<'a> {
         FuncToken {
@@ -162,6 +171,7 @@ pub struct Ident<'a> {
     pub ident: &'a str,
 }
 
+#[allow(dead_code)]
 impl<'a> Ident<'a> {
     pub fn new(ident: &'a str) -> Ident<'a> {
         Ident {
@@ -179,6 +189,7 @@ pub struct IntConst {
     pub int: u32,
 }
 
+#[allow(dead_code)]
 impl IntConst {
     pub fn new(int: u32) -> IntConst {
         IntConst {
@@ -196,6 +207,7 @@ pub struct KeyToken<'a> {
     pub key: &'a str,
 }
 
+#[allow(dead_code)]
 impl<'a> KeyToken<'a> {
     pub fn new(key: &'a str) -> KeyToken<'a> {
         KeyToken {
@@ -214,6 +226,7 @@ pub struct ListItem<'a> {
     pub sep: Option<&'a str>,
 }
 
+#[allow(dead_code)]
 impl<'a> ListItem<'a> {
     pub fn new(ast_item: AstItem<'a>, sep: Option<&'a str>) -> ListItem<'a> {
         ListItem {
@@ -232,6 +245,7 @@ pub struct ListMany<'a> {
     pub sep: Option<&'a str>,
 }
 
+#[allow(dead_code)]
 impl<'a> ListMany<'a> {
     pub fn new(annots: Vec<Annotation<'a>>, ident: &'a str, ast_type: &'a str, sep: Option<&'a str>, items: Vec<ListItem<'a>>) -> ListMany<'a> {
         ListMany {
@@ -256,6 +270,7 @@ pub struct ListSingle<'a> {
     pub sep: &'a str,
 }
 
+#[allow(dead_code)]
 impl<'a> ListSingle<'a> {
     pub fn new(annots: Vec<Annotation<'a>>, ident: &'a str, sep: &'a str, reference: &'a str) -> ListSingle<'a> {
         ListSingle {
@@ -280,6 +295,7 @@ pub struct NamedToken<'a> {
     pub optional: bool,
 }
 
+#[allow(dead_code)]
 impl<'a> NamedToken<'a> {
     pub fn new(annots: Vec<Annotation<'a>>, name: &'a str, not: bool, token_type: TokenType<'a>, optional: bool) -> NamedToken<'a> {
         NamedToken {
@@ -301,15 +317,12 @@ pub struct Quoted<'a> {
     pub string: &'a str,
 }
 
+#[allow(dead_code)]
 impl<'a> Quoted<'a> {
     pub fn new(string: &'a str) -> Quoted<'a> {
         Quoted {
             string
         }
-    }
-
-    pub fn as_annot_arg_val(self) -> AnnotArgVal<'a> {
-        AnnotArgVal::QuotedItem(self)
     }
 
     pub fn as_token_type(self) -> TokenType<'a> {
@@ -318,6 +331,10 @@ impl<'a> Quoted<'a> {
 
     pub fn as_func_arg(self) -> FuncArg<'a> {
         FuncArg::QuotedItem(self)
+    }
+
+    pub fn as_annot_arg_val(self) -> AnnotArgVal<'a> {
+        AnnotArgVal::QuotedItem(self)
     }
 }
 
@@ -329,6 +346,7 @@ pub struct SimpleToken<'a> {
     pub optional: bool,
 }
 
+#[allow(dead_code)]
 impl<'a> SimpleToken<'a> {
     pub fn new(annots: Vec<Annotation<'a>>, not: bool, token_type: TokenType<'a>, optional: bool) -> SimpleToken<'a> {
         SimpleToken {
@@ -349,6 +367,7 @@ pub struct Source<'a> {
     pub items: Vec<SourceItem<'a>>,
 }
 
+#[allow(dead_code)]
 impl<'a> Source<'a> {
     pub fn new(items: Vec<SourceItem<'a>>) -> Source<'a> {
         Source {
@@ -365,6 +384,7 @@ pub struct TokenGroup<'a> {
     pub token_list: Vec<Token<'a>>,
 }
 
+#[allow(dead_code)]
 impl<'a> TokenGroup<'a> {
     pub fn new(annots: Vec<Annotation<'a>>, not: bool, token_list: Vec<Token<'a>>, optional: bool) -> TokenGroup<'a> {
         TokenGroup {
@@ -381,6 +401,7 @@ impl<'a> TokenGroup<'a> {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum AnnotArgVal<'a> {
     QuotedItem(Quoted<'a>),
     IdentItem(Ident<'a>),
@@ -402,6 +423,7 @@ impl<'a> AnnotArgVal<'a> {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum AstItem<'a> {
     AstDefItem(AstDef<'a>),
     AstRefItem(AstRef<'a>),
@@ -418,6 +440,7 @@ impl<'a> AstItem<'a> {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum FuncArg<'a> {
     QuotedItem(Quoted<'a>),
 }
@@ -429,6 +452,7 @@ impl<'a> FuncArg<'a> {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum List<'a> {
     ListSingleItem(ListSingle<'a>),
     ListManyItem(ListMany<'a>),
@@ -445,6 +469,7 @@ impl<'a> List<'a> {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum SourceItem<'a> {
     AstSingleItem(AstSingle<'a>),
     AstManyItem(AstMany<'a>),
@@ -467,6 +492,7 @@ impl<'a> SourceItem<'a> {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum Token<'a> {
     NamedTokenItem(NamedToken<'a>),
     SimpleTokenItem(SimpleToken<'a>),
@@ -488,6 +514,7 @@ impl<'a> Token<'a> {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum TokenType<'a> {
     FuncTokenItem(FuncToken<'a>),
     KeyTokenItem(KeyToken<'a>),
