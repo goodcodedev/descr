@@ -110,7 +110,9 @@ impl CollectState {
     // Patterns therefore needs to be expanded
     // for it to work correctly
     pub fn get_end_regex(&self, syntax_data: &SyntaxData, begin: &CollectState) -> String {
-        if self.regexes.len() == 0 || self.only_optional {
+        // In case this is subbed, the match is moved to the sub,
+        // so need to build negative lookahead
+        if self.regexes.len() == 0 || self.only_optional || self.is_subbed {
             // Collect until first non-optional token
             // of patterns
             // Todo: This is not perfect yet as these expanded patterns themselves
@@ -160,7 +162,9 @@ impl CollectState {
             for regex in &self.regexes {
                 s = regex.add_to_string(s, true);
             }
-            s.push_str("))");
+            if self.is_subbed {
+                s.push_str("))");
+            }
             s
         }
     }
@@ -405,6 +409,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                     sub_state.regexes = collect_state.regexes.clone();
                     sub_state.captures = collect_state.captures.clone();
                     collect_state.captures.clear();
+                    sub_state.only_optional = collect_state.only_optional;
                     sub_state.is_first = false;
                     collect_state.is_subbed = true;
                     let mut sub_key = match_key.clone();

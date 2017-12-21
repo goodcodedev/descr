@@ -73,6 +73,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         typed_parts: &HashMap<&'d str, TypedPart<'d>>,
         snake_cased: &mut SnakeCased<'d>,
     ) {
+        let mut current_members = HashSet::new();
         for part in &rule.parts {
             if let Some((member_key, part_key, is_tag)) = match &part.token {
                 &AstRuleToken::Key(key) => {
@@ -109,6 +110,10 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
                 },
                 &AstRuleToken::Group(..) => None
             } {
+                if current_members.contains(member_key) {
+                    panic!("Several parts resolve to the same member key: {}, in {}", member_key, rule.ast_type);
+                }
+                current_members.insert(member_key);
                 Self::reg_struct_member(
                     struct_data,
                     rule.ast_type,
