@@ -1,1 +1,8 @@
-Test(key1:"First" key2:"Second")
+Source {
+    IfElse("if" Expr "else" Expr "end")
+}
+
+Expr {
+    IntConst(int),
+    Quote(string)
+}

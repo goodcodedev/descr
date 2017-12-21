@@ -57,14 +57,23 @@ impl PartRegex {
 
 #[derive(Debug, Clone)]
 pub struct CollectState {
+    // Sub patterns
     pub patterns: Vec<String>,
+    // Regex captures with syntax type name
     pub captures: Vec<String>,
     pub regexes: Vec<PartRegex>,
     pub is_first: bool,
+    pub is_last: bool,
     pub is_end: bool,
-    // Perhaps better described as
+    // If this is branched into a sub.
+    // In this case, the match is continued,
+    // and regex from here should be lookahead
+    pub is_subbed: bool,
+    // Perhaps better defined as
     // non determinant among
     // it's branches
+    // In those cases, the match is expanded
+    // to include child match match
     pub only_optional: bool,
     pub parent_refs: Vec<String>
 }
@@ -75,7 +84,9 @@ impl CollectState {
             captures: Vec::new(),
             regexes: Vec::with_capacity(4),
             is_first: !is_end,
+            is_last: false,
             is_end,
+            is_subbed: false,
             only_optional: true,
             parent_refs: Vec::new()
         }
@@ -99,9 +110,12 @@ impl CollectState {
     // Patterns therefore needs to be expanded
     // for it to work correctly
     pub fn get_end_regex(&self, syntax_data: &SyntaxData, begin: &CollectState) -> String {
-        if self.regexes.len() == 0 {
+        if self.regexes.len() == 0 || self.only_optional {
             // Collect until first non-optional token
             // of patterns
+            // Todo: This is not perfect yet as these expanded patterns themselves
+            // might be expanded (I think). Some recursion should be used.
+            // let is_only_optional = self.regexes.len() > 0;
             let expanded_patterns = syntax_data.expand_pattern_list(&begin.patterns);
             let mut is_first = true;
             let mut s = String::with_capacity(10);
@@ -129,10 +143,25 @@ impl CollectState {
                     }
                 }
             }
+            // There might be optional regexes with captures
+            if !self.is_subbed {
+                for regex in &self.regexes {
+                    s = regex.add_to_string(s, true);
+                }
+            }
             s.push_str("))");
             s
         } else {
-            self.get_regex()
+            let mut s = String::with_capacity(self.regexes.len() * 4);
+            if self.is_subbed {
+                // If this is branched into a sub, use negative lookahead
+                s.push_str("(?!(?:");
+            }
+            for regex in &self.regexes {
+                s = regex.add_to_string(s, true);
+            }
+            s.push_str("))");
+            s
         }
     }
 
@@ -171,7 +200,8 @@ impl CollectState {
 
 pub enum CollectPartReturn {
     Continue,
-    CollectEnd
+    CollectEnd,
+    CollectSub
 }
 
 impl<'a: 's, 's> AstPartsRule<'a> {
@@ -183,11 +213,50 @@ impl<'a: 's, 's> AstPartsRule<'a> {
         }
     }
 
+    fn add_parent_entry(&self, key: &str,
+                        state: &mut CollectState, 
+                        syntax_data: &mut SyntaxData,
+                        data: &LangData<'a>)
+    {
+        match data.resolve(key) {
+            ResolvedType::ResolvedEnum(key) => {
+                let enum_data = data.ast_enums.get(key).unwrap();
+                for item in &enum_data.items {
+                    syntax_data.add_parent_entry(self.ast_type, item);
+                    state.parent_refs.push(String::from(*item));
+                }
+            },
+            ResolvedType::ResolvedStruct(key) => {
+                syntax_data.add_parent_entry(self.ast_type, key);
+                state.parent_refs.push(String::from(key.to_string()));
+            }
+        }
+    }
+
+    fn add_patterns(&self, key: &str,
+                    state: &mut CollectState, 
+                    syntax_data: &mut SyntaxData,
+                    data: &LangData<'a>)
+    {
+        match data.resolve(key) {
+            ResolvedType::ResolvedEnum(key) => {
+                let enum_data = data.ast_enums.get(key).unwrap();
+                for item in &enum_data.items {
+                    state.patterns.push(String::from(*item));
+                }
+            },
+            ResolvedType::ResolvedStruct(key) => {
+                state.patterns.push(String::from(key));
+            }
+        }
+    }
+
     pub fn collect_part_syntax(&self, part: &AstRulePart,
                                state: &mut CollectState, 
                                syntax_data: &mut SyntaxData,
                                data: &LangData<'a>) -> CollectPartReturn
     {
+        // Todo: helper method
         let annot_name = match part.annots.items.get("syntax") {
             Some(ref annot) => {
                 match annot.args.get("name") {
@@ -212,66 +281,50 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                         // If already at end, transform
                         // to <Key>2 by setting end to [^\s]
                         // and using accum as begin
-                        match data.resolve(key) {
-                            ResolvedType::ResolvedEnum(key) => {
-                                let enum_data = data.ast_enums.get(key).unwrap();
-                                for item in &enum_data.items {
-                                    if state.is_first {
-                                        syntax_data.add_parent_entry(self.ast_type, item);
-                                        state.parent_refs.push(String::from(*item));
-                                    } else {
-                                        state.patterns.push(String::from(*item));
-                                    }
-                                }
-                            },
-                            ResolvedType::ResolvedStruct(key) => {
-                                if state.is_first {
-                                    syntax_data.add_parent_entry(self.ast_type, key);
-                                    state.parent_refs.push(String::from(key.to_string()));
-                                } else {
-                                    state.patterns.push(String::from(key));
-                                }
-                            }
-                        }
-                        if !state.is_first && state.is_end {
+                        if state.is_first {
+                            self.add_parent_entry(key, state, syntax_data, data);
+                        } else if state.is_end {
                             // Todo, branch to "next level" entry,
                             // name_2.., which continues collecting
                             // regexes, and is included at this level
-                            panic!("second level regex todo");
-                        } else if !state.is_first {
+                            // Rather, this elements end should be
+                            // prepended to a child element which is
+                            // this part, and this child elements
+                            // end should be used here, when it's
+                            // not optional.
+                            // For now, we can add to parent ref
+                            // which will work sometimes when this
+                            // is last element
+                            if state.is_last {
+                                // If this is last part, just add as parent entry
+                                self.add_parent_entry(key, state, syntax_data, data);
+                            } else {
+                                // Use currently collected regexes as
+                                // lookaheads in this "end" matcher, then as begin
+                                // match for a child part where this entry is.
+                                return CollectPartReturn::CollectSub;
+                            }
+                        } else {
+                            self.add_patterns(key, state, syntax_data, data);
                             // Switch to end "mode"
                             return CollectPartReturn::CollectEnd;
                         }
                     },
                     &TypedPart::ListPart{key} => {
-                        // Add references to list items
-                        match data.resolve(key) {
-                            ResolvedType::ResolvedEnum(key) => {
-                                let enum_data = data.ast_enums.get(key).unwrap();
-                                for item in &enum_data.items {
-                                    if state.is_first {
-                                        syntax_data.add_parent_entry(self.ast_type, item);
-                                        state.parent_refs.push(String::from(*item));
-                                    } else {
-                                        state.patterns.push(String::from(*item));
-                                    }
-                                }
-                            },
-                            ResolvedType::ResolvedStruct(key) => {
-                                if state.is_first {
-                                    syntax_data.add_parent_entry(self.ast_type, key);
-                                    state.parent_refs.push(String::from(key.to_string()));
-                                } else {
-                                    state.patterns.push(String::from(key));
-                                }
+                        if state.is_first {
+                            self.add_parent_entry(key, state, syntax_data, data);
+                        } else if state.is_end {
+                            if state.is_last {
+                                // If this is last part, just add as parent entry
+                                self.add_parent_entry(key, state, syntax_data, data);
+                            } else {
+                                // Use currently collected regexes as
+                                // lookaheads in this "end" matcher, then as begin
+                                // match for a child part where this entry is.
+                                return CollectPartReturn::CollectSub;
                             }
-                        }
-                        if !state.is_first && state.is_end {
-                            // Todo, branch to "next level" entry,
-                            // name_2.., which continues collecting
-                            // regexes, and is included at this level
-                            panic!("second level regex todo");
-                        } else if !state.is_first {
+                        } else {
+                            self.add_patterns(key, state, syntax_data, data);
                             // Switch to end "mode"
                             return CollectPartReturn::CollectEnd;
                         }
@@ -315,10 +368,23 @@ impl<'a: 's, 's> AstPartsRule<'a> {
         CollectPartReturn::Continue
     }
 
-    pub fn add_syntax_entries(&self, mut syntax_data: &mut SyntaxData, data: &LangData<'a>) {
-        let mut collect_state = CollectState::new(false);
+    pub fn add_syntax_entries(&self,
+                              mut syntax_data: &mut SyntaxData, 
+                              data: &LangData<'a>,
+                              match_key: String,
+                              from_index: usize,
+                              from_state: Option<CollectState>)
+    {
+        let mut collect_state = match from_state {
+            Some(s) => s,
+            _ => CollectState::new(false)
+        };
         let mut collect_state_begin = None;
-        for part in &self.parts {
+        let parts_len = self.parts.len();
+        for (i, part) in self.parts[from_index..].iter().enumerate() {
+            if i == parts_len - 1 {
+                collect_state.is_last = true;
+            }
             match self.collect_part_syntax(part, &mut collect_state, &mut syntax_data, data) {
                 CollectPartReturn::CollectEnd => {
                     if collect_state.is_first {
@@ -333,13 +399,30 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                     if collect_state.is_first {
                         collect_state.is_first = false;
                     }
+                },
+                CollectPartReturn::CollectSub => {
+                    let mut sub_state = CollectState::new(false);
+                    sub_state.regexes = collect_state.regexes.clone();
+                    sub_state.captures = collect_state.captures.clone();
+                    collect_state.captures.clear();
+                    sub_state.is_first = false;
+                    collect_state.is_subbed = true;
+                    let mut sub_key = match_key.clone();
+                    sub_key.push_str("_sub");
+                    println!("Adding {}", sub_key);
+                    if let Some(ref mut begin) = collect_state_begin {
+                        begin.patterns.push(sub_key.clone());
+                    }
+                    // Branch to sub, then break
+                    self.add_syntax_entries(&mut syntax_data, data, sub_key, i, Some(sub_state));
+                    break;
                 }
             }
         }
         if let Some(collect_begin) = collect_state_begin {
             // Begin end entry
             syntax_data.entries.insert(
-                self.ast_type.to_string(),
+                match_key,
                 SyntaxEntry::BeginEnd {
                     begin: collect_begin,
                     end: collect_state
@@ -348,7 +431,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
         } else {
             // Match entry
             syntax_data.entries.insert(
-                self.ast_type.to_string(),
+                match_key,
                 SyntaxEntry::Match {
                     collect: collect_state
                 }

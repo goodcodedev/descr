@@ -219,7 +219,7 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
                         if parts_rule.ast_type != ast_data.ast_type {
                             syntax_data.add_parent_entry(ast_data.ast_type, parts_rule.ast_type);
                         }
-                        parts_rule.add_syntax_entries(&mut syntax_data, self.data);
+                        parts_rule.add_syntax_entries(&mut syntax_data, self.data, parts_rule.ast_type.to_string(), 0, None);
                     }
                 }
             }
@@ -242,7 +242,7 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
                                 syntax_data.add_parent_entry(ast_key, parts_rule.ast_type);
                             }
                         }
-                        parts_rule.add_syntax_entries(&mut syntax_data, self.data);
+                        parts_rule.add_syntax_entries(&mut syntax_data, self.data, parts_rule.ast_type.to_string(), 0, None);
                     }
                 }
             }
@@ -402,6 +402,12 @@ impl<'a, 'd: 'a> CodegenSyntax<'a, 'd> {
                         replacements
                     },
                     &SyntaxEntry::BeginEnd{ref begin, ref end} => {
+                        // Todo: handle end is only_optional
+                        // Could possibly be done by excluding
+                        // matches that would match a child,
+                        // negative lookahead combined with
+                        // added non-space character after
+                        // optional matches
                         if begin.only_optional {
                             // Expand this match to include each of
                             // it's patterns.
