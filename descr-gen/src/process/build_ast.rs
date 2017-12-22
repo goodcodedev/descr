@@ -68,151 +68,34 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
     }
 
     fn process_parts_rule(
-        rule: &AstPartsRule<'d>,
+        rule: &'a AstPartsRule<'d>,
         struct_data: &mut HashMap<&'d str, AstStruct<'d>>,
         typed_parts: &HashMap<&'d str, TypedPart<'d>>,
         snake_cased: &mut SnakeCased<'d>,
     ) {
         let mut current_members = HashSet::new();
+        let mut list = Vec::new();
         for part in &rule.parts {
-            if let Some((member_key, part_key, is_tag)) = match &part.token {
-                &AstRuleToken::Key(key) => {
-                    let typed_part = typed_parts.get(key).unwrap();
-                    if typed_part.is_auto_member() {
-                        Some((part.member_key.unwrap_or(key), key, false))
-                    } else {
-                        match typed_part {
-                            &TypedPart::CharPart { .. }
-                            | &TypedPart::FnPart { .. }
-                            | &TypedPart::WSPart { .. } => {
-                                // Count as member if
-                                // member key is given
-                                part.member_key.map(|member_key| {
-                                    (member_key, key, false)
-                                })
-                            },
-                            &TypedPart::TagPart { .. } => {
-                                // This might be handled
-                                // in AstRuleToken::Tag now
-                                part.member_key.map(|member_key| {
-                                    (member_key, key, true)
-                                })
-                            }
-                            _ => None
-                        }
-                    }
-                },
-                &AstRuleToken::Tag(string) => {
-                    part.member_key.map(|member_key| { (member_key, string, true) })
-                },
-                &AstRuleToken::Func(..) => {
-                    part.member_key.map(|member_key| { (member_key, "", false) })
-                },
-                &AstRuleToken::Group(..) => None
-            } {
-                if current_members.contains(member_key) {
-                    panic!("Several parts resolve to the same member key: {}, in {}", member_key, rule.ast_type);
+            list = part.collect_ast_member_data(Vec::new(), false, typed_parts);
+            for mdata in &list {
+                if current_members.contains(mdata.member_name) {
+                    panic!("Several parts resolve to the same member key: {}, in {}",
+                            mdata.member_name, 
+                            rule.ast_type);
                 }
-                current_members.insert(member_key);
+                current_members.insert(mdata.member_name);
                 Self::reg_struct_member(
                     struct_data,
                     rule.ast_type,
-                    member_key,
-                    part_key,
-                    part.optional,
-                    part.not,
-                    is_tag,
+                    mdata.member_name,
+                    mdata.part_key,
+                    mdata.optional,
+                    mdata.not,
+                    mdata.tag,
                     snake_cased,
                 );
             }
-            /*
-            match &part.token {
-                &AstRuleToken::Key(key) => {
-                    use lang_data::typed_part::TypedPart::*;
-                    match typed_parts.get(key).unwrap() {
-                        &AstPart { .. }
-                        | &ListPart { .. }
-                        | &IntPart { .. }
-                        | &StringPart { .. }
-                        | &IdentPart { .. } => {
-                            // Count as member by default
-                            let member_key = part.member_key.unwrap_or(key);
-                            Self::reg_struct_member(
-                                struct_data,
-                                rule.ast_type,
-                                member_key,
-                                key,
-                                part.optional,
-                                part.not,
-                                false,
-                                snake_cased,
-                            );
-                        }
-                        &CharPart { .. } | &FnPart { .. } | &WSPart => {
-                            // Count as member if member name is given
-                            if let Some(member_key) = part.member_key {
-                                Self::reg_struct_member(
-                                    struct_data,
-                                    rule.ast_type,
-                                    member_key,
-                                    key,
-                                    part.optional,
-                                    part.not,
-                                    false,
-                                    snake_cased,
-                                );
-                            }
-                        }
-                        &TagPart { .. } => {
-                            // I think this is handled below in AstRuleToken::Tag.
-                            // Need big cleanup..
-                            // Count as member if member name is given
-                            if let Some(member_key) = part.member_key {
-                                Self::reg_struct_member(
-                                    struct_data,
-                                    rule.ast_type,
-                                    member_key,
-                                    key,
-                                    part.optional,
-                                    part.not,
-                                    true,
-                                    snake_cased,
-                                );
-                            }
-                        }
-                    }
-                }
-                &AstRuleToken::Tag(string) => {
-                    // Count as member if member name is given
-                    if let Some(member_key) = part.member_key {
-                        Self::reg_struct_member(
-                            struct_data,
-                            rule.ast_type,
-                            member_key,
-                            string,
-                            part.optional,
-                            part.not,
-                            true,
-                            snake_cased,
-                        );
-                    }
-                }
-                &AstRuleToken::Func(..) => {
-                    if let Some(member_key) = part.member_key {
-                        Self::reg_struct_member(
-                            struct_data,
-                            rule.ast_type,
-                            member_key,
-                            "",
-                            part.optional,
-                            part.not,
-                            false,
-                            snake_cased,
-                        );
-                    }
-                }
-            }
-            */
+            list.clear();
         }
     }
 

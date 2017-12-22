@@ -4,6 +4,7 @@ use lang_data::ast::RuleType;
 use lang_data::ast::AstStruct;
 use lang_data::annotations::*;
 use descr_lang::gen::ast::*;
+use std::collections::HashMap;
 use process::codegen_syntax::{SyntaxData, SyntaxEntry};
 
 /// Parser "rule"
@@ -365,8 +366,14 @@ impl<'a: 's, 's> AstPartsRule<'a> {
             &AstRuleToken::Func(ident, ..) => {
                 panic!("Fn not implemented: {}", ident);
             },
-            &AstRuleToken::Group(..) => {
+            &AstRuleToken::Group(ref _parts) => {
+                /*
+                for part in parts {
+                    match self.collect_part_syntax(part, collect_state, syntax_data, data) {
 
+                    }
+                }
+                */
             }
         } 
         CollectPartReturn::Continue
@@ -414,7 +421,6 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                     collect_state.is_subbed = true;
                     let mut sub_key = match_key.clone();
                     sub_key.push_str("_sub");
-                    println!("Adding {}", sub_key);
                     if let Some(ref mut begin) = collect_state_begin {
                         begin.patterns.push(sub_key.clone());
                     }
@@ -502,12 +508,202 @@ pub enum RuleFuncArg<'a> {
     Quoted(&'a str),
 }
 
+pub struct AstRulePartMemberData<'a> {
+    pub member_name: &'a str,
+    pub part_key: &'a str,
+    pub optional: bool,
+    pub not: bool,
+    pub tag: bool
+}
+
+pub struct GenParserData {
+    group_num: u32,
+    group_stack: Vec<String>,
+    // Member name, (Group name, Ref)
+    member_map: HashMap<String, (String, String)>,
+    opt_group: bool
+}
+impl GenParserData {
+    pub fn new() -> GenParserData {
+        GenParserData {
+            group_num: 1,
+            group_stack: Vec::new(),
+            member_map: HashMap::new(),
+            opt_group: false
+        }
+    }
+
+    pub fn push_group(&mut self) -> String {
+        let mut group_name = "group_".to_string();
+        group_name.push_str(&self.group_num.to_string());
+        self.group_stack.push(group_name.clone());
+        self.group_num += 1;
+        group_name
+    }
+
+    pub fn pop_group(&mut self) {
+        let _ = self.group_stack.pop();
+    }
+}
+
 impl<'a, 'b> AstRulePart<'a> {
-    pub fn gen_part_parser(&self, mut s: String, data: &'b LangData<'a>) -> String {
+    pub fn collect_ast_member_data(&self,
+                                   mut list: Vec<AstRulePartMemberData<'a>>, 
+                                   parent_opt: bool,
+                                   typed_parts: &HashMap<&'a str, TypedPart<'a>>)
+                                   -> Vec<AstRulePartMemberData<'a>> 
+        {
+        match &self.token {
+            &AstRuleToken::Key(key) => {
+                let typed_part = typed_parts.get(key).unwrap();
+                if typed_part.is_auto_member() {
+                    list.push(AstRulePartMemberData {
+                        member_name: self.member_key.unwrap_or(key),
+                        part_key: key,
+                        optional: parent_opt || self.optional,
+                        not: self.not,
+                        tag: false
+                    });
+                } else {
+                    match typed_part {
+                        &TypedPart::CharPart { .. }
+                        | &TypedPart::FnPart { .. }
+                        | &TypedPart::WSPart { .. } => {
+                            // Count as member if
+                            // member key is given
+                            if let Some(member_key) = self.member_key {
+                                list.push(AstRulePartMemberData {
+                                    member_name: member_key,
+                                    part_key: key,
+                                    optional: parent_opt || self.optional,
+                                    not: self.not,
+                                    tag: false
+                                });
+                            }
+                        },
+                        &TypedPart::TagPart { .. } => {
+                            // This might be handled
+                            // in AstRuleToken::Tag now
+                            if let Some(member_key) = self.member_key {
+                                list.push(AstRulePartMemberData {
+                                    member_name: member_key,
+                                    part_key: key,
+                                    optional: parent_opt || self.optional,
+                                    not: self.not,
+                                    tag: true
+                                });
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            },
+            &AstRuleToken::Tag(string) => {
+                if let Some(member_key) = self.member_key {
+                    list.push(AstRulePartMemberData {
+                        member_name: member_key,
+                        part_key: string,
+                        optional: parent_opt || self.optional,
+                        not: self.not,
+                        tag: true
+                    });
+                }
+            },
+            &AstRuleToken::Func(..) => {
+                if let Some(member_key) = self.member_key {
+                    list.push(AstRulePartMemberData {
+                        member_name: member_key,
+                        part_key: "",
+                        optional: parent_opt || self.optional,
+                        not: self.not,
+                        tag: false
+                    });
+                }
+            },
+            &AstRuleToken::Group(ref group_parts) => {
+                if self.not {
+                    if let Some(member_name) = self.member_key {
+                        list.push(AstRulePartMemberData {
+                            member_name,
+                            part_key: "",
+                            optional: parent_opt || self.optional,
+                            not: true,
+                            tag: false
+                        });
+                    }
+                } else {
+                    for group_part in group_parts {
+                        list = group_part.collect_ast_member_data(list, parent_opt || self.optional, typed_parts);
+                    }
+                }
+            }
+        }
+        list
+    }
+
+    pub fn gen_part_parser(&self, mut s: String, data: &'b LangData<'a>, gen_data: &'b mut GenParserData) -> String {
         if let &AstRuleToken::Group(ref parts) = &self.token {
-            // Just forward to parts for now
-            for part in parts {
-                s = part.gen_part_parser(s, data);
+            if self.not {
+                if let Some(member_name) = self.member_key {
+                    append!(s, data.sc(member_name) "_k: ");
+                }
+                append!(s, "until_done_result!(do_parse!(");
+                for part in parts {
+                    s = part.gen_part_parser(s, data, gen_data);
+                }
+                append!(s, "))");
+            } else if self.optional {
+                // Collect member names
+                let mut member_names = Vec::new();
+                for part in parts {
+                    if let Some(member_name) = part.member_key {
+                        member_names.push(member_name);
+                    }
+                }
+                let num_members = member_names.len();
+                indent!(s 2);
+                let group_name = if num_members > 0 {
+                    let group_name = gen_data.push_group();
+                    gen_data.opt_group = true;
+                    append!(s, &group_name ": ");
+                    Some(group_name)
+                } else {
+                    None
+                };
+                append!(s, "opt!(do_parse!(\n");
+                for part in parts {
+                    s = part.gen_part_parser(s, data, gen_data);
+                }
+                if num_members > 0 {
+                    append!(s 3, "(");
+                    let is_tuple = if num_members > 1 { true } else { false };
+                    if is_tuple {
+                        // Make tuple
+                        s += "(";
+                    }
+                    for (i, member_name) in member_names.iter().enumerate() {
+                        append!(s, member_name "_k");
+                        if i < num_members - 1 {
+                            s += ", ";
+                        }
+                        let mut member_ref = group_name.clone().unwrap();
+                        if is_tuple {
+                            let it_string = i.to_string();
+                            append!(member_ref, "." it_string.as_ref());
+                        }
+                        gen_data.member_map.insert(String::from(*member_name), (group_name.clone().unwrap(), member_ref));
+                    }
+                    if is_tuple {
+                        s += ")";
+                    }
+                    s += ")";
+                }
+                append!(s, ")) >>\n");
+            } else {
+                // Just forward to parts for now
+                for part in parts {
+                    s = part.gen_part_parser(s, data, gen_data);
+                }
             }
             s
         } else {
@@ -523,10 +719,10 @@ impl<'a, 'b> AstRulePart<'a> {
             }
             if self.optional {
                 append!(s, "opt!(do_parse!(sp >> res: ");
-                s = self.gen_parser(s, data);
+                s = self.gen_parser(s, data, gen_data);
                 s += " >> (res)))";
             } else {
-                s = self.gen_parser(s, data);
+                s = self.gen_parser(s, data, gen_data);
             }
             if self.not {
                 s += ")";
@@ -535,7 +731,7 @@ impl<'a, 'b> AstRulePart<'a> {
             s
         }
     }
-    pub fn gen_parser(&self, mut s: String, data: &'b LangData<'a>) -> String {
+    pub fn gen_parser(&self, mut s: String, data: &'b LangData<'a>, gen_data: &'b mut GenParserData) -> String {
         match &self.token {
             &AstRuleToken::Key(key) => data.typed_parts.get(key).unwrap().gen_parser(s, data),
             &AstRuleToken::Tag(string) => {
@@ -573,18 +769,22 @@ impl<'a, 'b> AstRulePart<'a> {
             &AstRuleToken::Group(ref parts) => {
                 // Just forward to parts for now
                 for part in parts {
-                    s = part.gen_part_parser(s, data);
+                    s = part.gen_part_parser(s, data, gen_data);
                 }
                 s
             }
         }
     }
 
-    pub fn gen_parser_struct_assign(&self, mut s: String, struct_data: Option<&AstStruct<'a>>, data: &'b LangData<'a>) -> String {
+    pub fn gen_parser_struct_assign(&self,
+                                    mut s: String, 
+                                    struct_data: Option<&AstStruct<'a>>, 
+                                    data: &'b LangData<'a>, 
+                                    gen_data: &'b mut GenParserData) -> String {
         if let &AstRuleToken::Group(ref parts) = &self.token {
             // Just forward to parts for now
             for part in parts {
-                s = part.gen_parser_struct_assign(s, struct_data, data);
+                s = part.gen_parser_struct_assign(s, struct_data, data, gen_data);
             }
         } else if let Some(member_key) = self.member_key {
             let is_boxed = match struct_data {
@@ -594,32 +794,51 @@ impl<'a, 'b> AstRulePart<'a> {
                 _ => false,
             };
             append!(s 3, data.sc(member_key) ": ");
+            // Check if there is a member ref from grouped
+            let (member_ref, group_key, opt_group) = if let Some(ref member_mapped) = gen_data.member_map.get(member_key) {
+                (
+                    String::from(member_mapped.1.as_ref()),
+                    Some(String::from(member_mapped.0.as_ref())),
+                    gen_data.opt_group
+                )
+            } else {
+                let mut member_ref = String::from(self.member_key.unwrap());
+                member_ref.push_str("_k");
+                (member_ref, None, false)
+            };
             if is_boxed {
                 s += "Box::new(";
+            }
+            if let Some(ref group_key) = group_key {
+                if opt_group {
+                    append!(s, group_key.as_ref() ".map(|" group_key.as_ref() "| { ");
+                }
             }
             if self.not {
                 // Not is collected as str
                 s += "std::str::from_utf8(";
-                s += self.member_key.unwrap();
-                s += "_k).unwrap()";
+                s += &member_ref;
+                s += ").unwrap()";
             } else {
                 match &self.token {
                     &AstRuleToken::Key(key) => {
-                        s = data.typed_parts.get(key).unwrap().gen_parser_val(s, self, data)
+                        s = data.typed_parts.get(key).unwrap().gen_parser_val(s, self, data, member_ref)
                     },
                     &AstRuleToken::Tag(..) => {
                         if self.optional {
-                            append!(s, self.member_key.unwrap() "_k.is_some()");
+                            append!(s, &member_ref ".is_some()");
                         } else {
                             s += "true";
                         }
                     }
                     &AstRuleToken::Func(..) => {
-                        s += self.member_key.unwrap();
-                        s += "_k";
+                        s += &member_ref;
                     },
                     &AstRuleToken::Group(..) => {}
                 }
+            }
+            if opt_group {
+                s += " })";
             }
             if is_boxed {
                 s += ")";
@@ -629,7 +848,7 @@ impl<'a, 'b> AstRulePart<'a> {
         s
     }
 
-    pub fn add_to_source(&self, mut s: String, data: &LangData<'a>) -> String {
+    pub fn add_to_source(&self, mut s: String, data: &LangData<'a>, parent_opt: bool) -> String {
         if self.not {
             if let Some(member_key) = self.member_key {
                 if self.optional {
@@ -646,11 +865,11 @@ impl<'a, 'b> AstRulePart<'a> {
                                                     .add_to_source(
                                                         s, 
                                                         self.member_key, 
-                                                        self.optional,
+                                                        self.optional || parent_opt,
                                                         data
                                                     ),
                 &AstRuleToken::Tag(quoted) => {
-                    if self.optional {
+                    if self.optional || parent_opt {
                         if let Some(member_key) = self.member_key {
                             append!(s 2, "if node." data.sc(member_key) " { s += \"" quoted "\"; }\n");
                         }
@@ -663,9 +882,33 @@ impl<'a, 'b> AstRulePart<'a> {
                     //panic!("func to source todo");
                 },
                 &AstRuleToken::Group(ref parts) => {
-                    // Just forward to parts for now
-                    for part in parts {
-                        s = part.add_to_source(s, data);
+                    if self.optional {
+                        // Check member keys for is_some()
+                        let member_key_parts = parts.iter()
+                                                    .filter(|p| p.member_key.is_some())
+                                                    .collect::<Vec<_>>();
+                        let mlen = member_key_parts.len();
+                        if mlen > 0 {
+                            append!(s 2, "if ");
+                            for (i, part) in member_key_parts.iter().enumerate() {
+                                if let Some(member_key) = part.member_key {
+                                    append!(s, "node." member_key ".is_some()");
+                                    if i < mlen - 1 {
+                                        s += ", ";
+                                    }
+                                }
+                            }
+                            append!(s, " {\n");
+                            for part in parts {
+                                s = part.add_to_source(s, data, true);
+                            }
+                            append!(s 2, "}\n");
+                        }
+                    } else {
+                        // Just forward to parts for now
+                        for part in parts {
+                            s = part.add_to_source(s, data, parent_opt);
+                        }
                     }
                 }
             }
@@ -696,6 +939,7 @@ impl<'a> AstRule<'a> {
             &ResolvedType::ResolvedEnum(key) => (None, data.ast_enums.get(key)),
             &ResolvedType::ResolvedStruct(key) => (data.ast_structs.get(key), None),
         };
+        let mut gen_data = GenParserData::new();
         match self {
             &AstRule::RefRule(rule_ref) => {
                 // When is_many, an enum is assumed generated for
@@ -720,7 +964,7 @@ impl<'a> AstRule<'a> {
             &AstRule::PartsRule(ref parts_rule) => {
                 s += "do_parse!(\n";
                 for part in &parts_rule.parts {
-                    s = part.gen_part_parser(s, data);
+                    s = part.gen_part_parser(s, data, &mut gen_data);
                 }
                 s += "        (";
                 // There could also be "simple enum" here
@@ -757,7 +1001,7 @@ impl<'a> AstRule<'a> {
                     s += "        ))";
                 } else {
                     for part in &parts_rule.parts {
-                        s = part.gen_parser_struct_assign(s, struct_data, data);
+                        s = part.gen_parser_struct_assign(s, struct_data, data, &mut gen_data);
                     }
                     if is_many {
                         s += "        })))";

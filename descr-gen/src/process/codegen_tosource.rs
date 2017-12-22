@@ -66,7 +66,7 @@ impl<'a, 'd> CodegenToSource<'a, 'd> {
                 // members at least
                 for part in &rule.parts {
                     s += "        s += \" \";\n";
-                    s = part.add_to_source(s, self.data);
+                    s = part.add_to_source(s, self.data, false);
                 }
             }
             s += "        s\n";
@@ -89,7 +89,7 @@ impl<'a, 'd> CodegenToSource<'a, 'd> {
                     for rule in rules {
                         for part in &rule.parts {
                             s += "s += \" \";\n";
-                            s = part.add_to_source(s, self.data);
+                            s = part.add_to_source(s, self.data, false);
                         }
                     }
                     append!(s 3, "},\n");

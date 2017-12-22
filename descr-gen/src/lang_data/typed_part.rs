@@ -94,16 +94,16 @@ impl<'a> TypedPart<'a> {
         s
     }
 
-    pub fn gen_parser_val(&self, mut s: String, part: &'a AstRulePart, data: &LangData) -> String {
+    pub fn gen_parser_val(&self, mut s: String, part: &'a AstRulePart, data: &LangData, member_ref: String) -> String {
         use lang_data::typed_part::TypedPart::*;
         let member_key = data.sc(part.member_key.unwrap());
         match self {
             &AstPart { .. } | &ListPart { .. } => {
-                append!(s, member_key "_k");
+                append!(s, member_ref.as_ref());
             }
             &CharPart { .. } => {
                 if part.optional {
-                    append!(s, member_key "_k.is_some()");
+                    append!(s, member_ref.as_ref() ".is_some()");
                 } else {
                     // Not sure if it would make
                     // sense to store char.
@@ -114,26 +114,26 @@ impl<'a> TypedPart<'a> {
             }
             &TagPart { .. } => {
                 if part.optional {
-                    append!(s, member_key "_k.is_some()");
+                    append!(s, member_ref.as_ref() ".is_some()");
                 }
             }
             &IntPart { .. } => {
-                append!(s, member_key "_k");
+                append!(s, member_ref.as_ref());
             }
             &IdentPart { .. } => {
-                append!(s, member_key "_k");
+                append!(s, member_ref.as_ref());
             }
             &FnPart { .. } => {
-                append!(s, member_key "_k");
+                append!(s, member_ref.as_ref());
             }
             &StringPart { .. } => {
-                append!(s, "String::from(" member_key "_k)");
+                append!(s, "String::from(" member_ref.as_ref() ")");
             }
             &StrPart { .. } => {
-                append!(s, member_key "_k");
+                append!(s, member_ref.as_ref());
             }
             &WSPart => {
-                append!(s, member_key "_k");
+                append!(s, member_ref.as_ref());
             }
         }
         s
