@@ -19,41 +19,86 @@ pub struct AstPartsRule<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct PartRegex {
-    pub regex: String,
-    pub not: bool,
-    pub optional: bool,
-    pub capture: bool,
-    pub capture_name: Option<String>
+pub enum PartRegex {
+    Regex {
+        regex: String,
+        not: bool,
+        optional: bool,
+        capture: bool,
+        capture_name: Option<String>,
+        in_group: bool
+    },
+    OptStart,
+    OptEnd,
+    NotStart,
+    NotEnd
 }
 impl PartRegex {
+    pub fn in_group(&self) -> bool {
+        match self {
+            &PartRegex::OptStart |
+            &PartRegex::OptEnd |
+            &PartRegex::NotStart |
+            &PartRegex::NotEnd => {
+                true
+            },
+            &PartRegex::Regex{
+                in_group,
+                ..
+            } => {
+                in_group
+            }
+        }
+    }
+
     pub fn add_to_string(&self, mut s: String, add_captures: bool) -> String {
-        if !self.not {
-            s.push_str("\\s*");
-        }
-        if add_captures && self.capture {
-            s.push('(');
-        }
-        if self.optional {
-            s.push_str("(?:");
-        }
-        if self.not {
-            // Non capture "(?:", negative lookahead "(?!"
-            s.push_str("(?:(?!");
-        }
-        s.push_str(&self.regex);
-        if self.not {
-            // Any char, zero or more times
-            s.push_str(").)*");
-        }
-        if self.optional {
-            s.push_str(")?");
-        }
-        if add_captures && self.capture {
-            s.push(')');
+        // Group opt/not starts and ends
+        match self {
+            &PartRegex::OptStart => s.push_str("(?:"),
+            &PartRegex::OptEnd => s.push_str(")?"),
+            &PartRegex::NotStart => s.push_str("(?!"),
+            &PartRegex::NotEnd => s.push_str(")"),
+            &PartRegex::Regex{
+                ref regex,
+                not,
+                optional,
+                capture,
+                ..
+            } => {
+                if !not {
+                    s.push_str("\\s*");
+                }
+                if add_captures && capture {
+                    s.push('(');
+                }
+                if optional {
+                    s.push_str("(?:");
+                }
+                if not {
+                    // Non capture "(?:", negative lookahead "(?!"
+                    s.push_str("(?:(?!");
+                }
+                s.push_str(regex);
+                if not {
+                    // Any char, zero or more times
+                    s.push_str(").)*");
+                }
+                if optional {
+                    s.push_str(")?");
+                }
+                if add_captures && capture {
+                    s.push(')');
+                }
+            }
         }
         s
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum CollectStateGroup {
+    Opt,
+    Not
 }
 
 #[derive(Debug, Clone)]
@@ -66,6 +111,7 @@ pub struct CollectState {
     pub is_first: bool,
     pub is_last: bool,
     pub is_end: bool,
+    pub group_stack: Vec<CollectStateGroup>,
     // If this is branched into a sub.
     // In this case, the match is continued,
     // and regex from here should be lookahead
@@ -87,10 +133,35 @@ impl CollectState {
             is_first: !is_end,
             is_last: false,
             is_end,
+            group_stack: Vec::new(),
             is_subbed: false,
             only_optional: true,
             parent_refs: Vec::new()
         }
+    }
+
+    pub fn close_regex_groups(&mut self) {
+        self.regexes.extend(self.group_stack.iter()
+                                            .rev()
+                                            .map(|grp| match grp {
+                                                &CollectStateGroup::Opt => PartRegex::OptEnd,
+                                                &CollectStateGroup::Not => PartRegex::NotEnd,
+                                            })
+                                            .collect::<Vec<_>>());
+    }
+
+    // Can be used if a group_stack is
+    // copied because of split in the
+    // middle of group
+    pub fn open_regex_groups(&mut self) {
+        let mut opened = self.group_stack.iter()
+                                         .map(|grp| match grp {
+                                             &CollectStateGroup::Opt => PartRegex::OptStart,
+                                             &CollectStateGroup::Not => PartRegex::NotStart,
+                                         })
+                                         .collect::<Vec<_>>();
+        opened.extend(self.regexes.clone());
+        self.regexes = opened;
     }
 
     pub fn append(&mut self, state: &CollectState) {
@@ -140,8 +211,12 @@ impl CollectState {
                     }
                     for r in &collect.regexes {
                         s = r.add_to_string(s, false);
-                        if !r.optional {
-                            break;
+                        if !r.in_group() {
+                            if let &PartRegex::Regex{optional, ..} = r {
+                                if !optional {
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
@@ -180,23 +255,24 @@ impl CollectState {
     }
 
     pub fn add_regex(&mut self, not: bool, optional: bool,
-                     regex: &str, default_name: Option<&str>)
+                     regex: &str, default_name: Option<&str>, in_group: bool)
     {
         let (capture, capture_name) = match default_name {
             Some(capture_name) => (true, Some(capture_name)),
             None => (false, None)
         };
-        let p = PartRegex {
+        let p = PartRegex::Regex {
             regex: regex.to_string(),
             not,
             optional,
             capture,
-            capture_name: capture_name.map(|n| { String::from(n) })
+            capture_name: capture_name.map(|n| { String::from(n) }),
+            in_group
         };
         if let Some(capture_name) = capture_name {
             self.captures.push(capture_name.to_string());
         }
-        if !p.optional && self.only_optional {
+        if !optional && self.only_optional {
             self.only_optional = false;
         }
         self.regexes.push(p);
@@ -207,6 +283,18 @@ pub enum CollectPartReturn {
     Continue,
     CollectEnd,
     CollectSub
+}
+
+pub enum CollectPart<'a : 'b, 'b> {
+    Part {
+        part: &'b AstRulePart<'a>,
+        opt_group: bool,
+        not_group: bool
+    },
+    OptGroupStart,
+    OptGroupEnd,
+    NotGroupStart,
+    NotGroupEnd
 }
 
 impl<'a: 's, 's> AstPartsRule<'a> {
@@ -274,6 +362,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
             },
             None => None
         };
+        let in_group = state.group_stack.len() > 0;
         match &part.token {
             &AstRuleToken::Key(key) => {
                 let typed_part = data.typed_parts.get(key).expect("Could not find part");
@@ -335,51 +424,116 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                         }
                     },
                     &TypedPart::CharPart{chr, ..} => {
-                        state.add_regex(part.not, part.optional, &to_regex(&chr.to_string()), annot_name.or(None));
+                        state.add_regex(part.not, part.optional, &to_regex(&chr.to_string()), annot_name.or(None), in_group);
                     },
                     &TypedPart::TagPart{tag, ..} => {
-                        state.add_regex(part.not, part.optional, &to_regex(tag), annot_name.or(Some("keyword.other")));
+                        state.add_regex(part.not, part.optional, &to_regex(tag), annot_name.or(Some("keyword.other")), in_group);
                     },
                     &TypedPart::IntPart{..} => {
-                        state.add_regex(part.not, part.optional, "[-\\+]?[1-9]+", annot_name.or(Some("constant.numeric")));
+                        state.add_regex(part.not, part.optional, "[-\\+]?[1-9]+", annot_name.or(Some("constant.numeric")), in_group);
                     },
                     &TypedPart::IdentPart{..} => {
-                        state.add_regex(part.not, part.optional, "[_]*[a-zA-Z][a-zA-Z0-9_]*", annot_name.or(Some("variable.other")));
+                        state.add_regex(part.not, part.optional, "[_]*[a-zA-Z][a-zA-Z0-9_]*", annot_name.or(Some("variable.other")), in_group);
                     },
                     &TypedPart::FnPart{key, ..} => {
                         panic!("Fn not implemented: {}", key);
                     },
                     &TypedPart::StringPart{..} => {
-                        state.add_regex(part.not, part.optional, "\"(?:[^\"\\\\]|\\.)*\"", annot_name.or(Some("string.quoted")));
+                        state.add_regex(part.not, part.optional, "\"(?:[^\"\\\\]|\\.)*\"", annot_name.or(Some("string.quoted")), in_group);
                     },
                     &TypedPart::StrPart{..} => {
-                        state.add_regex(part.not, part.optional, "\"(?:[^\"\\\\]|\\.)*\"", annot_name.or(Some("string.quoted")));
+                        state.add_regex(part.not, part.optional, "\"(?:[^\"\\\\]|\\.)*\"", annot_name.or(Some("string.quoted")), in_group);
                     },
                     &TypedPart::WSPart => {
-                        state.add_regex(false, false, "\\s+", None);
+                        state.add_regex(false, false, "\\s+", None, in_group);
                     },
                 }
             },
             &AstRuleToken::Tag(tag) => {
-                state.add_regex(part.not, part.optional, &to_regex(tag), annot_name.or(Some("keyword.other")));
+                state.add_regex(part.not, part.optional, &to_regex(tag), annot_name.or(Some("keyword.other")), in_group);
             },
             &AstRuleToken::Func(ident, ..) => {
                 panic!("Fn not implemented: {}", ident);
             },
             &AstRuleToken::Group(ref _parts) => {
-                /*
-                for part in parts {
-                    match self.collect_part_syntax(part, collect_state, syntax_data, data) {
-
-                    }
-                }
-                */
+                // Groups should be flattened from flatten_syntax_parts
             }
         } 
         CollectPartReturn::Continue
     }
 
+    // Creates a flat structure of parts and markers
+    // for group start and end.
+    // Group parts are flattened into the vector
+    pub fn flatten_syntax_parts<'b>(
+            mut v: Vec<CollectPart<'a, 'b>>, 
+            parts: &'b Vec<AstRulePart<'a>>, 
+            opt_group: bool, 
+            not_group: bool)
+            -> Vec<CollectPart<'a, 'b>>
+    {
+        for part in parts {
+            match &part.token {
+                &AstRuleToken::Key(..) |
+                &AstRuleToken::Tag(..) |
+                &AstRuleToken::Func(..) => {
+                    v.push(CollectPart::Part {
+                        part,
+                        opt_group,
+                        not_group
+                    });
+                },
+                &AstRuleToken::Group(ref group_parts) => {
+                    if part.optional {
+                        v.push(CollectPart::OptGroupStart);
+                        v = Self::flatten_syntax_parts(
+                            v, 
+                            group_parts, 
+                            true,
+                            part.not || not_group
+                        );
+                        v.push(CollectPart::OptGroupEnd);
+                    } else if part.not {
+                        v.push(CollectPart::NotGroupStart);
+                        v = Self::flatten_syntax_parts(
+                            v, 
+                            group_parts, 
+                            part.optional || opt_group, 
+                            true
+                        );
+                        v.push(CollectPart::NotGroupEnd);
+                    } else {
+                        v = Self::flatten_syntax_parts(
+                            v, 
+                            group_parts, 
+                            part.optional || opt_group, 
+                            true
+                        );
+                    }
+                }
+            }
+        }
+        v
+    }
+
     pub fn add_syntax_entries(&self,
+                              mut syntax_data: &mut SyntaxData, 
+                              data: &LangData<'a>)
+    {
+        let v = Self::flatten_syntax_parts(Vec::new(), &self.parts, false, false);
+        self.add_syntax_entries_from_syntax_parts(
+            &v,
+            syntax_data,
+            data,
+            self.ast_type.to_string(),
+            0,
+            None
+        );
+    }
+
+    fn add_syntax_entries_from_syntax_parts<'b>(
+                              &self,
+                              sparts: &Vec<CollectPart<'a, 'b>>,
                               mut syntax_data: &mut SyntaxData, 
                               data: &LangData<'a>,
                               match_key: String,
@@ -390,44 +544,81 @@ impl<'a: 's, 's> AstPartsRule<'a> {
             Some(s) => s,
             _ => CollectState::new(false)
         };
+        // If there is existing group_stack, open to current group
+        collect_state.open_regex_groups();
         let mut collect_state_begin = None;
-        let parts_len = self.parts.len();
-        for (i, part) in self.parts[from_index..].iter().enumerate() {
+        let parts_len = sparts.len();
+        for (i, spart) in sparts[from_index..].iter().enumerate() {
+            let i = i + from_index;
             if i == parts_len - 1 {
                 collect_state.is_last = true;
             }
-            match self.collect_part_syntax(part, &mut collect_state, &mut syntax_data, data) {
-                CollectPartReturn::CollectEnd => {
-                    if collect_state.is_first {
-                        collect_state.is_first = false;
+            match spart {
+                &CollectPart::Part{ref part, opt_group, not_group} => {
+                    match self.collect_part_syntax(part, &mut collect_state, &mut syntax_data, data) {
+                        CollectPartReturn::CollectEnd => {
+                            if collect_state.is_first {
+                                collect_state.is_first = false;
+                            }
+                            collect_state.close_regex_groups();
+                            // Put collect_state in begin,
+                            // and create new collect_state for end
+                            collect_state_begin = Some(collect_state);
+                            collect_state = CollectState::new(true);
+                            if let Some(ref begin) = collect_state_begin {
+                                // Transfer group stack so we can open to current group
+                                collect_state.group_stack = begin.group_stack.clone();
+                                collect_state.open_regex_groups();
+                            }
+                        },
+                        CollectPartReturn::Continue => {
+                            if collect_state.is_first {
+                                collect_state.is_first = false;
+                            }
+                        },
+                        CollectPartReturn::CollectSub => {
+                            // Collect state may be in the middle of a
+                            // opt or not group. So close down groups
+                            // in regexes
+                            collect_state.close_regex_groups();
+                            let mut sub_state = CollectState::new(false);
+                            sub_state.regexes = collect_state.regexes.clone();
+                            sub_state.captures = collect_state.captures.clone();
+                            // Transfer group stack so we can open to current group
+                            sub_state.group_stack = collect_state.group_stack.clone();
+                            collect_state.captures.clear();
+                            sub_state.only_optional = collect_state.only_optional;
+                            sub_state.is_first = false;
+                            collect_state.is_subbed = true;
+                            let mut sub_key = match_key.clone();
+                            sub_key.push_str("_sub");
+                            if let Some(ref mut begin) = collect_state_begin {
+                                begin.patterns.push(sub_key.clone());
+                            }
+                            // Branch to sub, then break
+                            self.add_syntax_entries_from_syntax_parts(
+                                sparts, &mut syntax_data, data, sub_key, i, Some(sub_state)
+                            );
+                            break;
+                        }
                     }
-                    // Put collect_state in begin,
-                    // and create new collect_state for end
-                    collect_state_begin = Some(collect_state);
-                    collect_state = CollectState::new(true);
                 },
-                CollectPartReturn::Continue => {
-                    if collect_state.is_first {
-                        collect_state.is_first = false;
-                    }
+                &CollectPart::OptGroupStart => {
+                    collect_state.group_stack.push(CollectStateGroup::Opt);
+                    collect_state.regexes.push(PartRegex::OptStart);
                 },
-                CollectPartReturn::CollectSub => {
-                    let mut sub_state = CollectState::new(false);
-                    sub_state.regexes = collect_state.regexes.clone();
-                    sub_state.captures = collect_state.captures.clone();
-                    collect_state.captures.clear();
-                    sub_state.only_optional = collect_state.only_optional;
-                    sub_state.is_first = false;
-                    collect_state.is_subbed = true;
-                    let mut sub_key = match_key.clone();
-                    sub_key.push_str("_sub");
-                    if let Some(ref mut begin) = collect_state_begin {
-                        begin.patterns.push(sub_key.clone());
-                    }
-                    // Branch to sub, then break
-                    self.add_syntax_entries(&mut syntax_data, data, sub_key, i, Some(sub_state));
-                    break;
-                }
+                &CollectPart::OptGroupEnd => {
+                    collect_state.group_stack.pop();
+                    collect_state.regexes.push(PartRegex::OptEnd);
+                },
+                &CollectPart::NotGroupStart => {
+                    collect_state.group_stack.push(CollectStateGroup::Not);
+                    collect_state.regexes.push(PartRegex::NotStart);
+                },
+                &CollectPart::NotGroupEnd => {
+                    collect_state.group_stack.pop();
+                    collect_state.regexes.push(PartRegex::NotEnd);
+                },
             }
         }
         if let Some(collect_begin) = collect_state_begin {

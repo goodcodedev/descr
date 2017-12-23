@@ -1,5 +1,5 @@
 Source {
-    IfElse("if" LPAREN cond:Expr RPAREN then:Expr ("else" els:Expr)?)
+    IfElse("if" LPAREN cond:Expr RPAREN then:Expr ("else" els:Expr)? "end")
 }
 
 Expr {
