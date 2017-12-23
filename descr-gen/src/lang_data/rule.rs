@@ -328,7 +328,6 @@ impl<'a: 's, 's> AstPartsRule<'a> {
 
     fn add_patterns(&self, key: &str,
                     state: &mut CollectState, 
-                    syntax_data: &mut SyntaxData,
                     data: &LangData<'a>)
     {
         match data.resolve(key) {
@@ -378,20 +377,14 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                         if state.is_first {
                             self.add_parent_entry(key, state, syntax_data, data);
                         } else if state.is_end {
-                            // Todo, branch to "next level" entry,
-                            // name_2.., which continues collecting
+                            // Branch to "next level" entry,
+                            // name_sub.., which continues collecting
                             // regexes, and is included at this level
-                            // Rather, this elements end should be
-                            // prepended to a child element which is
-                            // this part, and this child elements
-                            // end should be used here, when it's
-                            // not optional.
-                            // For now, we can add to parent ref
-                            // which will work sometimes when this
-                            // is last element
+                            // This elements end should be
+                            // prepended to the sub, and used with negative
+                            // lookahead here.
                             if state.is_last {
-                                // If this is last part, just add as parent entry
-                                self.add_parent_entry(key, state, syntax_data, data);
+                                return CollectPartReturn::CollectSub;
                             } else {
                                 // Use currently collected regexes as
                                 // lookaheads in this "end" matcher, then as begin
@@ -399,7 +392,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                                 return CollectPartReturn::CollectSub;
                             }
                         } else {
-                            self.add_patterns(key, state, syntax_data, data);
+                            self.add_patterns(key, state, data);
                             // Switch to end "mode"
                             return CollectPartReturn::CollectEnd;
                         }
@@ -418,7 +411,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                                 return CollectPartReturn::CollectSub;
                             }
                         } else {
-                            self.add_patterns(key, state, syntax_data, data);
+                            self.add_patterns(key, state, data);
                             // Switch to end "mode"
                             return CollectPartReturn::CollectEnd;
                         }
@@ -517,7 +510,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
     }
 
     pub fn add_syntax_entries(&self,
-                              mut syntax_data: &mut SyntaxData, 
+                              syntax_data: &mut SyntaxData, 
                               data: &LangData<'a>)
     {
         let v = Self::flatten_syntax_parts(Vec::new(), &self.parts, false, false);
@@ -554,7 +547,7 @@ impl<'a: 's, 's> AstPartsRule<'a> {
                 collect_state.is_last = true;
             }
             match spart {
-                &CollectPart::Part{ref part, opt_group, not_group} => {
+                &CollectPart::Part{ref part, ..} => {
                     match self.collect_part_syntax(part, &mut collect_state, &mut syntax_data, data) {
                         CollectPartReturn::CollectEnd => {
                             if collect_state.is_first {
@@ -1013,7 +1006,7 @@ impl<'a, 'b> AstRulePart<'a> {
             } else {
                 match &self.token {
                     &AstRuleToken::Key(key) => {
-                        s = data.typed_parts.get(key).unwrap().gen_parser_val(s, self, data, member_ref)
+                        s = data.typed_parts.get(key).unwrap().gen_parser_val(s, self, member_ref)
                     },
                     &AstRuleToken::Tag(..) => {
                         if self.optional {

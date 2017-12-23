@@ -94,9 +94,8 @@ impl<'a> TypedPart<'a> {
         s
     }
 
-    pub fn gen_parser_val(&self, mut s: String, part: &'a AstRulePart, data: &LangData, member_ref: String) -> String {
+    pub fn gen_parser_val(&self, mut s: String, part: &'a AstRulePart, member_ref: String) -> String {
         use lang_data::typed_part::TypedPart::*;
-        let member_key = data.sc(part.member_key.unwrap());
         match self {
             &AstPart { .. } | &ListPart { .. } => {
                 append!(s, member_ref.as_ref());

@@ -76,7 +76,7 @@ impl<'a, 'd: 'a> BuildAst<'a, 'd> {
         let mut current_members = HashSet::new();
         let mut list = Vec::new();
         for part in &rule.parts {
-            list = part.collect_ast_member_data(Vec::new(), false, typed_parts);
+            list = part.collect_ast_member_data(list, false, typed_parts);
             for mdata in &list {
                 if current_members.contains(mdata.member_name) {
                     panic!("Several parts resolve to the same member key: {}, in {}",
